@@ -26,7 +26,10 @@ def apply(source, patch_dir=PATCH_DIR):
         return 'already applied'
     if hashes != [r['before_sha256'] for r in records]:
         raise ValueError('Source differs from pinned files; no changes made')
-    patch = (patch_dir / '0001-policy-and-audio-config.patch').resolve()
+    patch_name = manifest.get('patch', '0001-policy-and-audio-config.patch')
+    if Path(patch_name).name != patch_name:
+        raise ValueError('Patch must be a file inside the patch directory')
+    patch = (patch_dir / patch_name).resolve()
     subprocess.run(['git', 'apply', '--check', str(patch)], cwd=source, check=True)
     subprocess.run(['git', 'apply', str(patch)], cwd=source, check=True)
     if [checksum(source / r['path']) for r in records] != [r['after_sha256'] for r in records]:
