@@ -1,0 +1,61 @@
+name: SM-P900 development kernel
+on:
+  workflow_dispatch:
+  push:
+    paths: ['scripts/build-kernel.sh', 'scripts/inspect-kernel.py', '.github/workflows/build-kernel.yml']
+permissions:
+  contents: read
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  kernel:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install host dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y bc lzop build-essential
+      - name: Fetch exact kernel and toolchain revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p upstream/kernel toolchains/gcc49 reports
+          git -C upstream/kernel init
+          git -C upstream/kernel remote add origin https://github.com/exynos5420/android_kernel_samsung_exynos5420.git
+          git -C upstream/kernel fetch --depth=1 origin de0cdcf10dcca77b400f15d83c1edf4f264a0f02
+          git -C upstream/kernel checkout --detach FETCH_HEAD
+          test "$(git -C upstream/kernel rev-parse HEAD)" = de0cdcf10dcca77b400f15d83c1edf4f264a0f02
+          git -C toolchains/gcc49 init
+          git -C toolchains/gcc49 remote add origin https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9
+          git -C toolchains/gcc49 fetch --depth=1 origin 43bf3bf040b873cb1334cdc0687a03d8d6f4b1c8
+          git -C toolchains/gcc49 checkout --detach FETCH_HEAD
+          df -h > reports/disk.txt
+          free -h > reports/memory.txt
+      - name: Compile and inspect v1awifi kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GCC49_ROOT="$GITHUB_WORKSPACE/toolchains/gcc49"
+          export JOBS=4
+          bash scripts/build-kernel.sh
+          printf 'Development zImage only. NOT boot.img. NOT flashable. Hardware UNTESTED.\n' > reports/DO-NOT-FLASH.txt
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm-p900-kernel-evidence
+          path: reports/
+          retention-days: 7
+      - name: Upload development kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm-p900-zimage-NOT-FLASHABLE
+          path: |
+            out/kernel/arch/arm/boot/zImage
+            reports/kernel-inspection.json
+            reports/DO-NOT-FLASH.txt
+          if-no-files-found: error
+          retention-days: 7
