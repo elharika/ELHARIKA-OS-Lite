@@ -1,0 +1,16 @@
+{
+  "upstream_repository": "exynos5420/android_device_samsung_universal5420-common",
+  "upstream_revision": "b018612a7939d3a4ab8900e3d03ac1ca608546a0",
+  "files": [
+    {
+      "path": "BoardConfigCommon.mk",
+      "before_sha256": "26f2c288ff3d0f494b2c188c18589e82e862fb4f271a05e29b2a13c480946190",
+      "after_sha256": "d03e32576112d5a1eaa4b1be9bfa5fd394deb7fa949ae99402a96a33c89d7626"
+    },
+    {
+      "path": "configs/audio/audio_effects.xml",
+      "before_sha256": "713005c375f2e242fe6fb5fe4d3790a37a41f27c8a8980c6907e0c2f7d8a6cd7",
+      "after_sha256": "f46c5dd8b62ad479a2b73b9b8ed5ffe130da5d0214b2c0b6c21ed9aaf171c8d3"
+    }
+  ]
+}
