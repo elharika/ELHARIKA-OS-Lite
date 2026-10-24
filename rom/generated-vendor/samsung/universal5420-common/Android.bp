@@ -1,0 +1,103 @@
+// Generated experimental SM-P900 prebuilts; no runtime approval.
+cc_prebuilt_library_shared {
+    name: "libexynoscamera",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libexynoscamera.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libbinder", "libc", "libcamera_client", "libcsc", "libcutils", "libexpat", "libexynosgscaler", "libexynosutils", "libexynosv4l2", "libhardware", "libhwjpeg", "libion_exynos", "liblog", "libm", "libpower", "libsecnativefeature", "libstdc++", "libstlport", "libutils", "libvdis"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libvdis",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libvdis.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libandroid", "libc", "libcutils", "liblog", "libm", "libstdc++", "libui", "libutils"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libGLES_mali",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/egl/libGLES_mali.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libbinder", "libc", "libcutils", "libdl", "libhardware", "liblog", "libm", "libstdc++", "libstlport", "libui", "libutils"],
+    vendor: true,
+    relative_install_path: "egl",
+}
+
+cc_prebuilt_binary {
+    name: "mcDriverDaemon",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/bin/mcDriverDaemon"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "liblog", "libm", "libstdc++", "libstlport"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libMcClient",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libMcClient.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "liblog", "libm", "libstdc++", "libstlport"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libMcRegistry",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libMcRegistry.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "liblog", "libm", "libstdc++", "libstlport"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "liblvverx",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/soundfx/liblvverx.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "libdl", "liblog", "libm", "libstdc++"],
+    vendor: true,
+    relative_install_path: "soundfx",
+}
+
+cc_prebuilt_library_shared {
+    name: "liblvvetx",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/soundfx/liblvvetx.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "libdl", "liblog", "libm", "libstdc++"],
+    vendor: true,
+    relative_install_path: "soundfx",
+}
+
+cc_prebuilt_library_shared {
+    name: "libstlport",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libstlport.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libm", "libstdc++"],
+    vendor: true,
+}
+
