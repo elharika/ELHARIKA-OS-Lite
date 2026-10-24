@@ -27,6 +27,6 @@ The exynos5420/proprietary_vendor_samsung repository was found, but the branch s
 
 ## Remaining work
 
-Obtain a lawful exact-model SM-P900 stock system dump, preferably P900XXS0BRI1, with source and checksums. Compare target and common dependencies, ELF ABI and symbols, firmware interfaces and loader requirements. Stock Android 5 blobs are NOT assumed to work on Android 11. Adapt source HALs/shims only after measuring the missing interfaces. Resolve licensing before redistributing proprietary binaries.
+The user-supplied SM-P900 P900XXS0BPL4 stock dump has now been verified and scanned. 140 distinct files were staged with matching hashes; nine requirements remain unresolved. See reports/stock-vendor-staging.json and docs/BUILD_AND_VALIDATION.md. Continue comparing ELF ABI/symbols, firmware interfaces and loader requirements against actual target platform output. Stock Android 5 blobs are NOT assumed to work on Android 11. Adapt source HALs/shims only after measuring the missing interfaces. Resolve licensing before redistributing proprietary binaries.
 
 A stock dump supplies investigation inputs, not an automatic solution. Full platform integration, sufficient build resources, packaging and physical-device testing remain necessary. Do not add a vendor manifest entry merely to silence the readiness audit. No proprietary binaries were imported or published in this audit.
