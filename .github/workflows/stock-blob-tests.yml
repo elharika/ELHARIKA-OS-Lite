@@ -8,6 +8,10 @@ on:
       - tests/test_unpack_stock.py
       - tests/test_stock_staging.py
       - scripts/stage_stock_vendor.py
+      - scripts/stock_candidate_baseline.py
+      - scripts/export_candidate_lists.py
+      - tests/test_stock_candidates.py
+      - rom/stock-candidate-overrides.json
       - .github/workflows/stock-blob-tests.yml
   workflow_dispatch:
 permissions:
