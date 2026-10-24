@@ -1,0 +1,17 @@
+{
+  "device": "SM-P900",
+  "profile": "experimental-minimal",
+  "status": "NOT_BUILT_NOT_FLASHABLE",
+  "distinct_staged_files": 139,
+  "all_staged_sha256_verified": true,
+  "missing_paths": [
+    "vendor/firmware/bcm4350_V0301.0609.hcd",
+    "vendor/lib/liblvverx_3.25.00.so",
+    "vendor/lib/liblvvetx_3.25.00.so",
+    "vendor/lib/libstlport.so"
+  ],
+  "original_stock_archive_sha256": "c5f281c6bec43ef6396adac3300b109e0e4d6f454a55fb4971cb068b010ad0c9",
+  "libaudioroute_source_revision": "b432f63fcbf6fecb43631ac8ef0454fa770182a4",
+  "libaudioroute_compiled": false,
+  "hardware_tested": false
+}
