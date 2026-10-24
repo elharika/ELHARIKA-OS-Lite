@@ -1,0 +1,1007 @@
+{
+  "identity": {
+    "model": "SM-P900",
+    "device": "v1awifi",
+    "android": "5.0.2",
+    "build": "P900XXS0BPL4",
+    "verified_from": "system image /build.prop"
+  },
+  "status": "INCOMPLETE_NOT_FLASHABLE",
+  "staged_count": 140,
+  "missing": [
+    "lib/libaptX_encoder.so",
+    "lib/libaudioroute.so",
+    "vendor/firmware/bcm4350_V0301.0609.hcd",
+    "vendor/lib/liblvverx_3.25.00.so",
+    "vendor/lib/liblvvetx_3.25.00.so",
+    "vendor/lib/libstlport.so",
+    "vendor/bin/hw/android.hardware.drm@1.1-service.widevine",
+    "vendor/etc/init/android.hardware.drm@1.1-service.widevine.rc",
+    "vendor/lib/libwvhidl.so"
+  ],
+  "files": [
+    {
+      "source": "lib/libexynoscamera.so",
+      "destination": "vendor/lib/libexynoscamera.so",
+      "sha256": "a4402d1e554cbefe4b8b36bfda4c396a6e14bcbadfd815ec94462efb407e8935",
+      "bytes": 407340,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libvdis.so",
+      "destination": "vendor/lib/libvdis.so",
+      "sha256": "d9b81a5951f13120ce9c2152508a3d1121589f419a3a2eddf69d25adcdaaa17c",
+      "bytes": 750836,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/lib/egl/libGLES_mali.so",
+      "destination": "vendor/lib/egl/libGLES_mali.so",
+      "sha256": "6bdde99d255444cf59374558736c85de5413125f63f4035237d6556c0f91047d",
+      "bytes": 17776176,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "bin/mcDriverDaemon",
+      "destination": "vendor/bin/mcDriverDaemon",
+      "sha256": "2c427be188b357bc473dce788cffeb21527602ec83f55855e321941f5b32f865",
+      "bytes": 66836,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libMcClient.so",
+      "destination": "vendor/lib/libMcClient.so",
+      "sha256": "8e610f2e41b8525746e38b41d9be62d58ea5be3a0d5a77332c52e6742d9806f4",
+      "bytes": 29908,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libMcRegistry.so",
+      "destination": "vendor/lib/libMcRegistry.so",
+      "sha256": "5ba78aecaa4d9370802d9175ce5a97a89a70ec62c50e780d702c2a669a3c0635",
+      "bytes": 13428,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/mfc_fw.bin",
+      "destination": "vendor/firmware/mfc_fw.bin",
+      "sha256": "10f831fbebbb3bd58b4e8382da5a99a33a38c50360269016ccc73d7909abaf61",
+      "bytes": 400448,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/srp_cga.bin",
+      "destination": "vendor/firmware/srp_cga.bin",
+      "sha256": "6711b5693e0062b926d80e4f8ded4074b360ad81e8c319cce18d08939b5f7cb6",
+      "bytes": 34272,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/srp_data.bin",
+      "destination": "vendor/firmware/srp_data.bin",
+      "sha256": "2b147330e753d4be99f56d0c7f78145c5e275b1c19e521ec4156ca4db283819d",
+      "bytes": 57420,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/srp_vliw.bin",
+      "destination": "vendor/firmware/srp_vliw.bin",
+      "sha256": "32f89c2eec55d05801274e6185ca5161072323b7faff90f1e9e02358a88a3637",
+      "bytes": 45276,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/lib/mediadrm/libwvdrmengine.so",
+      "destination": "vendor/lib/mediadrm/libwvdrmengine.so",
+      "sha256": "8a4011b622c726838c83164ef0d7cdcb118ed4fbc258f8ce9f552a210782b8aa",
+      "bytes": 1393084,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/bcm4335_V0105.0541.hcd",
+      "destination": "vendor/firmware/bcm4335_V0105.0541.hcd",
+      "sha256": "8bc0eb6b512d475e576ac808e2af968db9e69b7c214660306387934c3a6f8918",
+      "bytes": 66894,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/FFFFFFFF000000000000000000000001.drbin",
+      "destination": "vendor/app/FFFFFFFF000000000000000000000001.drbin",
+      "sha256": "65a4982b403f61d7505e3972f4dba58ce8ccf0be687803f46f15ea77afdfd327",
+      "bytes": 34393,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/00060308060501020000000000000000.tlbin",
+      "destination": "vendor/app/mcRegistry/00060308060501020000000000000000.tlbin",
+      "sha256": "fe641a32bf95bb37f80f4d967539d999a87727712f411e0af81245cc38885dc0",
+      "bytes": 32281,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/02010000080300030000000000000000.tlbin",
+      "destination": "vendor/app/mcRegistry/02010000080300030000000000000000.tlbin",
+      "sha256": "abb0c2de1dadb3622d5a287f16a8abb1d7c8eb7509d130cc7f60ddfc4c76bf59",
+      "bytes": 3597,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/07010000000000000000000000000000.tlbin",
+      "destination": "vendor/app/mcRegistry/07010000000000000000000000000000.tlbin",
+      "sha256": "e1c006cb684f07bb3e40297a24325c4ca8f09c058952df40b0945ffe9926e797",
+      "bytes": 19161,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/07060000000000000000000000000000.tlbin",
+      "destination": "vendor/app/mcRegistry/07060000000000000000000000000000.tlbin",
+      "sha256": "005fd4dc3d69c82f17d9024f2f72fec3dc22405ab2a7bf9f43be68b91d96f3a4",
+      "bytes": 8893,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000003.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000003.tlbin",
+      "sha256": "fc798d2882c7608a4142ffa7831a978f59f0f522fa50694e86a9a8d3c42ec0c8",
+      "bytes": 193344,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000004.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000004.tlbin",
+      "sha256": "3ea4171d6e1baf469b065a5f653f1b7b34ec109cf640a680c91afe5616cfe960",
+      "bytes": 211881,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000005.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000005.tlbin",
+      "sha256": "3ab3f2089a9197dc1fa2c596dbb6dcd89db4847ed7d436ca13f78b63ab5ed9d4",
+      "bytes": 60065,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000007.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000007.tlbin",
+      "sha256": "77946a9cb0235a55bdf4166527c9e95757f06a8055ac0428b16ecc4c12d80a03",
+      "bytes": 5389,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000008.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000008.tlbin",
+      "sha256": "76bab07707ef4e152ec2d21fddcd0ace1b21c2dfd1ee808e26f01b33959391b3",
+      "bytes": 47329,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000009.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000009.tlbin",
+      "sha256": "f18b630c29422fff2a23d44df00acfb6598a282f66d8e3e77687018daef3b65c",
+      "bytes": 110957,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff00000000000000000000000a.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff00000000000000000000000a.tlbin",
+      "sha256": "5d62b05c1f9f8528979c4ee87d5e79892409d8b46bd2181e8ad3faa5fef2c113",
+      "bytes": 22429,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff00000000000000000000000c.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff00000000000000000000000c.tlbin",
+      "sha256": "65c0262efc045df3370adadc4edafed8cebc28686a65e9f137c2e02340668672",
+      "bytes": 98400,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff00000000000000000000000d.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff00000000000000000000000d.tlbin",
+      "sha256": "d29f5d5c6e49f2df1c17e612f6db8569c6944132ba30a6102dd1431618f85b6e",
+      "bytes": 94845,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff00000000000000000000000f.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff00000000000000000000000f.tlbin",
+      "sha256": "d18114a83eb7e883f30aa3401d8927030717d0f714514f5850797f3df4621d66",
+      "bytes": 21721,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000010.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000010.tlbin",
+      "sha256": "741b9efb1c3c7361729757bfce17a7be7e3c8036e2ee7ca262e896a19ee82852",
+      "bytes": 18633,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000011.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000011.tlbin",
+      "sha256": "1f6824ca2e11de4f3153b2f597ac8ac4f93849edd74a5d657ea52d1d3bfcabb7",
+      "bytes": 107661,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000012.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000012.tlbin",
+      "sha256": "08850ab4a619b226cff2f393bf409c4854b49fae8e5e99eafa2ea54b78e8f8cc",
+      "bytes": 84833,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000013.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000013.tlbin",
+      "sha256": "db39928a2834b62a96c8171a58685413c30d51224e4c5d3d6cd34d68cd19998c",
+      "bytes": 51289,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffff000000000000000000000017.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffff000000000000000000000017.tlbin",
+      "sha256": "4a7f929ca0763be42e83debefba3968ca8e2d8cc5dedce847a2755a34dbedd2f",
+      "bytes": 106257,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffffd00000000000000000000004.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffffd00000000000000000000004.tlbin",
+      "sha256": "a774dd5445192afeb691a5a6b1a79321a9beb51a58070364dcf904204165b620",
+      "bytes": 112065,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "app/mcRegistry/ffffffffd0000000000000000000000a.tlbin",
+      "destination": "vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin",
+      "sha256": "0ed5bc3b9f4ff975c595cb955354ff7cf77437fca54e9c7be5c2a01679bb631c",
+      "bytes": 8077,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/fimc_is_fw2_IMX134.bin",
+      "destination": "vendor/firmware/fimc_is_fw2_IMX134.bin",
+      "sha256": "6146aeca3b12c1daf223fecf2e42ba0d1b333a6a8729f6fc1cf5f5ab686ca611",
+      "bytes": 1750995,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/setfile_6b2.bin",
+      "destination": "vendor/firmware/setfile_6b2.bin",
+      "sha256": "caed1bbf46aef6caf1814841bf08bf003897b30eb1eaed8e689ad1c4f20f316d",
+      "bytes": 264028,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/firmware/setfile_imx134.bin",
+      "destination": "vendor/firmware/setfile_imx134.bin",
+      "sha256": "72a79b46494e1813b20e285c7f1ea9aac563ded0d82fcffa58b8dc34ec525edf",
+      "bytes": 189644,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/PARAM.ini",
+      "destination": "etc/PARAM.ini",
+      "sha256": "c9037edbcf843eb1b85f94ce93c1cb353229978cc6995ef9d9ad2e2b9f3303e5",
+      "bytes": 24,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/PDC.ini",
+      "destination": "etc/PDC.ini",
+      "sha256": "a93e32e4c2c6e6eb917615dca32c6a28a6239a070c5c0742728130e770bde539",
+      "bytes": 394,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libak8963c.so",
+      "destination": "vendor/lib/libak8963c.so",
+      "sha256": "777d5a0ab0d504e3db1317eae6955efc2f73dcadb80e3e5387fb35ea4469b73b",
+      "bytes": 42112,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_apsta.bin",
+      "destination": "etc/wifi/bcmdhd_apsta.bin",
+      "sha256": "2dd341aa2676dba3a99d74441cf73d15ab2d3ea4c1454b08db3750955958e452",
+      "bytes": 467430,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_apsta.bin_4339_a0",
+      "destination": "etc/wifi/bcmdhd_apsta.bin_4339_a0",
+      "sha256": "caf47142a2ff238d2cf61ca6b841891c08c7a64dd234aa5f0324f727ec7ef028",
+      "bytes": 497429,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_apsta.bin",
+      "destination": "etc/wifi/bcmdhd_apsta.bin_4354_a0",
+      "sha256": "2dd341aa2676dba3a99d74441cf73d15ab2d3ea4c1454b08db3750955958e452",
+      "bytes": 467430,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_apsta.bin",
+      "destination": "etc/wifi/bcmdhd_apsta.bin_4354_a1",
+      "sha256": "2dd341aa2676dba3a99d74441cf73d15ab2d3ea4c1454b08db3750955958e452",
+      "bytes": 467430,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_ibss.bin",
+      "destination": "etc/wifi/bcmdhd_ibss.bin",
+      "sha256": "5a673111479887ee070001e3327d7836dfff88c0d92b0fb7356a66f6f00fc8ba",
+      "bytes": 506088,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_ibss.bin_4339_a0",
+      "destination": "etc/wifi/bcmdhd_ibss.bin_4339_a0",
+      "sha256": "90e8e055e1e0c01dc5fbf2603115192b102a52299aa53084779ee0c6a7af0108",
+      "bytes": 514547,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_ibss.bin",
+      "destination": "etc/wifi/bcmdhd_ibss.bin_4354_a0",
+      "sha256": "5a673111479887ee070001e3327d7836dfff88c0d92b0fb7356a66f6f00fc8ba",
+      "bytes": 506088,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_ibss.bin",
+      "destination": "etc/wifi/bcmdhd_ibss.bin_4354_a1",
+      "sha256": "5a673111479887ee070001e3327d7836dfff88c0d92b0fb7356a66f6f00fc8ba",
+      "bytes": 506088,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_mfg.bin",
+      "destination": "etc/wifi/bcmdhd_mfg.bin",
+      "sha256": "971397bdea3ed8a2087567affe1b4121c0da12447fd230a768adbc6238d9b2f4",
+      "bytes": 483199,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_mfg.bin_4339_a0",
+      "destination": "etc/wifi/bcmdhd_mfg.bin_4339_a0",
+      "sha256": "234bddb6fabb9f2aa35278cf2c98921da36b7c260a227a750411f0d254e50d8d",
+      "bytes": 531619,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_mfg.bin",
+      "destination": "etc/wifi/bcmdhd_mfg.bin_4354_a0",
+      "sha256": "971397bdea3ed8a2087567affe1b4121c0da12447fd230a768adbc6238d9b2f4",
+      "bytes": 483199,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_mfg.bin",
+      "destination": "etc/wifi/bcmdhd_mfg.bin_4354_a1",
+      "sha256": "971397bdea3ed8a2087567affe1b4121c0da12447fd230a768adbc6238d9b2f4",
+      "bytes": 483199,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_sta.bin",
+      "destination": "etc/wifi/bcmdhd_sta.bin",
+      "sha256": "e6ece55ae151bf2525b29acfa20241b811c6fb6e28944626f95c8f5db85a2bfb",
+      "bytes": 533810,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_sta.bin",
+      "destination": "etc/wifi/bcmdhd_sta.bin_4354_a0",
+      "sha256": "e6ece55ae151bf2525b29acfa20241b811c6fb6e28944626f95c8f5db85a2bfb",
+      "bytes": 533810,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/bcmdhd_sta.bin",
+      "destination": "etc/wifi/bcmdhd_sta.bin_4354_a1",
+      "sha256": "e6ece55ae151bf2525b29acfa20241b811c6fb6e28944626f95c8f5db85a2bfb",
+      "bytes": 533810,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/cred.conf",
+      "destination": "etc/wifi/cred.conf",
+      "sha256": "485f06b83b0e3983e0bedad5909dc976dc1553e8d24733e2d21ee95ce822dcbb",
+      "bytes": 20,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_mfg.txt_4339_a0",
+      "destination": "etc/wifi/nvram_mfg.txt_4339_a0",
+      "sha256": "bb458852dfd46c2a45599478a33c21af1bf196ee59f6bef0065a469a97ffdce4",
+      "bytes": 2226,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_mfg.txt_4354_a0",
+      "destination": "etc/wifi/nvram_mfg.txt_4354_a0",
+      "sha256": "1f30f7a95312c7a3a78c38cb8d2afe60842cfbe0b977f70b6fce421b2bfeff76",
+      "bytes": 3639,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_mfg.txt_4354_a1",
+      "destination": "etc/wifi/nvram_mfg.txt_4354_a1",
+      "sha256": "055c7864e76d0bc345f364e004c1d24dbde0f061016b0b251e9e19014c690ff2",
+      "bytes": 3431,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_net.txt_4339_a0",
+      "destination": "etc/wifi/nvram_net.txt_4339_a0",
+      "sha256": "593fa6c341bc15a2eacf51cce45ff9f2911d34ef647f79210887055461f7a04f",
+      "bytes": 2550,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_net.txt_4354_a0",
+      "destination": "etc/wifi/nvram_net.txt_4354_a0",
+      "sha256": "6f68453fda3bafa22238570c9e3854a3168ea43919d0177cea56e293221794ff",
+      "bytes": 3483,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "etc/wifi/nvram_net.txt_4354_a1",
+      "destination": "etc/wifi/nvram_net.txt_4354_a1",
+      "sha256": "634864fac348e98034157ce0d8ff6430e4bd7efb419eaa854bb95011cc441448",
+      "bytes": 3466,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/liboemcrypto.so",
+      "destination": "vendor/lib/liboemcrypto.so",
+      "sha256": "0838b81c28549a7144d1180d4619d1d38b6aee4349150cbeabfe8d2700405964",
+      "bytes": 129733,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "bin/gpsd",
+      "destination": "vendor/bin/gpsd",
+      "sha256": "8662da3f34f5b2e5945eed95f8c50ede2cfdeb2c03420d9b522c86da6f8b72a9",
+      "bytes": 3391100,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/hw/gps.default.so",
+      "destination": "vendor/lib/hw/gps.universal5420.so",
+      "sha256": "09b2705e668d7db54d355c24e7c5cec6f817faa788e25a62dc52f186d8261269",
+      "bytes": 108368,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/LVVEFS_Rx_Configuration.txt",
+      "destination": "vendor/etc/nxp/LVVEFS_Rx_Configuration.txt",
+      "sha256": "d0d4d7f3c962e69ca53fb131ecec72f76d3fcca7fac363b6a10fee797b3a24fe",
+      "bytes": 2431,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/LVVEFS_Tx_Configuration.txt",
+      "destination": "vendor/etc/nxp/LVVEFS_Tx_Configuration.txt",
+      "sha256": "fc4b5b74fc5d7163be3aaec29e5734133767ae5abdaace372abf13801f16eb77",
+      "bytes": 3469,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_ANALOG_DOCK.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_ANALOG_DOCK.txt",
+      "sha256": "14b90cf0aedaddc71c5b9de14321a7cf87db87b50eef82d9c31dd34b5507b78e",
+      "bytes": 799,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "273f62bbaa42fe7cca418f83f1b8b992819b16d986966625e8384f4cb5420cda",
+      "bytes": 806,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "946ad0f273fcb5061621387e719c692ff31a61cbcbd30a831b6ce73138a9ea00",
+      "bytes": 797,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "4973e860fa99e741d133049e0b28792e91abac3a2fa3719e43b57774aec84438",
+      "bytes": 795,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "ef19410b7f724986f2226f3da792eb536993947c63f349b2cc2e1ff1f099c9f2",
+      "bytes": 798,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/BargeIn/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "9346cfb35a4cf8171aefa9f0ba9d3f1cea2dce4a1c7a1ae30f4534d9859e26ac",
+      "bytes": 797,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_ANALOG_DOCK.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_ANALOG_DOCK.txt",
+      "sha256": "07d6793ddf3d8a1dbd64db4fe35c3443260437af10bfb647209aeac6092c71bb",
+      "bytes": 801,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "90bfbfa31a935e535ec595fdafa47cc5098b22caaf0f0bf07250e9f928440a27",
+      "bytes": 808,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "6ace01d0592a5872e70c9831123c15796f8501bd0dcaee58d2ac52067e837154",
+      "bytes": 799,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "48dded9da6d72a0e0ce5ef6a40d805c10c37a2e8723fa4312de9de111c072c9d",
+      "bytes": 804,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "08cce785843fb124c18a4c65e1f3da3ad053f0abcea5e25fd77999cfa181cedc",
+      "bytes": 800,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/BargeInDriving/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "3aaef8827d32b2eae8239846f0f1cc2a92084eb57f5b3f46e15c00ddff06dc26",
+      "bytes": 799,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "6ffe55b50f99ad7702a450288a1c2e46c12c23569b93c57fc1510ac15e14908e",
+      "bytes": 1722,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "sha256": "96d61ce435db0a574a59a2083137c713b57c9074c56f31c1b11c664d9d62423e",
+      "bytes": 1707,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "sha256": "8ec8767699fe0dab754c8aef6a001756298bbe11480dffdfdcdaa8f1f429a615",
+      "bytes": 1719,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "sha256": "fadd1bb212aeadabcb8ca62c7da4508f304bd428f7345698d75fe7d5e66759ab",
+      "bytes": 1721,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "sha256": "5fa5c1d8012a5bd6c90d1625da7925ca08a30482658a9e72a23afbaabf5cdbd7",
+      "bytes": 1721,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "adf20b4455e8f8b3ced652ab1447e66ec3f2f8e73ec4488a893df0eb2541d959",
+      "bytes": 1722,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "d0dfc0ba86d5b3c56b50e653a214e0fcf187ad210afb97e5ecb049711514ccd1",
+      "bytes": 1709,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "32622ab34c737b6f5ec89402c12dc8588fb99134e90dee7cc3a974aab346b663",
+      "bytes": 1720,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "1d0c51b49f5faccddb41aa8f274609e32d93b6858e434d939316be3675c62925",
+      "bytes": 1721,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "e47ffd4d90ac7c63059e7d35798da8179dc2414a84e9c119998e1e1f593055b9",
+      "bytes": 1629,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "e60f3c580a721a1e053fd036ab02ac208b932e6ad95564a9a607618f0e3be795",
+      "bytes": 798,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "sha256": "29144519162b2f976ef3ddaecbae02c807926722b9eccb43fd16eafcf9add037",
+      "bytes": 793,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "sha256": "711306f8d0e42b6ba2dbc9e166645f6a664a8377715c28f56d616860f0192cc2",
+      "bytes": 795,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "sha256": "39f753b2e113b98efd46345157ea2f9f93cde6f010409131e4ad266be7c95b7b",
+      "bytes": 790,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "sha256": "4f80dc639f5e414166f104dd8f6899b973a4269d08a078a6d50af61a3b5edcfe",
+      "bytes": 791,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "e6d685487c82d22b52de203dfffad16dd8da5818649be9bd84e733c6b34b3f18",
+      "bytes": 910,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "268b77074e138d5730e296ec8a77a0fe7e5922c6954806ccc1261e8dbe2d2d5b",
+      "bytes": 793,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "0b828491dc418031361efc47101c70afd442964bfea6952e30fa707841a401ca",
+      "bytes": 808,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "95fee2a03e549200cd7b78997a14bf9427149918f1c251eaf69253079ab91cb9",
+      "bytes": 900,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIP/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "df1b02ac7750dc2e4e4bac42407dc8e1bfedde8426bd428fe7a19ec247fce400",
+      "bytes": 899,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "01ac2c5c28df7f0fbf008afa27a0a040ad8a7e9a82f37096cbf149563a764113",
+      "bytes": 1748,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "2fdaf64db8da2ee3a4dd1ae0e2159d436660f4a128b000eaa22bf85cf69b3cf1",
+      "bytes": 1766,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "b9769fac377227bef59d6d80359fdc0e40f3df321d8dfb6c7999ec098a108c57",
+      "bytes": 1812,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "5d3cc2fdcd5d07fcf45aee6769ba8ae48e7f92ab9b9695019f0652d8cb382c3b",
+      "bytes": 1710,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "b2a92cbbb0b9cab2fb36dacc6d7a7ff2722c1935b334ad1460c41917297c2986",
+      "bytes": 1792,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "06b5a20e35353236efa0a6dda889b737c17e3c0cfb08e27c285d9b352cbb2df0",
+      "bytes": 842,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "b7b277e603eb7169bc79671a6148a7734f6f0e79c0ab3631cab5076c281ccb2d",
+      "bytes": 854,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "985df885f6fe48e1eb2b5322e197e4c7831a8b90db9e2f62dccb94cb074612c9",
+      "bytes": 1388,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "68193771ea8f395b8338fd1b51b1d35abad17f4b1eb511bf7537d83f1eefb739",
+      "bytes": 850,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSec/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "ed29c48b1a3c20a9879a9528b9cae6ddfde6103ff0bdbda24d6a52a2413f75f0",
+      "bytes": 886,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "a6f8957e01280751f9190e2ab1f9c0e5514ccd563d6be144602ce423987180b2",
+      "bytes": 1748,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "sha256": "655f442a56ce1b99cdd1bcd2d31195adfe1fc1c29d2f0c17cbf75d8d9bdd67e2",
+      "bytes": 1766,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "sha256": "ab0bd79949092ee916cf63d0c919a706b5414db0e571a492e291bf9b20d4896b",
+      "bytes": 1803,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "sha256": "d5e091b571fcddc8a10b139fe66577c3be37901ba30f511b42553e76bbf893f7",
+      "bytes": 1708,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "sha256": "0e7b741db9e9b77fb051ad497700095ed2e084c05de7c8da9e15c784c94e46a1",
+      "bytes": 1766,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "aad3ae4e9c62c1c0c8d3cd8cb78e6b8adf6fd7e3ee634a18f70385d9c35a3cdb",
+      "bytes": 1749,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "f8915d8f2f4faaff342c33edc55addcf25ca28f22ceb26a9389da3ddb344a954",
+      "bytes": 1767,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "6a91d6aa50c1f512e1b414031ed670caced79dec173d73ffa9cb79a62af4da0f",
+      "bytes": 1785,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "f6d095e9d554a6d913e36300123e7de6f67267453e0d1bb2440da28d81bc1cca",
+      "bytes": 1712,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "3d9a13f535d5ec4fbad858650ffded694d7fd1f0dfb5e2f90edb6bd1ea7a5f8a",
+      "bytes": 1769,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "cd0a1e16e81bc46cc63e1827bb503db3c1da36b5b6d1e8e436a17477966f2051",
+      "bytes": 842,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_EARPIECE.txt",
+      "sha256": "8155c33ccaa69eb958cb8fba5fe033f7bbee1fec2db66ac28adb77305d69737d",
+      "bytes": 860,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_SPEAKER.txt",
+      "sha256": "fc0dd08498bee0b1393434777b425cdb5c4a27edd3bf27bca8fb0254993f0b20",
+      "bytes": 1394,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_WIRED_HEADPHONE.txt",
+      "sha256": "96f2e3d4df8f5ee91499069a39f1f153f3ba6e8d3d888603d25bd968c2342d70",
+      "bytes": 855,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_NARROWBAND_WIRED_HEADSET.txt",
+      "sha256": "716833cdb34bc4805e7cc1e7016257b93bb4ca35674a268ecd5c750b0fd5ecd5",
+      "bytes": 891,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "a4e7a0ceb5fdb8dde8e15738881705e70d71a08bba1ab4cb7c47b28aca5251fc",
+      "bytes": 843,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "540ad79b8296b90c418b67b1cb02831bfeaabd2e52ccc5ef5ada7a312dc9367d",
+      "bytes": 855,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "097055068b8b8589863b07e5de3f4325e6cecc0f1f631dc3ef6fc7003f224a64",
+      "bytes": 1389,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "ab81278b7b9191de55f398ea91c0437e9d12f44ec928fb0de9e5fc18f4a7f40b",
+      "bytes": 851,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPSecCallFwd/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "2ce6c33054391abd7193c6d9ebe2214775fa00509497b0c245f19464029bf5a9",
+      "bytes": 887,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "7c34fb44472d62a9357013dd059854e249d5a003f5facfcb4f2e4c628f62cb54",
+      "bytes": 1752,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "2880361ddbeb43332d23e93cd8e63356f90837ad4dc36b90579db61bbbc34d5a",
+      "bytes": 1770,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "4eca83ffab711981b51d72dcdbeb40999970166516e085f353ca02baf4872b54",
+      "bytes": 1815,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "0b56134a3d4a869defdee5de510e8b578a1834e86e12a28093e7e92e83aee4fe",
+      "bytes": 1728,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Rx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "d7490f258a3d2257032d082258da21edb6310ecb2d9a9c3dad03efcc6c2d2493",
+      "bytes": 1819,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_BLUETOOTH_SCO_HEADSET.txt",
+      "sha256": "41edb286a0b0277e017f2b31ea08e540b4a78addcd67ab2cf2985e645503664d",
+      "bytes": 816,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_EARPIECE.txt",
+      "sha256": "9f45731acf1615e677d56edf86fb7761ea7ddd5a04224732cc49757f9e740ffa",
+      "bytes": 864,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_SPEAKER.txt",
+      "sha256": "c138700ef9257640b46e5b8033ab1c276c876c1723879eeda3cbc52414341868",
+      "bytes": 815,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_WIRED_HEADPHONE.txt",
+      "sha256": "8f7c1f29fa0c7768ef1c509d84c3f1d3831ba99dcbd9d2dad0068c321a2615c5",
+      "bytes": 859,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "destination": "vendor/etc/nxp/mVoIPWebEx/Tx_ControlParams_WIDEBAND_WIRED_HEADSET.txt",
+      "sha256": "9b6c29b53d8bc86a61c0a33cee876bbd20d0944b182380ba4818e02650968da2",
+      "bytes": 907,
+      "runtime_compatibility": "NOT_TESTED"
+    },
+    {
+      "source": "lib/hw/sensors.universal5420.so",
+      "destination": "vendor/lib/sensors.universal5420.so",
+      "sha256": "4e7ab23e9fe49e2650c3f52a17f3d7433b76c4c89733b02d9a7e5dcc742db848",
+      "bytes": 30052,
+      "runtime_compatibility": "NOT_TESTED"
+    }
+  ],
+  "identical_duplicate_entries_removed": [
+    "etc/wifi/bcmdhd_mfg.bin_4339_a0"
+  ]
+}
