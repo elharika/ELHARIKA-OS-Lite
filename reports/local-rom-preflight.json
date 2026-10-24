@@ -1,0 +1,34 @@
+{
+  "status": "BLOCKED",
+  "machine": "x86_64",
+  "cpu_available": 9,
+  "disk_free_bytes": 23782748160,
+  "ram_total_bytes": 10451439616,
+  "suggested_jobs": 2,
+  "planning_thresholds": {
+    "disk_gib": 200,
+    "ram_gib": 16,
+    "note": "Conservative project defaults, not measured Android 11 minimums or proof of sufficient capacity."
+  },
+  "blockers": [
+    "missing:build/envsetup.sh",
+    "missing:build/soong/soong_ui.bash",
+    "missing:vendor/elharika/AndroidProducts.mk",
+    "missing:vendor/elharika/elharika_v1awifi.mk",
+    "missing:vendor/elharika/apps/pen/Android.bp",
+    "missing:vendor/elharika/apps/launcher/Android.bp",
+    "missing:device/samsung/v1awifi/AndroidProducts.mk",
+    "missing:device/samsung/v1awifi/lineage_v1awifi.mk",
+    "missing:device/samsung/universal5420-common/BoardConfigCommon.mk",
+    "missing:kernel/samsung/exynos5420/Makefile",
+    "missing:vendor/samsung/v1awifi/v1awifi-vendor.mk",
+    "missing:vendor/samsung/v1a-common/v1a-common-vendor.mk",
+    "missing:vendor/samsung/universal5420-common/universal5420-common-vendor.mk",
+    "missing:vendor/lineage/config/common_full_tablet_wifionly.mk",
+    "disk below project planning threshold",
+    "RAM below project planning threshold",
+    "missing tool:repo",
+    "missing full platform lock: run repo manifest -r -o elharika-platform-lock.xml after sync"
+  ],
+  "hardware_tested": false
+}
