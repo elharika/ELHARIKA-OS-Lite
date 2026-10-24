@@ -1,0 +1,16 @@
+name: Performance profile checks
+on:
+  push:
+    paths:
+      - 'config/performance-profile.json'
+      - 'scripts/test_performance_profile.py'
+      - '.github/workflows/performance-check.yml'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  validate-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate conservative SM-P900 profile
+        run: python3 scripts/test_performance_profile.py
