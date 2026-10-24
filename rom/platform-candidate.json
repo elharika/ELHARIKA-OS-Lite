@@ -1,0 +1,11 @@
+{
+  "android_api": 30,
+  "android_version": "11",
+  "manifest_repository": "https://github.com/LineageOS/android",
+  "manifest_revision": "88e370827501474db8f1905128fdea2e8128ead4",
+  "manifest_file": "default.xml",
+  "status": "CANDIDATE_NOT_SYNCED_OR_BUILT",
+  "all_projects_pinned": false,
+  "reason": "Pinned hardware trees require this AOSP-derived build infrastructure; the manifest still references moving project branches. Run repo manifest -r after sync to capture the complete source lock.",
+  "hardware_compatibility": "NOT_TESTED"
+}
