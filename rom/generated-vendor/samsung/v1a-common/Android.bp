@@ -1,0 +1,12 @@
+// Generated experimental SM-P900 prebuilts; no runtime approval.
+cc_prebuilt_library_shared {
+    name: "libak8963c",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/libak8963c.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "libm", "libstdc++", "libutils", "libz"],
+    vendor: true,
+}
+
