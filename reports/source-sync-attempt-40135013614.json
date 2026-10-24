@@ -1,0 +1,13 @@
+{
+  "run_id": 40135013614,
+  "job_id": 120994577665,
+  "status": "DISK_RESERVE_REACHED",
+  "initialization": "SUCCESS",
+  "elapsed_seconds": 535.6,
+  "reserve_gib": 12,
+  "final_free_bytes": 11649654784,
+  "android_compiled": false,
+  "source_sync_completed": false,
+  "interpretation": "This shallow-sync attempt reached its disk reserve. Full source size and build capacity remain unmeasured.",
+  "next_attempt": "Remove only preinstalled dotnet, Android SDK and CodeQL on disposable standard hosted worker; record recovered space; keep 12 GiB reserve."
+}
