@@ -1,0 +1,20 @@
+name: Stock blob verifier tests
+on:
+  push:
+    paths:
+      - scripts/verify_stock_blobs.py
+      - tests/test_stock_blobs.py
+      - .github/workflows/stock-blob-tests.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install fixture tools
+        run: sudo apt-get update && sudo apt-get install -y e2fsprogs binutils gcc
+      - name: Test generated ext4 fixtures (not hardware tests)
+        run: python3 -m unittest discover -s tests -p test_stock_blobs.py -v
