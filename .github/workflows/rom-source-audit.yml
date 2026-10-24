@@ -1,0 +1,17 @@
+name: SM-P900 ROM source readiness audit
+on:
+  push:
+    paths:
+      - 'rom/**'
+      - 'scripts/audit_rom_sources.py'
+      - '.github/workflows/rom-source-audit.yml'
+  workflow_dispatch:
+jobs:
+  source-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python script syntax
+        run: python3 -m py_compile scripts/audit_rom_sources.py
+      - name: Audit ROM source dependencies
+        run: python3 scripts/audit_rom_sources.py
