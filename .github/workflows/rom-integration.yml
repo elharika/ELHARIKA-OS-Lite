@@ -1,0 +1,44 @@
+name: ROM integration tools and worker capacity
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/rom_preflight.py
+      - scripts/build-rom.sh
+      - scripts/prepare_product.py
+      - scripts/collect_device_qa.py
+      - tests/test_build_qa.py
+      - tests/test_product_setup.py
+      - rom/AndroidProducts.mk
+      - rom/elharika_v1awifi.mk
+      - .github/workflows/rom-integration.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test integration tools (not an Android build)
+        run: |
+          set -euo pipefail
+          bash -n scripts/build-rom.sh
+          python3 -m unittest discover -s tests -p test_build_qa.py -v
+          python3 -m unittest discover -s tests -p test_product_setup.py -v
+      - name: Measure this worker and report missing platform inputs
+        run: |
+          mkdir -p evidence
+          set +e
+          python3 scripts/rom_preflight.py . --report evidence/runner-preflight.json > evidence/preflight.log 2>&1
+          result=$?
+          set -e
+          if [ "$result" != 0 ] && [ "$result" != 2 ]; then cat evidence/preflight.log; exit "$result"; fi
+          cat evidence/preflight.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rom-worker-readiness-NOT-A-ROM
+          path: evidence/
+          retention-days: 7
