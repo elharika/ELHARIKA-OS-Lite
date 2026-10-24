@@ -35,6 +35,16 @@ def inspect(root, min_disk_gib=200, min_ram_gib=16):
     free = shutil.disk_usage(root).free
     ram = memory.get('MemTotal', 0)
     cpu = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+    host_ram = ram
+    memory_limit = Path('/sys/fs/cgroup/memory.max')
+    if memory_limit.is_file():
+        limit = memory_limit.read_text().strip()
+        if limit.isdigit(): ram = min(ram, int(limit))
+    cpu_limit = Path('/sys/fs/cgroup/cpu.max')
+    if cpu_limit.is_file():
+        quota, period = cpu_limit.read_text().split()
+        if quota.isdigit() and int(period) > 0:
+            cpu = max(1, min(cpu, int(quota) // int(period)))
     missing = [p for p in REQUIRED if not (root / p).is_file()]
     blockers = ['missing:' + p for p in missing]
     if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'AMD64'):
@@ -57,7 +67,7 @@ def inspect(root, min_disk_gib=200, min_ram_gib=16):
         blockers.append('upstream neverallow bypass still enabled; apply reviewed device fixes')
     return {'status': 'BLOCKED' if blockers else 'PREFLIGHT_PASSED_NOT_HARDWARE_VALIDATED',
             'machine': platform.machine(), 'cpu_available': cpu,
-            'disk_free_bytes': free, 'ram_total_bytes': ram,
+            'disk_free_bytes': free, 'host_ram_total_bytes': host_ram, 'ram_effective_bytes': ram,
             'suggested_jobs': max(1, min(cpu, max(1, int(ram / 1024**3) // 4))),
             'planning_thresholds': {'disk_gib': min_disk_gib, 'ram_gib': min_ram_gib,
                 'note': 'Conservative project defaults, not measured Android 11 minimums or proof of sufficient capacity.'},
