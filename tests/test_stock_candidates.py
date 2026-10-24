@@ -4,8 +4,8 @@ from pathlib import Path
 import sys
 import unittest
 import tempfile
-from export_candidate_lists import export
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
+from export_candidate_lists import export
 from minimal_vendor_baseline import derive as minimal
 from stock_candidate_baseline import derive
 ROOT=Path(__file__).resolve().parents[1]
