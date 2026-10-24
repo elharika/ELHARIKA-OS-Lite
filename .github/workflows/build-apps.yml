@@ -1,0 +1,59 @@
+name: ELHARIKA apps and runner inventory
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['apps/**', 'scripts/build-apps-sdk.py', '.github/workflows/build-apps.yml']
+permissions:
+  contents: read
+concurrency:
+  group: elharika-apps-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record actual resources
+        run: |
+          mkdir -p evidence
+          df -h > evidence/disk.txt
+          free -h > evidence/memory.txt
+          nproc > evidence/cpu.txt
+      - name: Install SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-30" "build-tools;30.0.3"
+      - name: Build development APKs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/build-apps-sdk.py \
+            --android-jar "$ANDROID_HOME/platforms/android-30/android.jar" \
+            --build-tools "$ANDROID_HOME/build-tools/30.0.3" \
+            --keystore "$RUNNER_TEMP/elharika-debug.jks" 2>&1 | tee evidence/build.log
+          sha256sum out/pen/pen-debug.apk out/launcher/launcher-debug.apk > evidence/SHA256SUMS
+      - name: Save build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: elharika-build-evidence
+          path: evidence/
+          retention-days: 7
+      - name: Save successful development APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: elharika-development-apks-not-rom
+          path: |
+            out/pen/pen-debug.apk
+            out/launcher/launcher-debug.apk
+          if-no-files-found: error
+          retention-days: 7

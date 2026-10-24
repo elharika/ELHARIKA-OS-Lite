@@ -1,0 +1,21 @@
+<resources>
+<string name="undo">تراجع</string>
+<string name="clear">صفحة جديدة</string>
+<string name="export">تصدير PNG</string>
+<string name="pdf">تصدير PDF</string>
+<string name="import_image">فتح صورة</string>
+<string name="finger">السماح بالرسم بالإصبع</string>
+<string name="pressure">منحنى ضغط الفرشاة</string>
+<string name="button">زر القلم للممحاة</string>
+<string name="search">البحث عن التطبيقات</string>
+<string name="settings">الإعدادات</string>
+<string name="theme">فاتح / داكن</string>
+<string name="confirm">حذف محتوى الصفحة؟</string>
+<string name="yes">حذف</string>
+<string name="no">إلغاء</string>
+<string name="saved">تم الحفظ</string>
+<string name="error">تعذرت العملية</string>
+<string name="tools">أدوات</string>
+<string name="note">الملاحظات محفوظة محلياً. وضع القلم يتجاهل الأصابع داخل مساحة الرسم.</string>
+<string name="width">عرض الفرشاة</string>
+</resources>

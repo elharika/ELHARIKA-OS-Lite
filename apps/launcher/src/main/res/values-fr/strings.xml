@@ -1,0 +1,21 @@
+<resources>
+<string name="undo">Annuler le trait</string>
+<string name="clear">Nouvelle page</string>
+<string name="export">Exporter PNG</string>
+<string name="pdf">Exporter PDF</string>
+<string name="import_image">Ouvrir image</string>
+<string name="finger">Dessiner au doigt</string>
+<string name="pressure">Courbe de pression</string>
+<string name="button">Bouton du stylet : gomme</string>
+<string name="search">Rechercher une application</string>
+<string name="settings">Paramètres</string>
+<string name="theme">Clair / Sombre</string>
+<string name="confirm">Effacer cette page ?</string>
+<string name="yes">Effacer</string>
+<string name="no">Annuler</string>
+<string name="saved">Enregistré</string>
+<string name="error">Échec de l’opération</string>
+<string name="tools">Outils</string>
+<string name="note">Notes enregistrées localement. Le mode stylet ignore les doigts dans le canevas.</string>
+<string name="width">Largeur du trait</string>
+</resources>
