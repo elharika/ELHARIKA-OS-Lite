@@ -1,0 +1,47 @@
+--- a/proprietary-files.txt
++++ b/proprietary-files.txt
+@@ -1,11 +1,5 @@
+ # All unpinned blobs are from T700XXU1CVG1
+ # Vendor security patch level 2017-08-01
+-
+-# aptX - from marlin - OPM1.171019.011
+-lib/libaptX_encoder.so:vendor/lib/libaptX_encoder.so|984739a0bc968e18f75ced205733fe3f51c2d4f0
+-
+-# Audio
+-lib/libaudioroute.so|46fcafe8de5c4fe078ad9e9e613bc260fd137106
+ 
+ # Bluetooth firmware - pinned to T705XXU1CPK2
+ vendor/firmware/bcm4350_V0301.0609.hcd|e6850eace7336e7390d53e7d9f47cc008f3c18f6
+@@ -37,8 +31,3 @@
+ # STLport (Camera/RIL) - local compile LineageOS/external/stlport@984b8432
+ vendor/lib/libstlport.so|0be0a0d13e12fbf95d97d309dcbc25d3f969a469
+ 
+-# Widevine - from N935FXXS7CTJ2
+-vendor/bin/hw/android.hardware.drm@1.1-service.widevine|2721d7cbd6730d76d08cfd6d32c1bbaca715fb93
+-vendor/etc/init/android.hardware.drm@1.1-service.widevine.rc|6d73a2063f155dcbd5ba95ca2d85e184cda61127
+-vendor/lib/libwvhidl.so|3fe7095af33f25e3d5ed4e2d388afef0892b3d19
+-vendor/lib/mediadrm/libwvdrmengine.so|273f332a0c60201f6b7b8493e6560355b2961076
+--- a/manifest.xml
++++ b/manifest.xml
+@@ -65,8 +65,6 @@
+             <name>IDrmFactory</name>
+             <instance>default</instance>
+         </interface>
+-        <fqname>@1.1::ICryptoFactory/widevine</fqname>
+-        <fqname>@1.1::IDrmFactory/widevine</fqname>
+     </hal>
+     <hal format="hidl">
+         <name>android.hardware.gnss</name>
+--- a/device-common.mk
++++ b/device-common.mk
+@@ -33,7 +33,9 @@
+     $(COMMON_PATH)/configs/ld.config.txt:$(TARGET_COPY_OUT_VENDOR)/etc/swcodec/ld.config.txt
+ 
+ # Audio
+-PRODUCT_PACKAGES += \
++# Use the Android 11 source-built audio routing library.
++PRODUCT_PACKAGES += \
++    libaudioroute \
+     audio.primary.universal5420 \
+     audio.a2dp.default \
+     audio.r_submix.default \
