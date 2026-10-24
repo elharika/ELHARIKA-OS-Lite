@@ -1,0 +1,23 @@
+{
+  "upstream_repository": "exynos5420/android_device_samsung_universal5420-common",
+  "upstream_revision": "b018612a7939d3a4ab8900e3d03ac1ca608546a0",
+  "patch": "0002-minimal-profile.patch",
+  "status": "EXPERIMENTAL_NOT_BUILT",
+  "files": [
+    {
+      "path": "proprietary-files.txt",
+      "before_sha256": "349928b76d8407dec2c584c0d1c4b2f1759e765789d619638e1ddeb0f39669ac",
+      "after_sha256": "6957b37619a91a6e1c35ce9bf279dde627fccc7a615d9456c687598928d16ca9"
+    },
+    {
+      "path": "manifest.xml",
+      "before_sha256": "af1765b320d6e4a2c8d181c3c5a4bc2b7054cd51de948180cadb2fcc1370b8a7",
+      "after_sha256": "b00b106663c9d34432e65f06f10c2de6161aa2d51b3672ef73253b5d8cf484c4"
+    },
+    {
+      "path": "device-common.mk",
+      "before_sha256": "de98c9930cc29a7f47b8ab7739857faacdd91d589c197a4970a597f1fa1c7579",
+      "after_sha256": "2c6ad75ad74990dd671c1be9bc85635350dcbb2db0405f6630db05cbfded8534"
+    }
+  ]
+}
