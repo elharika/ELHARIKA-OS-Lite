@@ -1,0 +1,27 @@
+name: Pinned device configuration patches
+on:
+  push:
+    paths:
+      - patches/universal5420-common/**
+      - scripts/apply_device_fixes.py
+      - scripts/test_device_fixes.py
+      - .github/workflows/device-fixes.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned upstream configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/device-fixture"
+          mkdir -p "$root/configs/audio"
+          base='https://raw.githubusercontent.com/exynos5420/android_device_samsung_universal5420-common/b018612a7939d3a4ab8900e3d03ac1ca608546a0'
+          curl --fail --location --retry 3 "$base/BoardConfigCommon.mk" -o "$root/BoardConfigCommon.mk"
+          curl --fail --location --retry 3 "$base/configs/audio/audio_effects.xml" -o "$root/configs/audio/audio_effects.xml"
+          python3 scripts/test_device_fixes.py "$root"
