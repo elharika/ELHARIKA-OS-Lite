@@ -1,0 +1,46 @@
+// Generated experimental SM-P900 prebuilts; no runtime approval.
+cc_prebuilt_library_shared {
+    name: "liboemcrypto",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/liboemcrypto.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libMcClient", "libc", "libdl", "liblog", "libm", "libstdc++"],
+    vendor: true,
+}
+
+cc_prebuilt_binary {
+    name: "gpsd",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/bin/gpsd"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcrypto", "libcutils", "libgui", "libhardware_legacy", "libicuuc", "liblog", "libm", "libsecril-client", "libssl", "libstdc++", "libstlport", "libutils"],
+    vendor: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "gps.universal5420",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/hw/gps.universal5420.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "liblog", "libm", "libstdc++", "libstlport", "libutils"],
+    vendor: true,
+    relative_install_path: "hw",
+}
+
+cc_prebuilt_library_shared {
+    name: "sensors.universal5420",
+    owner: "samsung",
+    srcs: ["proprietary/vendor/lib/sensors.universal5420.so"],
+    compile_multilib: "32",
+    strip: { none: true },
+    check_elf_files: true,
+    shared_libs: ["libc", "libcutils", "libdl", "liblog", "libm", "libstdc++", "libutils"],
+    vendor: true,
+}
+
