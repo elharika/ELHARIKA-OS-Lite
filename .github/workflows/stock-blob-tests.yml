@@ -8,6 +8,8 @@ on:
       - tests/test_unpack_stock.py
       - tests/test_stock_staging.py
       - scripts/stage_stock_vendor.py
+      - scripts/assemble_vendor_tree.py
+      - tests/test_stock_assembly.py
       - scripts/generate_vendor_rules.py
       - tests/test_stock_vendor_rules.py
       - scripts/stock_candidate_baseline.py
