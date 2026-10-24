@@ -1,0 +1,16 @@
+{
+  "files": 143,
+  "elf_modules": 14,
+  "non_elf_copy_entries": 129,
+  "status": "ASSEMBLED_NOT_ANDROID_COMPILED",
+  "elf_checks_enabled": true,
+  "fixups": [
+    {
+      "file": "vendor/bin/mcDriverDaemon",
+      "change": "/system/app -> /vendor/app (same byte length)",
+      "before_sha256": "2c427be188b357bc473dce788cffeb21527602ec83f55855e321941f5b32f865",
+      "after_sha256": "3ab296727383ef0712b53ecc63a3f7116b8c3a298dbc84e4f4825a2b92d55232"
+    }
+  ],
+  "hardware_tested": false
+}
