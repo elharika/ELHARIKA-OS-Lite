@@ -1,0 +1,14 @@
+{
+  "profile": "ELHARIKA OS Lite / SM-P900",
+  "target": "v1awifi",
+  "priorities": ["responsive UI", "stable graphics", "low background memory", "battery"],
+  "android_branch_candidate": "lineage-18.1",
+  "animation_scales": {"window": 0.5, "transition": 0.5, "animator": 0.5},
+  "zram": {"mode": "evaluate-after-kernel-check", "candidate_mib": 768, "compression": "verify-supported-algorithm"},
+  "background_policy": "do-not-force-process-limit",
+  "thermal_policy": "preserve-vendor-protections",
+  "cpu_policy": "preserve-stock-governor-until-measured",
+  "graphics_policy": "do-not-force-GPU-flags",
+  "gapps": "optional-not-bundled",
+  "status": "design-profile-only-not-applied-to-ROM"
+}
