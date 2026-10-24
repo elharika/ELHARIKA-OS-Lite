@@ -1,28 +1,32 @@
-# Verified research status — SM-P900 / Android 11
+# Android 11 source and vendor audit — SM-P900
 
-The candidate ROM platform is LineageOS 18.1 (Android 11). These are repository candidates, **not a tested integrated build**.
+Status: DEVELOPMENT / NOT FLASHABLE. No full Android ROM build or physical-device test has completed.
 
-## GitHub repositories found through connected GitHub
+## Completed
 
-- exynos5420/android_device_samsung_v1awifi
-- exynos5420/android_device_samsung_v1a-common
-- exynos5420/android_device_samsung_universal5420-common
-- exynos5420/android_kernel_samsung_exynos5420
-- exynos5420/android_hardware_samsung_slsi_exynos5420
-- LineageOS/android_hardware_samsung
+The hardware manifest now pins 11 source repositories to commit IDs. Samsung SLSI Exynos, Exynos5, OpenMAX and policy dependencies have been identified; the previous missing-owner guesses are no longer the current blocker. See rom/roomservice.xml.
 
-All candidate sources in rom/roomservice.xml require branch/ref compatibility verification during actual repo sync.
+The SM-P900 kernel CI succeeded at https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/40100855004 . Its configuration checks include Wacom and SELinux. This does not prove Android boot, pen operation, or runtime SELinux enforcement.
 
-## Unresolved dependencies
+## Verified vendor conflicts
 
-The common device tree lists Samsung SLSI Exynos, Exynos5, OpenMAX and SELinux repositories. The initially guessed `exynos5420/` locations were not accessible through the linked GitHub account and are intentionally **not** inserted as fictional URLs.
+The exact target list at https://github.com/exynos5420/android_device_samsung_v1awifi/blob/ace582ea814b5b5593c1a25ac68ed7315ceefdc9/proprietary-files.txt names P900XXS0BRI1 as the source of unpinned target blobs.
 
-Vendor trees / proprietary binaries for v1awifi and common device families have not been integrated. Their license, origin, revisions and ABI compatibility must be verified.
+The common list at https://github.com/exynos5420/android_device_samsung_universal5420-common/blob/b018612a7939d3a4ab8900e3d03ac1ca608546a0/proprietary-files.txt instead names:
 
-## Release blocker
+- Default common blobs: T700XXU1CVG1.
+- Mali graphics library: A800SKSS1CTJ1.
+- Bluetooth firmware: T705XXU1CPK2.
+- Widevine components: N935FXXS7CTJ2.
+- aptX: marlin OPM1.171019.011.
+- STLport: locally compiled open-source library; its classification must not be confused with foreign hardware firmware.
 
-**NOT FLASHABLE.** Do not build a ZIP from these files or flash them. First resolve missing dependencies, perform a full Android platform build with a sufficiently provisioned host, and test on the physical SM-P900.
+The user's strict requirement prohibits importing firmware intended for other models. Consequently the common list cannot be imported unchanged. These annotations establish source provenance, not that every file is incompatible: shared hardware compatibility would still require independent validation and does not override the project constraint.
 
-## Known upstream concerns
+The exynos5420/proprietary_vendor_samsung repository was found, but the branch search for 18.1 returned no match. Its existence is not evidence of a compatible Android 11 vendor set.
 
-Community Exynos5420 Android 11 ports report Mali graphics driver crashes in some GPU-heavy apps and browser workloads, WPA2/WPA3 mixed-mode Wi-Fi problems, and limited DRM capability. A successful compile cannot resolve or rule out these issues.
+## Remaining work
+
+Obtain a lawful exact-model SM-P900 stock system dump, preferably P900XXS0BRI1, with source and checksums. Compare target and common dependencies, ELF ABI and symbols, firmware interfaces and loader requirements. Stock Android 5 blobs are NOT assumed to work on Android 11. Adapt source HALs/shims only after measuring the missing interfaces. Resolve licensing before redistributing proprietary binaries.
+
+A stock dump supplies investigation inputs, not an automatic solution. Full platform integration, sufficient build resources, packaging and physical-device testing remain necessary. Do not add a vendor manifest entry merely to silence the readiness audit. No proprietary binaries were imported or published in this audit.
