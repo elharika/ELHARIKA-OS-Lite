@@ -1,0 +1,9 @@
+{
+  "profile": "experimental-stock-candidates",
+  "device": "SM-P900",
+  "staged_count": 143,
+  "missing": [],
+  "all_sha256_verified": true,
+  "runtime_compatible": "NOT_TESTED",
+  "status": "INCOMPLETE_NOT_FLASHABLE"
+}
