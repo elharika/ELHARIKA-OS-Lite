@@ -19,6 +19,25 @@ jobs:
           persist-credentials: false
       - name: Test source preparation tools
         run: python3 -m unittest discover -s tests -p test_sync_tools.py -v
+      - name: Reclaim preinstalled tools on this disposable hosted worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          mkdir -p evidence
+          df -B1 > evidence/disk-before-cleanup.txt
+          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL; do
+            if [ -L "$tool_path" ]; then
+              echo "Refusing unexpected symlink: $tool_path" >&2
+              exit 1
+            fi
+            if [ -d "$tool_path" ]; then
+              sudo du -sx -B1 "$tool_path" >> evidence/removed-tools-sizes.txt
+              sudo rm -rf --one-file-system -- "$tool_path"
+            fi
+          done
+          df -B1 > evidence/disk-after-cleanup.txt
       - name: Initialize Android 11 candidate
         shell: bash
         run: |
@@ -54,6 +73,15 @@ jobs:
           cd "$RUNNER_TEMP/android11"
           python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
           du -sh . .repo > "$GITHUB_WORKSPACE/evidence/source-size.txt"
+      - name: Record source footprint even after a stopped sync
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          df -B1 > evidence/disk-final.txt
+          if [ -d "$RUNNER_TEMP/android11" ]; then
+            timeout 90 du -x -B1 --max-depth=2 "$RUNNER_TEMP/android11" > evidence/source-footprint.txt || true
+          fi
       - name: Save observed result (not a ROM)
         if: always()
         uses: actions/upload-artifact@v4
