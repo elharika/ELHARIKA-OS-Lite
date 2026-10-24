@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Research baseline ONLY. This is NOT a validated build manifest. -->
+<manifest>
+  <remote name="github" fetch="https://github.com/" />
+  <project name="LineageOS/android_device_samsung_v1awifi"
+           path="device/samsung/v1awifi"
+           remote="github" revision="cm-14.1" />
+  <!-- Kernel, vendor and shared hardware repositories must be validated and added before build. -->
+</manifest>
