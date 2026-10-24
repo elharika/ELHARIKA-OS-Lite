@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Research baseline ONLY. This is NOT a validated build manifest. -->
+<!-- Development source candidate list; not a verified full ROM build. Vendor blobs still missing. -->
 <manifest>
   <remote name="github" fetch="https://github.com/" />
-  <project name="LineageOS/android_device_samsung_v1awifi"
-           path="device/samsung/v1awifi"
-           remote="github" revision="cm-14.1" />
-  <!-- Kernel, vendor and shared hardware repositories must be validated and added before build. -->
+  <project name="exynos5420/android_device_samsung_v1awifi" path="device/samsung/v1awifi" remote="github" revision="lineage-18.1" />
+  <project name="exynos5420/android_device_samsung_v1a-common" path="device/samsung/v1a-common" remote="github" revision="lineage-18.1" />
+  <project name="exynos5420/android_device_samsung_universal5420-common" path="device/samsung/universal5420-common" remote="github" revision="lineage-18.1" />
+  <project name="exynos5420/android_kernel_samsung_exynos5420" path="kernel/samsung/exynos5420" remote="github" revision="lineage-18.1" />
+  <project name="exynos5420/android_hardware_samsung_slsi_exynos5420" path="hardware/samsung_slsi/exynos5420" remote="github" revision="lineage-18.1" />
+  <project name="LineageOS/android_hardware_samsung" path="hardware/samsung" remote="github" revision="lineage-18.1" />
 </manifest>
