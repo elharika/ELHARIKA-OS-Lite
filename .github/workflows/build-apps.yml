@@ -31,14 +31,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager "platforms;android-30" "build-tools;30.0.3"
+          mkdir -p "$RUNNER_TEMP/elharika-sdk"
+          curl --fail --location --retry 3 https://dl.google.com/android/repository/platform-30_r03.zip -o "$RUNNER_TEMP/platform.zip"
+          curl --fail --location --retry 3 https://dl.google.com/android/repository/build-tools_r30.0.3-linux.zip -o "$RUNNER_TEMP/build-tools.zip"
+          unzip -q "$RUNNER_TEMP/platform.zip" -d "$RUNNER_TEMP/elharika-sdk/platform"
+          unzip -q "$RUNNER_TEMP/build-tools.zip" -d "$RUNNER_TEMP/elharika-sdk/tools"
+          sha256sum "$RUNNER_TEMP/platform.zip" "$RUNNER_TEMP/build-tools.zip" > evidence/sdk-checksums.txt
       - name: Build development APKs
         shell: bash
         run: |
           set -euo pipefail
           python3 scripts/build-apps-sdk.py \
-            --android-jar "$ANDROID_HOME/platforms/android-30/android.jar" \
-            --build-tools "$ANDROID_HOME/build-tools/30.0.3" \
+            --android-jar "$RUNNER_TEMP/elharika-sdk/platform/android-11/android.jar" \
+            --build-tools "$RUNNER_TEMP/elharika-sdk/tools/android-11" \
             --keystore "$RUNNER_TEMP/elharika-debug.jks" 2>&1 | tee evidence/build.log
           sha256sum out/pen/pen-debug.apk out/launcher/launcher-debug.apk > evidence/SHA256SUMS
       - name: Save build evidence
@@ -57,3 +62,4 @@ jobs:
             out/launcher/launcher-debug.apk
           if-no-files-found: error
           retention-days: 7
+
