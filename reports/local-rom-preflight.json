@@ -1,9 +1,10 @@
 {
   "status": "BLOCKED",
   "machine": "x86_64",
-  "cpu_available": 9,
-  "disk_free_bytes": 23782748160,
-  "ram_total_bytes": 10451439616,
+  "cpu_available": 8,
+  "disk_free_bytes": 23784538112,
+  "host_ram_total_bytes": 10451439616,
+  "ram_effective_bytes": 8589934592,
   "suggested_jobs": 2,
   "planning_thresholds": {
     "disk_gib": 200,
