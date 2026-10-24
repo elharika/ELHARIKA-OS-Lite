@@ -1,11 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Development source candidate list; not a verified full ROM build. Vendor blobs still missing. -->
 <manifest>
+  <!--Pinned hardware sources only. Android platform and reviewed vendor blobs still missing. NOT FLASHABLE.-->
   <remote name="github" fetch="https://github.com/" />
-  <project name="exynos5420/android_device_samsung_v1awifi" path="device/samsung/v1awifi" remote="github" revision="lineage-18.1" />
-  <project name="exynos5420/android_device_samsung_v1a-common" path="device/samsung/v1a-common" remote="github" revision="lineage-18.1" />
-  <project name="exynos5420/android_device_samsung_universal5420-common" path="device/samsung/universal5420-common" remote="github" revision="lineage-18.1" />
-  <project name="exynos5420/android_kernel_samsung_exynos5420" path="kernel/samsung/exynos5420" remote="github" revision="lineage-18.1" />
-  <project name="exynos5420/android_hardware_samsung_slsi_exynos5420" path="hardware/samsung_slsi/exynos5420" remote="github" revision="lineage-18.1" />
-  <project name="LineageOS/android_hardware_samsung" path="hardware/samsung" remote="github" revision="lineage-18.1" />
+  <project name="exynos5420/android_device_samsung_v1awifi" path="device/samsung/v1awifi" remote="github" revision="ace582ea814b5b5593c1a25ac68ed7315ceefdc9" />
+  <project name="exynos5420/android_device_samsung_v1a-common" path="device/samsung/v1a-common" remote="github" revision="4ae15a9b02c6efb1ffe956ab386fce9b3606ea94" />
+  <project name="exynos5420/android_device_samsung_universal5420-common" path="device/samsung/universal5420-common" remote="github" revision="b018612a7939d3a4ab8900e3d03ac1ca608546a0" />
+  <project name="exynos5420/android_kernel_samsung_exynos5420" path="kernel/samsung/exynos5420" remote="github" revision="de0cdcf10dcca77b400f15d83c1edf4f264a0f02" />
+  <project name="LineageOS/android_hardware_samsung" path="hardware/samsung" remote="github" revision="6710479da9e205360dc9097a7aa264bb40e6e5be" />
+  <project name="LineageOS/android_hardware_samsung_slsi_exynos" path="hardware/samsung_slsi/exynos" remote="github" revision="68b6c0f455aa865795bb3b111fb5839aa05d4bbb" />
+  <project name="LineageOS/android_hardware_samsung_slsi_exynos5" path="hardware/samsung_slsi/exynos5" remote="github" revision="491b09afe341b9ed33d2489608c8d3c570c179ce" />
+  <project name="exynos5420/android_hardware_samsung_slsi_exynos5420" path="hardware/samsung_slsi/exynos5420" remote="github" revision="3058e274d99531967f68eaa1f2569616db518e3e" />
+  <project name="LineageOS/android_hardware_samsung_slsi_openmax" path="hardware/samsung_slsi/openmax" remote="github" revision="b892486ae1af02c321fdb76dec38715f53f06905" />
+  <project name="LineageOS/android_device_samsung_slsi_sepolicy" path="device/samsung_slsi/sepolicy" remote="github" revision="9968b62f8f76c22143a8fc7491440aa11c32e6f4" />
+  <project name="LineageOS/android_device_lineage_sepolicy" path="device/lineage/sepolicy" remote="github" revision="02f04d2b0a57f1c7435dc9f2ce8fac2640b38782" />
 </manifest>
