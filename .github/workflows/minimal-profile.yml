@@ -1,0 +1,34 @@
+name: Experimental minimal profile checks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - patches/minimal-profile/**
+      - scripts/apply_device_fixes.py
+      - scripts/apply_minimal_profile.py
+      - scripts/minimal_vendor_baseline.py
+      - scripts/test_minimal_profile.py
+      - tests/test_minimal_baseline.py
+      - .github/workflows/minimal-profile.yml
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test against pinned actual source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/minimal-fixture"
+          mkdir -p "$fixture"
+          base='https://raw.githubusercontent.com/exynos5420/android_device_samsung_universal5420-common/b018612a7939d3a4ab8900e3d03ac1ca608546a0'
+          for file in proprietary-files.txt manifest.xml device-common.mk; do
+            curl --fail --location --retry 3 "$base/$file" -o "$fixture/$file"
+          done
+          python3 scripts/test_minimal_profile.py "$fixture"
+          python3 -m unittest discover -s tests -p test_minimal_baseline.py -v
