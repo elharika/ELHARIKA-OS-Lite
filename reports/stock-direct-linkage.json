@@ -1,0 +1,174 @@
+{
+  "device": "SM-P900",
+  "stock_build": "P900XXS0BPL4",
+  "scope": "Static exact-symbol-name match against direct dependencies in STOCK image only. No transitive/global lookup, namespace, relocation, version binding, or runtime validation.",
+  "results": [
+    {
+      "source": "vendor/lib/egl/libGLES_mali.so",
+      "sha256": "6bdde99d255444cf59374558736c85de5413125f63f4035237d6556c0f91047d",
+      "needed": [
+        "libbinder.so",
+        "libc.so",
+        "libcutils.so",
+        "libdl.so",
+        "libhardware.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so",
+        "libstlport.so",
+        "libui.so",
+        "libutils.so"
+      ],
+      "missing_direct_dependency_files": [],
+      "ambiguous_search_names": [],
+      "strong_import_count": 280,
+      "weak_import_count": 0,
+      "unresolved_in_direct_stock_exports": [],
+      "provider_import_matches": {
+        "lib/libbinder.so": 0,
+        "lib/libc.so": 197,
+        "lib/libcutils.so": 3,
+        "lib/libdl.so": 4,
+        "lib/libhardware.so": 1,
+        "lib/liblog.so": 2,
+        "lib/libm.so": 30,
+        "lib/libstdc++.so": 9,
+        "lib/libstlport.so": 29,
+        "lib/libui.so": 7,
+        "lib/libutils.so": 0
+      },
+      "exports_audio_effect_library_info": false,
+      "android11_compatible": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libexynoscamera.so",
+      "sha256": "a4402d1e554cbefe4b8b36bfda4c396a6e14bcbadfd815ec94462efb407e8935",
+      "needed": [
+        "libbinder.so",
+        "libc.so",
+        "libcamera_client.so",
+        "libcsc.so",
+        "libcutils.so",
+        "libexpat.so",
+        "libexynosgscaler.so",
+        "libexynosutils.so",
+        "libexynosv4l2.so",
+        "libhardware.so",
+        "libhwjpeg.so",
+        "libion_exynos.so",
+        "liblog.so",
+        "libm.so",
+        "libpower.so",
+        "libsecnativefeature.so",
+        "libstdc++.so",
+        "libstlport.so",
+        "libutils.so",
+        "libvdis.so"
+      ],
+      "missing_direct_dependency_files": [],
+      "ambiguous_search_names": [],
+      "strong_import_count": 341,
+      "weak_import_count": 0,
+      "unresolved_in_direct_stock_exports": [],
+      "provider_import_matches": {
+        "lib/libbinder.so": 0,
+        "lib/libc.so": 68,
+        "lib/libcamera_client.so": 144,
+        "lib/libcsc.so": 9,
+        "lib/libcutils.so": 4,
+        "lib/libexpat.so": 2,
+        "lib/libexynosgscaler.so": 0,
+        "lib/libexynosutils.so": 2,
+        "lib/libexynosv4l2.so": 23,
+        "lib/libhardware.so": 1,
+        "lib/libhwjpeg.so": 25,
+        "lib/libion_exynos.so": 7,
+        "lib/liblog.so": 2,
+        "lib/libm.so": 4,
+        "lib/libpower.so": 2,
+        "lib/libsecnativefeature.so": 2,
+        "lib/libstdc++.so": 5,
+        "lib/libstlport.so": 0,
+        "lib/libutils.so": 40,
+        "lib/libvdis.so": 5
+      },
+      "exports_audio_effect_library_info": false,
+      "android11_compatible": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/lib/liblvverx_3.20.03.so",
+      "sha256": "3bcaa67077d80db7deb7dd6849e0abb4772ccdb238752a2de133cd140288685a",
+      "needed": [
+        "libc.so",
+        "libcutils.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "missing_direct_dependency_files": [],
+      "ambiguous_search_names": [],
+      "strong_import_count": 39,
+      "weak_import_count": 0,
+      "unresolved_in_direct_stock_exports": [],
+      "provider_import_matches": {
+        "lib/libc.so": 38,
+        "lib/libcutils.so": 1,
+        "lib/libdl.so": 0,
+        "lib/liblog.so": 1,
+        "lib/libm.so": 0,
+        "lib/libstdc++.so": 0
+      },
+      "exports_audio_effect_library_info": true,
+      "android11_compatible": "NOT_TESTED"
+    },
+    {
+      "source": "vendor/lib/liblvvetx_3.20.03.so",
+      "sha256": "18e517b4533cf4f53f3b911b3b635f65f7d9bfcc766f073e9646ed7e486238a2",
+      "needed": [
+        "libc.so",
+        "libcutils.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "missing_direct_dependency_files": [],
+      "ambiguous_search_names": [],
+      "strong_import_count": 39,
+      "weak_import_count": 0,
+      "unresolved_in_direct_stock_exports": [],
+      "provider_import_matches": {
+        "lib/libc.so": 38,
+        "lib/libcutils.so": 1,
+        "lib/libdl.so": 0,
+        "lib/liblog.so": 1,
+        "lib/libm.so": 0,
+        "lib/libstdc++.so": 0
+      },
+      "exports_audio_effect_library_info": true,
+      "android11_compatible": "NOT_TESTED"
+    },
+    {
+      "source": "lib/libstlport.so",
+      "sha256": "9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a",
+      "needed": [
+        "libc.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "missing_direct_dependency_files": [],
+      "ambiguous_search_names": [],
+      "strong_import_count": 106,
+      "weak_import_count": 0,
+      "unresolved_in_direct_stock_exports": [],
+      "provider_import_matches": {
+        "lib/libc.so": 81,
+        "lib/libm.so": 19,
+        "lib/libstdc++.so": 6
+      },
+      "exports_audio_effect_library_info": false,
+      "android11_compatible": "NOT_TESTED"
+    }
+  ]
+}
