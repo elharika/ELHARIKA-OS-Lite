@@ -1,0 +1,38 @@
+{
+  "device": "SM-P900",
+  "build": "P900XXS0BPL4",
+  "overrides": [
+    {
+      "required_source": "vendor/lib/libstlport.so",
+      "stock_source": "lib/libstlport.so",
+      "sha256": "9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a",
+      "sha1": "73fcd42bcf813f8355eaba4dbd6e5ef97d3c7291",
+      "bytes": 234836,
+      "status": "EXPERIMENTAL_NOT_RUNTIME_VALIDATED"
+    },
+    {
+      "required_source": "vendor/firmware/bcm4350_V0301.0609.hcd",
+      "stock_source": "vendor/firmware/bcm4350_V0301.0591.hcd",
+      "sha256": "1a7838154622ba44e3a5f730e113c956be129e4e9496156cba6db75b2e1e5e38",
+      "sha1": "74758da250bd1a9c9ef9f719dae272b6114ebdbf",
+      "bytes": 82610,
+      "status": "EXPERIMENTAL_NOT_RUNTIME_VALIDATED"
+    },
+    {
+      "required_source": "vendor/lib/liblvverx_3.25.00.so",
+      "stock_source": "vendor/lib/liblvverx_3.20.03.so",
+      "sha256": "3bcaa67077d80db7deb7dd6849e0abb4772ccdb238752a2de133cd140288685a",
+      "sha1": "c691e13b8907267bf1bb5e96f8ab49c817a3dc72",
+      "bytes": 433216,
+      "status": "EXPERIMENTAL_NOT_RUNTIME_VALIDATED"
+    },
+    {
+      "required_source": "vendor/lib/liblvvetx_3.25.00.so",
+      "stock_source": "vendor/lib/liblvvetx_3.20.03.so",
+      "sha256": "18e517b4533cf4f53f3b911b3b635f65f7d9bfcc766f073e9646ed7e486238a2",
+      "sha1": "1b4b9665617881f24fdbf917a3b496e90df38fb6",
+      "bytes": 539964,
+      "status": "EXPERIMENTAL_NOT_RUNTIME_VALIDATED"
+    }
+  ]
+}
