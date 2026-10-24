@@ -1,0 +1,62 @@
+name: Android 11 bounded source sync (free runner)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/android11-sync-probe.yml
+permissions:
+  contents: read
+concurrency:
+  group: android11-source-probe
+  cancel-in-progress: false
+jobs:
+  source-sync:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test source preparation tools
+        run: python3 -m unittest discover -s tests -p test_sync_tools.py -v
+      - name: Initialize Android 11 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence" "$RUNNER_TEMP/android11"
+          df -B1 > evidence/disk-before.txt
+          free -b > evidence/memory.txt
+          git clone --depth=1 https://gerrit.googlesource.com/git-repo "$RUNNER_TEMP/repo-tool"
+          git -C "$RUNNER_TEMP/repo-tool" rev-parse HEAD > evidence/repo-tool-revision.txt
+          git config --global user.name 'ELHARIKA build experiment'
+          git config --global user.email 'build@elharika.invalid'
+          cd "$RUNNER_TEMP/android11"
+          python3 "$RUNNER_TEMP/repo-tool/repo" init \
+            -u https://github.com/LineageOS/android \
+            -b 88e370827501474db8f1905128fdea2e8128ead4 \
+            --depth=1 --no-clone-bundle 2>&1 | tee "$GITHUB_WORKSPACE/evidence/init.log"
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
+          mkdir -p .repo/local_manifests
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_sync_manifest.py" \
+            "$GITHUB_WORKSPACE/evidence/base-manifest.xml" \
+            "$GITHUB_WORKSPACE/rom/roomservice.xml" .repo/local_manifests/elharika.xml
+          cp .repo/local_manifests/elharika.xml "$GITHUB_WORKSPACE/evidence/hardware-overlay.xml"
+      - name: Try actual source sync with disk reserve and 30 minute budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/bounded_sync.py --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence" --minutes 30 --reserve-gib 12 -- \
+            python3 "$RUNNER_TEMP/repo-tool/repo" sync -c -j4 \
+            --no-clone-bundle --no-tags --optimized-fetch --fail-fast
+          cd "$RUNNER_TEMP/android11"
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
+          du -sh . .repo > "$GITHUB_WORKSPACE/evidence/source-size.txt"
+      - name: Save observed result (not a ROM)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android11-source-sync-evidence-NOT-A-ROM
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
