@@ -1,0 +1,17 @@
+# EXPERIMENTAL SM-P900 P900XXS0BPL4 sources. NOT RUNTIME VALIDATED.
+# Derived from the audited upstream device lists; original attribution is retained in project documentation.
+# SHA-1 pins identify source bytes only; SHA-256 verification precedes staging.
+bin/mcDriverDaemon:vendor/bin/mcDriverDaemon|7df5fc0508e7d2e94e302c1c4e9d041bdeb0d976
+vendor/firmware/bcm4350_V0301.0591.hcd|74758da250bd1a9c9ef9f719dae272b6114ebdbf
+vendor/firmware/mfc_fw.bin|7f5a553ece7b9328c836192cafcb2ef13615ac71
+vendor/firmware/srp_cga.bin|1a030d369b712bfc2d037e1f8e3c38f65c1ad524
+vendor/firmware/srp_data.bin|1c68f6ebdceeb0e52d3a8056860e5f5e93fa43c1
+vendor/firmware/srp_vliw.bin|916849016859ab316caa5aa6393a44704054216c
+vendor/lib/egl/libGLES_mali.so|811c1d8cd49e507b2bd1a134c49de768096b5cc7
+lib/libMcClient.so:vendor/lib/libMcClient.so|d7e0f1166fa447224483cf09ccd60e2a2608de14
+lib/libMcRegistry.so:vendor/lib/libMcRegistry.so|1354b2174661264538867b532b6570db4caa5265
+lib/libexynoscamera.so:vendor/lib/libexynoscamera.so|3ce909557e6b5f721de02be37206293fd1e40f35
+lib/libstlport.so:vendor/lib/libstlport.so|73fcd42bcf813f8355eaba4dbd6e5ef97d3c7291
+lib/libvdis.so:vendor/lib/libvdis.so|5c9e826ccad8b872f4e21db01d46554cd315b98c
+vendor/lib/liblvverx_3.20.03.so:vendor/lib/soundfx/liblvverx.so|c691e13b8907267bf1bb5e96f8ab49c817a3dc72
+vendor/lib/liblvvetx_3.20.03.so:vendor/lib/soundfx/liblvvetx.so|1b4b9665617881f24fdbf917a3b496e90df38fb6
