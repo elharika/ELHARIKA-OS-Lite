@@ -1,0 +1,253 @@
+{
+  "device": "SM-P900",
+  "codename": "v1awifi",
+  "release_approved": false,
+  "checks": [
+    {
+      "category": "boot",
+      "test": "cold boot",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "boot",
+      "test": "reboot reliability",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "boot",
+      "test": "recovery return",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "boot",
+      "test": "partition compatibility",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "handwriting",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "pressure",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "hover",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "side button",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "palm rejection",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "portrait/landscape mapping",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "sleep/wake",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "pen",
+      "test": "latency",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "display",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "touchscreen",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "Wi-Fi",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "Bluetooth",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "speakers",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "headphone",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "microphone",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "front camera",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "rear camera",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "USB",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "microSD",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "sensors",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "charging",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "hardware",
+      "test": "buttons",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "graphics",
+      "test": "hardware composition",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "graphics",
+      "test": "browser stability",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "graphics",
+      "test": "video playback",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "idle RAM",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "app launch time",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "multitasking",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "memory pressure",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "standby drain",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "active battery drain",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "performance",
+      "test": "thermal stability",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "security",
+      "test": "SELinux enforcing",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "security",
+      "test": "app permissions",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "security",
+      "test": "APK installation",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "security",
+      "test": "no default root",
+      "status": "NOT_TESTED",
+      "evidence": null
+    },
+    {
+      "category": "security",
+      "test": "release signing",
+      "status": "NOT_TESTED",
+      "evidence": null
+    }
+  ]
+}
