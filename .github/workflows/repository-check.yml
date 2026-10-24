@@ -1,0 +1,17 @@
+name: Repository safety checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm no ROM is being misrepresented
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f README.md
+          grep -q 'NOT FLASHABLE' README.md
+          echo 'Repository documentation check passed. This is NOT an Android ROM build.'
