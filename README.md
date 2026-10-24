@@ -7,3 +7,7 @@ On main push or manual dispatch, GitHub Actions records actual CPU, disk and RAM
 No paid runner is selected. Private repository minutes can count toward the account allowance; check account billing controls. Source uses standard ubuntu-22.04. This CI file has not yet run on GitHub. Local builds previously succeeded with the same SDK and JDK major version; this is not hardware verification.
 
 The standard runner is not assumed sufficient for an entire Android source build. A large runner alone will not resolve the incomplete device port. No GApps or root components are included in these apps.
+
+## ROM development status
+
+**NOT FLASHABLE.** This repository does not yet contain a validated SM-P900 Android ROM. APK build artifacts must never be flashed through TWRP. The hardware-specific device tree, vendor blobs, Android source integration, ROM packaging and on-device tests are pending. See `docs/ROM_BUILD_PLAN.md`.
