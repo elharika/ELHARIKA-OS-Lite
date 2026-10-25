@@ -6,9 +6,31 @@ import shutil
 import tempfile
 
 
+# The upstream board configuration is gated by this internal build variable.
+ENV_OLD = """    else
+        LINEAGE_BUILD=
+    fi
+    export LINEAGE_BUILD"""
+ENV_NEW = """    elif [ "$1" = "elharika_v1awifi" ]; then
+        LINEAGE_BUILD=v1awifi
+    else
+        LINEAGE_BUILD=
+    fi
+    export LINEAGE_BUILD"""
+
+def product_environment(text):
+    if text.count(ENV_NEW) == 1:
+        return text
+    if text.count(ENV_OLD) != 1:
+        raise ValueError('Unexpected envsetup product detection; review before patching')
+    return text.replace(ENV_OLD, ENV_NEW, 1)
+
+
 def prepare(project, android):
     if not (android / 'build/envsetup.sh').is_file():
         raise ValueError('An existing Android platform checkout is required')
+    environment = android / 'build/envsetup.sh'
+    patched_environment = product_environment(environment.read_text())
     destination = android / 'vendor/elharika'
     if destination.exists():
         raise ValueError('vendor/elharika already exists; refusing to overwrite')
@@ -29,6 +51,7 @@ def prepare(project, android):
             shutil.copyfile(project / 'apps' / module / 'Android.bp', module_dir / 'Android.bp')
             shutil.copytree(project / 'apps' / module / 'src', module_dir / 'src')
         staged.rename(destination)
+    environment.write_text(patched_environment)
     return destination
 
 
