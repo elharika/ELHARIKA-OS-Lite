@@ -47,7 +47,8 @@ $(ELHARIKA_OPENCL_LINKS): $(TARGET_OUT_VENDOR)/lib/egl/libGLES_mali.so
 ALL_DEFAULT_INSTALLED_MODULES += $(ELHARIKA_OPENCL_LINKS)
 endif
 '''
-        (root/'samsung/universal5420-common/Android.mk').write_text(links)
+        makefile=root/'samsung/universal5420-common/Android.mk'
+        makefile.write_text(makefile.read_text()+'\n'+links)
         summary.update(status='ASSEMBLED_NOT_ANDROID_COMPILED',hardware_tested=False)
         (root/'assembly-report.json').write_text(json.dumps(summary,indent=2)+'\n')
         files=sorted(p for p in root.rglob('*') if p.is_file())
