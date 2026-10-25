@@ -37,6 +37,16 @@ def mobicore_selection(text):
     return text.replace('# Provisioning Agent Shared Library', 'endif # stock MobiCore providers for v1awifi\n\n# Provisioning Agent Shared Library', 1)
 
 
+def camera_selection(text):
+    marker = '# ELHARIKA: use stock camera library, not the empty source stub.'
+    if marker in text:
+        return text
+    if hashlib.sha256(text.encode()).hexdigest() != 'b95de996190349383d069d31cb6cbd0b432d0daec0b5fd19003143e7d23840a4':
+        raise ValueError('Unexpected pinned camera rules; review library providers')
+    text = text.replace('# libexynoscamera', marker + '\nifneq ($(TARGET_DEVICE),v1awifi)\n# libexynoscamera', 1)
+    return text.replace('# libcamera\n', 'endif # stock camera library for v1awifi\n\n# libcamera\n', 1)
+
+
 def prepare(project, android):
     if not (android / 'build/envsetup.sh').is_file():
         raise ValueError('An existing Android platform checkout is required')
@@ -44,6 +54,8 @@ def prepare(project, android):
     patched_environment = product_environment(environment.read_text())
     mobicore = android / 'hardware/samsung_slsi/exynos5420/mobicore/daemon/Android.mk'
     patched_mobicore = mobicore_selection(mobicore.read_text())
+    camera = android / 'device/samsung/universal5420-common/camera/Android.mk'
+    patched_camera = camera_selection(camera.read_text())
     destination = android / 'vendor/elharika'
     if destination.exists():
         raise ValueError('vendor/elharika already exists; refusing to overwrite')
@@ -66,6 +78,7 @@ def prepare(project, android):
         staged.rename(destination)
     environment.write_text(patched_environment)
     mobicore.write_text(patched_mobicore)
+    camera.write_text(patched_camera)
     return destination
 
 
