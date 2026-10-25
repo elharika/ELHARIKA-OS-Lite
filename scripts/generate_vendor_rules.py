@@ -35,6 +35,22 @@ def generate(baseline,stage,output):
             for lib in info['needed']:
                 if not re.fullmatch(r'[A-Za-z0-9_.+-]+\.so',lib):raise ValueError('Review versioned dependency: '+lib)
                 needed.append(lib[:-3])
+            # Legacy source HALs are Android.mk modules. Soong cannot depend on
+            # Make-only modules; define their consumers in Make as well.
+            if name in ('libexynoscamera', 'gpsd'):
+                block = 'include $(CLEAR_VARS)\n'
+                block += 'LOCAL_MODULE := ' + name + '\n'
+                block += 'LOCAL_MODULE_OWNER := samsung\n'
+                block += 'LOCAL_SRC_FILES := proprietary/' + dest + '\n'
+                block += 'LOCAL_MODULE_CLASS := ' + ('SHARED_LIBRARIES' if shared else 'EXECUTABLES') + '\n'
+                if shared: block += 'LOCAL_MODULE_SUFFIX := .so\n'
+                block += 'LOCAL_MULTILIB := 32\nLOCAL_STRIP_MODULE := false\nLOCAL_CHECK_ELF_FILES := true\n'
+                block += 'LOCAL_SHARED_LIBRARIES := ' + ' '.join(sorted(set(needed))) + '\n'
+                if vendor: block += 'LOCAL_VENDOR_MODULE := true\n'
+                if len(relative)>2: block += 'LOCAL_MODULE_RELATIVE_PATH := ' + '/'.join(relative[1:-1]) + '\n'
+                block += 'include $(BUILD_PREBUILT)\n'
+                groups[owner].append((dest,name,block))
+                continue
             block=('cc_prebuilt_library_shared' if shared else 'cc_prebuilt_binary')+' {\n'
             block+=f'    name: {json.dumps(name)},\n    owner: "samsung",\n'
             block+=f'    srcs: [{json.dumps("proprietary/"+dest)}],\n'
@@ -50,14 +66,18 @@ def generate(baseline,stage,output):
         directory=output/'samsung'/owner;directory.mkdir(parents=True)
         bp='// Generated experimental SM-P900 prebuilts; no runtime approval.\n'
         mk='# Generated experimental SM-P900 vendor rules. NOT FLASHABLE.\n'
+        legacy = 'LOCAL_PATH := $(call my-dir)\n\n'
         for dest,name,block in items:
             if block:
-                bp+=block+'\n';mk+='PRODUCT_PACKAGES += '+name+'\n'
+                if block.startswith('include $(CLEAR_VARS)'): legacy += block+'\n'
+                else: bp+=block+'\n'
+                mk+='PRODUCT_PACKAGES += '+name+'\n'
             else:
                 if dest.startswith('vendor/'):
                     target='$(TARGET_COPY_OUT_VENDOR)/'+dest[len('vendor/'):]
                 else:target='$(TARGET_COPY_OUT_SYSTEM)/'+dest
                 mk+=f'PRODUCT_COPY_FILES += vendor/samsung/{owner}/proprietary/{dest}:{target}\n'
+        (directory/'Android.mk').write_text(legacy)
         (directory/'Android.bp').write_text(bp)
         (directory/(owner+'-vendor.mk')).write_text(mk)
         (directory/'BoardConfigVendor.mk').write_text('# No additional board overrides. Experimental stock candidate set.\n')
