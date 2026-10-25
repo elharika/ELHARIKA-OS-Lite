@@ -109,13 +109,12 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/android11"
-          source build/envsetup.sh
-          lunch elharika_v1awifi-userdebug >/dev/null
+          # Load Android only inside the monitored shell; envsetup expects unset variables.
           python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence" \
             --minutes 25 --reserve-gib 8 -- \
-            bash -lc 'source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage'
       - name: Record final footprint
         if: always()
         shell: bash
