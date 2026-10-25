@@ -8,6 +8,7 @@ on:
       - scripts/generate_vendor_rules.py
       - scripts/assemble_vendor_tree.py
       - rom/roomservice.xml
+      - scripts/prepare_product.py
 permissions:
   contents: read
 concurrency:
