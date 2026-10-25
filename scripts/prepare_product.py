@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install custom product sources into an existing Android checkout; no build or flash."""
 import argparse
+import hashlib
 from pathlib import Path
 import shutil
 import tempfile
@@ -26,11 +27,23 @@ def product_environment(text):
     return text.replace(ENV_OLD, ENV_NEW, 1)
 
 
+def mobicore_selection(text):
+    marker = '# ELHARIKA: exact-stock MobiCore trio is supplied by vendor prebuilts.'
+    if marker in text:
+        return text
+    if hashlib.sha256(text.encode()).hexdigest() != 'b7e7aefde81c1332874e4bdbf4196e1d1afb69d0f26a5cb870042d78c3938728':
+        raise ValueError('Unexpected pinned MobiCore rules; review duplicate providers')
+    text = text.replace('# Client Library', marker + '\nifneq ($(TARGET_DEVICE),v1awifi)\n\n# Client Library', 1)
+    return text.replace('# Provisioning Agent Shared Library', 'endif # stock MobiCore providers for v1awifi\n\n# Provisioning Agent Shared Library', 1)
+
+
 def prepare(project, android):
     if not (android / 'build/envsetup.sh').is_file():
         raise ValueError('An existing Android platform checkout is required')
     environment = android / 'build/envsetup.sh'
     patched_environment = product_environment(environment.read_text())
+    mobicore = android / 'hardware/samsung_slsi/exynos5420/mobicore/daemon/Android.mk'
+    patched_mobicore = mobicore_selection(mobicore.read_text())
     destination = android / 'vendor/elharika'
     if destination.exists():
         raise ValueError('vendor/elharika already exists; refusing to overwrite')
@@ -52,6 +65,7 @@ def prepare(project, android):
             shutil.copytree(project / 'apps' / module / 'src', module_dir / 'src')
         staged.rename(destination)
     environment.write_text(patched_environment)
+    mobicore.write_text(patched_mobicore)
     return destination
 
 
