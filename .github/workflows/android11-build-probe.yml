@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/android11-build-probe.yml
       - scripts/bounded_build.py
+      - scripts/generate_vendor_rules.py
+      - scripts/assemble_vendor_tree.py
 permissions:
   contents: read
 concurrency:
@@ -120,6 +122,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p evidence
+          if [ -f evidence/build.log ]; then
+            tail -n 100 evidence/build.log
+          fi
           df -B1 > evidence/disk-final.txt
           if [ -d "$RUNNER_TEMP/android11/out" ]; then
             timeout 90 du -x -B1 --max-depth=2 "$RUNNER_TEMP/android11/out" > evidence/out-footprint.txt || true
