@@ -1,5 +1,5 @@
 <manifest>
-  <!--Pinned hardware sources only. Android platform and reviewed vendor blobs still missing. NOT FLASHABLE.-->
+  <!--Pinned device sources and platform compatibility overrides. NOT FLASHABLE.-->
   <remote name="github" fetch="https://github.com/" />
   <project name="exynos5420/android_device_samsung_v1awifi" path="device/samsung/v1awifi" remote="github" revision="ace582ea814b5b5593c1a25ac68ed7315ceefdc9" />
   <project name="exynos5420/android_device_samsung_v1a-common" path="device/samsung/v1a-common" remote="github" revision="4ae15a9b02c6efb1ffe956ab386fce9b3606ea94" />
@@ -12,4 +12,6 @@
   <project name="LineageOS/android_hardware_samsung_slsi_openmax" path="hardware/samsung_slsi/openmax" remote="github" revision="b892486ae1af02c321fdb76dec38715f53f06905" />
   <project name="LineageOS/android_device_samsung_slsi_sepolicy" path="device/samsung_slsi/sepolicy" remote="github" revision="9968b62f8f76c22143a8fc7491440aa11c32e6f4" />
   <project name="LineageOS/android_device_lineage_sepolicy" path="device/lineage/sepolicy" remote="github" revision="02f04d2b0a57f1c7435dc9f2ce8fac2640b38782" />
+  <!-- Keep the shell APN generator: later upstream requires a pyyaml Soong module absent from this Android 11 tree. -->
+  <project name="LineageOS/android_vendor_apn" path="vendor/apn" remote="github" revision="cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e" />
 </manifest>
