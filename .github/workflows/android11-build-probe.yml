@@ -112,6 +112,7 @@ jobs:
           python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_touch_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
       - name: Validate SM-P900 lunch target
         shell: bash
         run: |
