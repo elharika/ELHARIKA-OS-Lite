@@ -197,6 +197,33 @@ jobs:
           path: development-boot/
           retention-days: 7
           if-no-files-found: error
+      - name: Preserve policy compiler inputs for reproducible diagnosis
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/selinux-inputs evidence/policy-host/bin evidence/policy-host/lib64
+          policy_dir="$RUNNER_TEMP/android11/out/target/product/v1awifi/obj/FAKE/sepolicy_neverallows_intermediates"
+          for name in policy.conf policy_2.conf; do
+            if [ -f "$policy_dir/$name" ]; then
+              cp "$policy_dir/$name" evidence/selinux-inputs/
+            fi
+          done
+          host="$RUNNER_TEMP/android11/out/host/linux-x86"
+          for name in checkpolicy sepolicy-analyze; do
+            if [ -f "$host/bin/$name" ]; then
+              cp "$host/bin/$name" evidence/policy-host/bin/
+              ldd "$host/bin/$name" > "evidence/policy-host/$name-dependencies.txt" || true
+            fi
+          done
+          for name in libc++.so libc++.so.1; do
+            if [ -f "$host/lib64/$name" ]; then
+              cp -L "$host/lib64/$name" evidence/policy-host/lib64/
+            fi
+          done
+          if [ -f evidence/selinux/build.log ]; then
+            tail -n 100 evidence/selinux/build.log
+          fi
       - name: Record final footprint
         if: always()
         shell: bash
