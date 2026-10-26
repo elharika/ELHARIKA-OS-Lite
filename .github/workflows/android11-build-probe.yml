@@ -9,6 +9,12 @@ on:
       - scripts/assemble_vendor_tree.py
       - rom/roomservice.xml
       - scripts/prepare_product.py
+      - scripts/harden_sepolicy.py
+      - scripts/fix_wifi_policy.py
+      - scripts/fix_touch_policy.py
+      - scripts/fix_graphics_policy.py
+      - scripts/apply_device_fixes.py
+      - scripts/apply_minimal_profile.py
 permissions:
   contents: read
 concurrency:
