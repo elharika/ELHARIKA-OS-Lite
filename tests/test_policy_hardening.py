@@ -17,12 +17,14 @@ class PolicyHardeningTests(unittest.TestCase):
             (self.directory / name).write_text(source)
 
     def test_exact_inputs_and_idempotence(self):
-        self.assertEqual(apply(self.root), 2)
+        self.assertEqual(apply(self.root), 3)
         self.assertEqual(apply(self.root), 0)
         for name, source in ORIGINAL.items():
             self.assertEqual((self.directory / name).read_text(),
                              source.replace(REMOVALS[name], ""))
             self.assertEqual(source.count(REMOVALS[name]), 1)
+        self.assertIn('sensors_data_file:file create_file_perms',
+                      (self.directory / 'hal_sensors_default.te').read_text())
 
     def test_modified_source_rejected_without_partial_writes(self):
         (self.directory / "cbd.te").write_text("unexpected")
