@@ -129,6 +129,24 @@ jobs:
             --evidence "$GITHUB_WORKSPACE/evidence" \
             --minutes 25 --reserve-gib 8 -- \
             bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage'
+      - name: Verify actual boot image contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$RUNNER_TEMP/android11/out/target/product/v1awifi"
+          python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
+          mkdir -p development-boot
+          cp "$product/boot.img" development-boot/
+          (cd development-boot && sha256sum boot.img > SHA256SUMS)
+          cp evidence/boot-image-validation.json development-boot/
+          echo "Development boot image only. Not a ROM. Hardware untested; not approved for flashing." > development-boot/README.txt
+      - name: Preserve structurally verified development boot image
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1awifi-development-boot-NOT-FLASH-APPROVED
+          path: development-boot/
+          retention-days: 7
+          if-no-files-found: error
       - name: Record final footprint
         if: always()
         shell: bash
