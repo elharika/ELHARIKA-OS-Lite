@@ -164,6 +164,14 @@ jobs:
               {"status":"SPARSE_HEADER_VALID_NOT_HARDWARE_TESTED", "size":image.stat().st_size,
                "expanded_size":blocks*block_size, "sha256":digest, "flash_approved":False}, indent=2)+"\\n")
           PY
+      - name: Preserve structurally checked development system image
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1awifi-development-system-NOT-FLASH-APPROVED
+          path: ${{ runner.temp }}/android11/out/target/product/v1awifi/system.img
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 1
       - name: Preserve structurally verified development boot image
         uses: actions/upload-artifact@v4
         with:
