@@ -17,7 +17,7 @@ concurrency:
 jobs:
   bootimage-probe:
     runs-on: ubuntu-22.04
-    timeout-minutes: 110
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -122,6 +122,16 @@ jobs:
           source build/envsetup.sh
           lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
           env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
+      - name: Compile SELinux policy before expensive system build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android11"
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
+            --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence/selinux" \
+            --minutes 18 --reserve-gib 8 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 sepolicy_neverallows'
       - name: Probe boot and system image compilation within disk/time limits
         shell: bash
         run: |
