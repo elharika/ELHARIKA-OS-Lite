@@ -17,7 +17,7 @@ concurrency:
 jobs:
   bootimage-probe:
     runs-on: ubuntu-22.04
-    timeout-minutes: 70
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v4
         with:
@@ -118,7 +118,7 @@ jobs:
           source build/envsetup.sh
           lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
           env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
-      - name: Probe boot image compilation within disk/time limits
+      - name: Probe boot and system image compilation within disk/time limits
         shell: bash
         run: |
           set -euo pipefail
@@ -127,8 +127,8 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence" \
-            --minutes 25 --reserve-gib 8 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage'
+            --minutes 55 --reserve-gib 6 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage systemimage'
       - name: Verify actual boot image contents
         shell: bash
         run: |
@@ -140,6 +140,30 @@ jobs:
           (cd development-boot && sha256sum boot.img > SHA256SUMS)
           cp evidence/boot-image-validation.json development-boot/
           echo "Development boot image only. Not a ROM. Hardware untested; not approved for flashing." > development-boot/README.txt
+      - name: Verify produced system image bounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$RUNNER_TEMP/android11/out/target/product/v1awifi"
+          test -s "$product/system.img"
+          python3 - "$product/system.img" <<'PY'
+          import hashlib, json, struct, sys
+          from pathlib import Path
+          image = Path(sys.argv[1])
+          with image.open("rb") as stream:
+              header = stream.read(28)
+          if len(header) != 28:
+              raise SystemExit("Truncated system image")
+          magic, major, minor, header_size, chunk_size, block_size, blocks, chunks, checksum = struct.unpack("<I4H4I", header)
+          if magic != 0xed26ff3a or major != 1 or header_size < 28 or chunk_size < 12 or not blocks or not chunks:
+              raise SystemExit("Unexpected Android sparse system image header")
+          if blocks * block_size > 2300000000:
+              raise SystemExit("Expanded system exceeds pinned SM-P900 partition")
+          digest = hashlib.sha256(image.read_bytes()).hexdigest()
+          Path("evidence/system-image-validation.json").write_text(json.dumps(
+              {"status":"SPARSE_HEADER_VALID_NOT_HARDWARE_TESTED", "size":image.stat().st_size,
+               "expanded_size":blocks*block_size, "sha256":digest, "flash_approved":False}, indent=2)+"\\n")
+          PY
       - name: Preserve structurally verified development boot image
         uses: actions/upload-artifact@v4
         with:
