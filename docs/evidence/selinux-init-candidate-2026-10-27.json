@@ -1,0 +1,28 @@
+{
+  "policy_checks_passed": false,
+  "hardware_tested": false,
+  "flash_approved": false,
+  "sha256": {
+    "selinux-inputs/policy.conf": "b1614d34591bf20b70b9c687e39897455e5393874344e13f355ed673993fc49d",
+    "selinux-inputs/policy_2.conf": "680d43f0e0770a59c4335ee733b986d29a4cca6016125d850c65952edfbeaabe",
+    "policy-host/bin/checkpolicy": "f8efea3a9073722da6e688e58d9ea92cea9afeb09497ca5160d91868bab12beb",
+    "policy-host/bin/sepolicy-analyze": "209ad1853240e3d938c7f7a6bc47834d6e90cd5ff00b4082d4c816bea9a63a38"
+  },
+  "stages": [
+    {
+      "stage": "checkpolicy",
+      "returncode": 1,
+      "violations": [
+        "neverallow on line 3 of device/lineage/sepolicy/legacy-common/public/legacy-camera-hal1/mediaserver.te (or line 59127 of policy.conf) violated by allow cameraserver fwk_camera_hwservice:hwservice_manager { add };",
+        "neverallow on line 3 of device/lineage/sepolicy/legacy-common/public/legacy-camera-hal1/mediaserver.te (or line 59127 of policy.conf) violated by allow cameraserver fwk_camera_hwservice:hwservice_manager { add };",
+        "neverallow on line 2 of device/lineage/sepolicy/legacy-common/public/legacy-camera-hal1/mediaserver.te (or line 59118 of policy.conf) violated by allow cameraserver cameraserver_service:service_manager { add };",
+        "neverallow on line 5 of device/samsung_slsi/sepolicy/common/public/domain.te (or line 59093 of policy.conf) violated by allow cbd sysfs_sec_switch:file { write };",
+        "neverallow on line 5 of device/samsung_slsi/sepolicy/common/public/domain.te (or line 59093 of policy.conf) violated by allow hal_sensors_default sysfs_input:file { write };",
+        "neverallow on line 5 of system/sepolicy/public/hal_camera.te (or line 16166 of policy.conf) violated by allow mediaserver hal_camera_hwservice:hwservice_manager { find };",
+        "neverallow on line 21 of system/sepolicy/public/cameraserver.te (or line 10848 of policy.conf) violated by allow mediaserver fwk_camera_hwservice:hwservice_manager { add };",
+        "neverallow on line 20 of system/sepolicy/public/cameraserver.te (or line 10839 of policy.conf) violated by allow mediaserver cameraserver_service:service_manager { add };",
+        "neverallow on line 1 of system/sepolicy/public/camera_service_server.te (or line 10702 of policy.conf) violated by allow mediaserver fwk_camera_hwservice:hwservice_manager { add };"
+      ]
+    }
+  ]
+}
