@@ -1,0 +1,23 @@
+{
+  "policy_checks_passed": true,
+  "hardware_tested": false,
+  "flash_approved": false,
+  "sha256": {
+    "selinux-inputs/policy.conf": "614cdb254646bed1281f533a87ca4491b35175a6a2f79469ee539262e34986dd",
+    "selinux-inputs/policy_2.conf": "89b74677f498a9a5fc518b58514008240bcc107a173027b63180411068dbbcae",
+    "policy-host/bin/checkpolicy": "f8efea3a9073722da6e688e58d9ea92cea9afeb09497ca5160d91868bab12beb",
+    "policy-host/bin/sepolicy-analyze": "209ad1853240e3d938c7f7a6bc47834d6e90cd5ff00b4082d4c816bea9a63a38"
+  },
+  "stages": [
+    {
+      "stage": "checkpolicy",
+      "returncode": 0,
+      "violations": []
+    },
+    {
+      "stage": "sepolicy-analyze",
+      "returncode": 0,
+      "violations": []
+    }
+  ]
+}
