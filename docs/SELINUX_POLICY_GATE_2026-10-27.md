@@ -1,0 +1,7 @@
+# SELinux gate state — development only
+
+CI run 40458639784 regenerated policy from pinned Android 11 sources and confirmed two assertions: cbd sysfs_sec_switch:file write and hal_sensors_default sysfs_input:file write. The modem patch restricts switch access to reads. The sensor patch retains sysfs_input read access, and the preexisting source policy permits writes to sysfs_sensors_writable. The pinned common file_contexts explicitly label `/sys/class/input/input4/enabled` through `input9/enabled` with sysfs_sensors_writable; no blanket write to read-only sysfs_input was added and no neverallow was disabled.
+
+Local replay on captured 40458639784 policy.conf and policy_2.conf, with equivalent expanded modem and sensor rules, returned exit status zero from both actual CI host checkpolicy and sepolicy-analyze. The report and input/tool SHA-256 hashes are in docs/evidence/selinux-all-neverallows-replay-2026-10-27.json. Nine tests for the recently added init, camera, modem and sensor patch scripts passed locally. The complete repository suite runs in GitHub CI.
+
+This is a successful local policy replay only. Run 40530610642 regenerates policy from source and, if it passes, continues bootimage/systemimage compilation; its outcome must be reviewed before claims about a complete build. Stock sensor library path strings from the prior run are investigation hints, not runtime proof. Hardware sensors, camera, S Pen and the full operating system remain NOT TESTED on SM-P900. Do not flash development artifacts.
