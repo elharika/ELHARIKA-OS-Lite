@@ -15,6 +15,7 @@ on:
       - scripts/fix_graphics_policy.py
       - scripts/fix_init_policy.py
       - scripts/fix_camera_hosting.py
+      - scripts/fix_modem_policy.py
       - scripts/apply_device_fixes.py
       - scripts/apply_minimal_profile.py
 permissions:
@@ -73,6 +74,19 @@ jobs:
           (cd "$RUNNER_TEMP/elharika-vendor" && sha256sum --check --quiet SHA256SUMS)
           cp "$RUNNER_TEMP/elharika-vendor/assembly-report.json" evidence/vendor-assembly.json
           cp "$RUNNER_TEMP/elharika-vendor/SHA256SUMS" evidence/vendor-source-sha256.txt
+          python3 - "$RUNNER_TEMP/elharika-vendor/samsung/v1awifi/proprietary/vendor/lib/sensors.universal5420.so" <<'PY'
+          import hashlib, json, re, sys
+          from pathlib import Path
+          data = Path(sys.argv[1]).read_bytes()
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != "4e7ab23e9fe49e2650c3f52a17f3d7433b76c4c89733b02d9a7e5dcc742db848":
+              raise SystemExit("Unreviewed stock sensor library")
+          candidates = sorted({s.decode("ascii") for s in re.findall(rb"[ -~]{4,}", data)
+                               if re.search(rb"/sys/|/dev/|poll_delay|enable|input|calibration", s, re.I)})
+          Path("evidence/sensor-static-path-hints.json").write_text(json.dumps(
+              {"sha256": digest, "status": "STATIC_HINTS_NOT_OBSERVED_RUNTIME_ACCESSES",
+               "strings": candidates}, indent=2) + "\n")
+          PY
           # Remove only this job's verified, reproducible extraction intermediates.
           rm -rf -- "$stock_work"
       - name: Initialize and sync Android 11 source
@@ -123,6 +137,7 @@ jobs:
           python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_init_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_camera_hosting.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
       - name: Validate SM-P900 lunch target
         shell: bash
         run: |
