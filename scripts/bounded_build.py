@@ -10,8 +10,23 @@ import subprocess
 import time
 
 
+def tune_github_parallelism(command):
+    """Use the public GitHub runner more fully for the expensive image build only."""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return command, False
+    tuned = list(command)
+    marker = "m -j2 bootimage systemimage"
+    replacement = "m -j4 bootimage systemimage"
+    for index, value in enumerate(tuned):
+        if marker in value:
+            tuned[index] = value.replace(marker, replacement, 1)
+            return tuned, True
+    return tuned, False
+
+
 def run(command, root, evidence, minutes, reserve_gib):
     evidence.mkdir(parents=True, exist_ok=True)
+    command, parallelism_tuned = tune_github_parallelism(command)
     start = time.monotonic()
     samples = []
     reason = None
@@ -54,6 +69,7 @@ def run(command, root, evidence, minutes, reserve_gib):
         "elapsed_seconds": round(time.monotonic() - start, 1),
         "reserve_gib": reserve_gib,
         "budget_minutes": minutes,
+        "parallelism_tuned": parallelism_tuned,
         "samples": samples,
         "final_free_bytes": shutil.disk_usage(root).free,
         "android_compiled": status == "BUILD_COMPLETE",
