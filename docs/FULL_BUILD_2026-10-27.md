@@ -1,0 +1,7 @@
+# Android 11 build status (SM-P900)
+
+GitHub run 40530610642 compiled and passed the real `sepolicy_neverallows` gate after source integration. The subsequent `m -j2 bootimage systemimage` ran for 3303 seconds and stopped at its configured 55-minute budget with 45467/87990 Ninja actions (51%) complete and 20081569792 bytes free. The bounded build reported TIME_BUDGET_REACHED, not a compiler error or insufficient disk. No complete system.img was produced or validated. The original boot-only image remains structurally checked but unbooted.
+
+Workflow commit 326a109348708f1d0ea00d15f1d35bd36d3ea9e6 raises the full-build budget to 135 minutes and the job timeout to 165 minutes, keeping j2 and the 6 GiB free-space reserve. Run 40578944685 is the source build for this configuration; its result is pending. Even a successful build remains a development artifact until device boot, graphics, Wi-Fi, sensors and mandatory Wacom S Pen are tested.
+
+The original SM-P900 stock sensors.universal5420.so with SHA-256 4e7ab23e9fe49e2650c3f52a17f3d7433b76c4c89733b02d9a7e5dcc742db848 contains static `/sys/class/input/` and `poll_delay`/`enable` strings; see the adjacent hints JSON. These strings do not prove which sysfs nodes are written at runtime. The source policy grants the sensor HAL writable labeled `sysfs_sensors_writable` nodes including input4–input9 `enabled`, and removes broad writes to read-only `sysfs_input`. Hardware tests must confirm actual node numbers and input devices before release.
