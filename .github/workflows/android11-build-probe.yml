@@ -27,7 +27,7 @@ concurrency:
 jobs:
   bootimage-probe:
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 165
     steps:
       - uses: actions/checkout@v4
         with:
@@ -168,7 +168,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence" \
-            --minutes 55 --reserve-gib 6 -- \
+            --minutes 135 --reserve-gib 6 -- \
             bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 bootimage systemimage'
       - name: Verify actual boot image contents
         shell: bash
