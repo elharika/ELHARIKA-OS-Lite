@@ -187,28 +187,7 @@ jobs:
           set -euo pipefail
           product="$RUNNER_TEMP/android11/out/target/product/v1awifi"
           test -s "$product/system.img"
-          python3 - "$product/system.img" <<'PY'
-          import hashlib, json, struct, sys
-          from pathlib import Path
-          image = Path(sys.argv[1])
-          with image.open("rb") as stream:
-              header = stream.read(28)
-          if len(header) != 28:
-              raise SystemExit("Truncated system image")
-          magic, major, minor, header_size, chunk_size, block_size, blocks, chunks, checksum = struct.unpack("<I4H4I", header)
-          if magic != 0xed26ff3a or major != 1 or header_size < 28 or chunk_size < 12 or not blocks or not chunks:
-              raise SystemExit("Unexpected Android sparse system image header")
-          if blocks * block_size > 2300000000:
-              raise SystemExit("Expanded system exceeds pinned SM-P900 partition")
-          digest_hash = hashlib.sha256()
-          with image.open("rb") as stream:
-              for block in iter(lambda: stream.read(1024 * 1024), b""):
-                  digest_hash.update(block)
-          digest = digest_hash.hexdigest()
-          Path("evidence/system-image-validation.json").write_text(json.dumps(
-              {"status":"SPARSE_HEADER_VALID_NOT_HARDWARE_TESTED", "size":image.stat().st_size,
-               "expanded_size":blocks*block_size, "sha256":digest, "flash_approved":False}, indent=2)+"\n")
-          PY
+          python3 scripts/verify_sparse_system.py "$product/system.img" evidence/system-image-validation.json
       - name: Preserve structurally checked development system image
         uses: actions/upload-artifact@v4
         with:
