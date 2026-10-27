@@ -1,0 +1,20 @@
+{
+  "policy_checks_passed": false,
+  "hardware_tested": false,
+  "flash_approved": false,
+  "sha256": {
+    "selinux-inputs/policy.conf": "2d9cdb4c6c84b5c9c1837ea83ff80275e413d75829bdd5ed3d84215da66d2cc1",
+    "selinux-inputs/policy_2.conf": "ca68baf0d55fc312228bec20d6fe27f0eaffdae62ae20975da349b49aff56372",
+    "policy-host/bin/checkpolicy": "f8efea3a9073722da6e688e58d9ea92cea9afeb09497ca5160d91868bab12beb",
+    "policy-host/bin/sepolicy-analyze": "209ad1853240e3d938c7f7a6bc47834d6e90cd5ff00b4082d4c816bea9a63a38"
+  },
+  "stages": [
+    {
+      "stage": "checkpolicy",
+      "returncode": 1,
+      "violations": [
+        "neverallow on line 5 of device/samsung_slsi/sepolicy/common/public/domain.te (or line 59093 of policy.conf) violated by allow hal_sensors_default sysfs_input:file { write };"
+      ]
+    }
+  ]
+}
