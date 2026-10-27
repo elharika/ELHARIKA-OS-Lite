@@ -13,6 +13,7 @@ on:
       - scripts/fix_wifi_policy.py
       - scripts/fix_touch_policy.py
       - scripts/fix_graphics_policy.py
+      - scripts/fix_init_policy.py
       - scripts/apply_device_fixes.py
       - scripts/apply_minimal_profile.py
 permissions:
@@ -119,6 +120,7 @@ jobs:
           python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_touch_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_init_policy.py "$android_root/device/samsung/universal5420-common"
       - name: Validate SM-P900 lunch target
         shell: bash
         run: |
