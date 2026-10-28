@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/android11-build-probe.yml
       - scripts/bounded_build.py
+      - apps/**
+      - tests/test_android_manifests.py
       - scripts/generate_vendor_rules.py
       - scripts/assemble_vendor_tree.py
       - rom/roomservice.xml
