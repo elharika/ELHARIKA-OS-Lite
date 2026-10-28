@@ -1,0 +1,187 @@
+name: Android 11 SM-P900 system image build
+
+on:
+  workflow_run:
+    workflows:
+      - Android 11 SM-P900 boot image build
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android11-v1awifi-systemimage
+  cancel-in-progress: false
+
+jobs:
+  build-systemimage:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate project tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest discover -s tests -v 2>&1 | tee evidence/project-tests.log
+          python3 -m compileall -q scripts tests
+          for script in scripts/*.sh; do bash -n "$script"; done
+
+      - name: Reclaim hosted runner disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -B1 > evidence/disk-before-cleanup.txt
+          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/Go /opt/hostedtoolcache/Ruby /opt/hostedtoolcache/Java_Temurin; do
+            if [ -L "$tool_path" ]; then
+              echo "Unexpected symlink: $tool_path" >&2
+              exit 1
+            fi
+            if [ -d "$tool_path" ]; then
+              sudo du -sx -B1 "$tool_path" >> evidence/removed-tools-sizes.txt
+              sudo rm -rf --one-file-system -- "$tool_path"
+            fi
+          done
+          df -B1 > evidence/disk-after-cleanup.txt
+
+      - name: Prepare verified SM-P900 vendor inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5
+          stock_work="$RUNNER_TEMP/elharika-stock-input"
+          mkdir -p "$stock_work"
+          python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
+          python3 scripts/unpack_stock_system.py "$stock_work/stock.zip" "$stock_work/expanded"
+          python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$stock_work/minimal.json"
+          python3 scripts/stock_candidate_baseline.py "$stock_work/minimal.json" "$stock_work/candidates.json"
+          python3 scripts/stage_stock_vendor.py --system-image "$stock_work/expanded/system.ext4" --baseline "$stock_work/candidates.json" --output "$stock_work/stage"
+          python3 scripts/assemble_vendor_tree.py "$stock_work/candidates.json" "$stock_work/stage" "$RUNNER_TEMP/elharika-vendor"
+          (cd "$RUNNER_TEMP/elharika-vendor" && sha256sum --check --quiet SHA256SUMS)
+          cp "$RUNNER_TEMP/elharika-vendor/assembly-report.json" evidence/vendor-assembly.json
+          cp "$RUNNER_TEMP/elharika-vendor/SHA256SUMS" evidence/vendor-source-sha256.txt
+          rm -rf -- "$stock_work"
+
+      - name: Initialize and sync Android 11 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/android11"
+          git clone --depth=1 https://gerrit.googlesource.com/git-repo "$RUNNER_TEMP/repo-tool"
+          cd "$RUNNER_TEMP/android11"
+          python3 "$RUNNER_TEMP/repo-tool/repo" init \
+            -u https://github.com/LineageOS/android \
+            -b 88e370827501474db8f1905128fdea2e8128ead4 \
+            --depth=1 --no-clone-bundle \
+            --repo-url=https://gerrit.googlesource.com/git-repo --repo-rev=stable
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
+          mkdir -p .repo/local_manifests
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_sync_manifest.py" \
+            "$GITHUB_WORKSPACE/evidence/base-manifest.xml" \
+            "$GITHUB_WORKSPACE/rom/roomservice.xml" .repo/local_manifests/elharika.xml
+          cp .repo/local_manifests/elharika.xml "$GITHUB_WORKSPACE/evidence/hardware-overlay.xml"
+          python3 "$RUNNER_TEMP/repo-tool/repo" sync -c -j4 \
+            --no-clone-bundle --no-tags --optimized-fetch --fail-fast \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/sync.log"
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
+          test "$(git -C vendor/apn rev-parse HEAD)" = cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e
+          du -sh . > "$GITHUB_WORKSPACE/evidence/source-size.txt"
+          df -B1 > "$GITHUB_WORKSPACE/evidence/disk-after-sync.txt"
+
+      - name: Integrate SM-P900 vendor tree and product
+        shell: bash
+        run: |
+          set -euo pipefail
+          android_root="$RUNNER_TEMP/android11"
+          mkdir -p "$android_root/vendor/samsung"
+          for device in universal5420-common v1a-common v1awifi; do
+            test ! -e "$android_root/vendor/samsung/$device"
+            test -f "$RUNNER_TEMP/elharika-vendor/samsung/$device/$device-vendor.mk"
+            mv "$RUNNER_TEMP/elharika-vendor/samsung/$device" "$android_root/vendor/samsung/"
+          done
+          python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/prepare_product.py "$android_root"
+          python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_touch_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_init_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_camera_hosting.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
+
+      - name: Validate build target
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP/android11"
+          set +u
+          source build/envsetup.sh
+          lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
+          env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
+
+      - name: Build system image only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android11"
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
+            --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence/system-build" \
+            --minutes 285 --reserve-gib 5 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 systemimage'
+
+      - name: Verify system image
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$RUNNER_TEMP/android11/out/target/product/v1awifi"
+          test -s "$product/system.img"
+          python3 scripts/verify_sparse_system.py "$product/system.img" evidence/system-image-validation.json
+          mkdir -p development-system
+          cp "$product/system.img" development-system/
+          cp evidence/system-image-validation.json development-system/
+          (cd development-system && sha256sum system.img > SHA256SUMS)
+          stat -c '%n %s bytes' "$product/system.img" | tee evidence/system-image-size.txt
+          echo "Development system image for SM-P900 only. Hardware testing is still required before flash approval." > development-system/README.txt
+
+      - name: Upload verified system image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-development-NOT-FLASH-APPROVED
+          path: development-system/
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 1
+
+      - name: Record final footprint
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          df -B1 > evidence/disk-final.txt
+          if [ -f evidence/system-build/build.log ]; then
+            tail -n 200 evidence/system-build/build.log > evidence/system-build-tail.log || true
+          fi
+          if [ -d "$RUNNER_TEMP/android11/out" ]; then
+            timeout 90 du -x -B1 --max-depth=2 "$RUNNER_TEMP/android11/out" > evidence/out-footprint.txt || true
+          fi
+
+      - name: Upload system build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-build-evidence
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
