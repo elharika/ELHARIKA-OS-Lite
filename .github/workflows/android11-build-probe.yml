@@ -19,6 +19,7 @@ on:
       - scripts/fix_camera_hosting.py
       - scripts/fix_modem_policy.py
       - scripts/fix_sensor_policy.py
+      - scripts/fix_core_data_labels.py
       - scripts/apply_device_fixes.py
       - scripts/apply_minimal_profile.py
 permissions:
@@ -144,6 +145,7 @@ jobs:
           python3 scripts/fix_camera_hosting.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
       - name: Validate SM-P900 lunch target
         shell: bash
         run: |
@@ -162,7 +164,7 @@ jobs:
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/selinux" \
             --minutes 18 --reserve-gib 8 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 sepolicy_neverallows'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 sepolicy_neverallows sepolicy_tests'
       - name: Probe boot and system image compilation within disk/time limits
         shell: bash
         run: |
