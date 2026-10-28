@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           df -B1 > evidence/disk-before-cleanup.txt
-          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL; do
+          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/Go /opt/hostedtoolcache/Ruby /opt/hostedtoolcache/Java_Temurin; do
             if [ -L "$tool_path" ]; then
               echo "Unexpected symlink: $tool_path" >&2
               exit 1
@@ -56,6 +56,8 @@ jobs:
               sudo rm -rf --one-file-system -- "$tool_path"
             fi
           done
+          /usr/bin/python3 --version
+          git --version
           df -B1 > evidence/disk-after-cleanup.txt
       - name: Prepare verified SM-P900 vendor inputs before source sync
         shell: bash
