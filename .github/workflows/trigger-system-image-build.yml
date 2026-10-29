@@ -15,12 +15,14 @@ jobs:
   dispatch-system-build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Dispatch system image workflow on latest main
+      - name: Cancel stale builds and dispatch latest system image workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Dispatch the existing verified build workflow against latest main,
-          # including the corrected low-footprint product profile.
+          for run_id in 40928418632 40928549226; do
+            gh api --method POST \
+              repos/${{ github.repository }}/actions/runs/${run_id}/cancel || true
+          done
           gh api --method POST \
             repos/${{ github.repository }}/actions/workflows/android11-systemimage-after-boot.yml/dispatches \
             -f ref=main
