@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf
           stock_work="$RUNNER_TEMP/elharika-stock-input"
           mkdir -p "$stock_work"
           python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
@@ -204,3 +204,4 @@ jobs:
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
+

@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y e2fsprogs binutils
+          sudo apt-get install -y e2fsprogs binutils patchelf
           mkdir -p evidence
           python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$RUNNER_TEMP/stock.zip"
           python3 scripts/unpack_stock_system.py "$RUNNER_TEMP/stock.zip" "$RUNNER_TEMP/expanded"
@@ -57,8 +57,14 @@ jobs:
           print('Inspected ELF modules:',len(entries))
           PY
           python3 scripts/generate_vendor_rules.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/vendor-rules"
+          python3 scripts/assemble_vendor_tree.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/assembled"
+          (cd "$RUNNER_TEMP/assembled" && sha256sum --check --quiet SHA256SUMS)
+          cp "$RUNNER_TEMP/assembled/assembly-report.json" evidence/assembly-report.json
+          readelf -W -d --dyn-syms "$RUNNER_TEMP/assembled/samsung/universal5420-common/proprietary/vendor/lib/libstlport.so" > evidence/libstlport-patched.readelf.txt
           cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.bp" evidence/Android.bp
           cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.mk" evidence/Android.mk
+          cp "$RUNNER_TEMP/vendor-rules/samsung/v1awifi/Android.bp" evidence/gps-Android.bp
+          cp "$RUNNER_TEMP/vendor-rules/samsung/v1awifi/Android.mk" evidence/gps-Android.mk
           for name in liblvverx liblvvetx libstlport; do
             case "$name" in
               libstlport) path="$RUNNER_TEMP/stage/proprietary/vendor/lib/libstlport.so" ;;

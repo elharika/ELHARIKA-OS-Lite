@@ -4,9 +4,12 @@ import argparse
 import json
 from pathlib import Path,PurePosixPath
 import re
+import shutil
 from verify_stock_blobs import digest,elf_info,safe_path
 
 TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-common','v1awifi')}
+STLPORT_SHA256='9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a'
+AEABI_SYMBOLS={'__aeabi_ldivmod','__aeabi_uldivmod'}
 
 def generate(baseline,stage,output):
     if baseline.get('profile',{}).get('name')!='experimental-stock-candidates':raise ValueError('Wrong profile')
@@ -54,6 +57,13 @@ def generate(baseline,stage,output):
             for lib in info['needed']:
                 if not re.fullmatch(r'[A-Za-z0-9_.+-]+\.so',lib):raise ValueError('Review versioned dependency: '+lib)
                 needed.append(lib[:-3])
+            if dest=='vendor/lib/libstlport.so':
+                imports={s['name'] for s in info['undefined_symbols']}
+                if (owner!='universal5420-common' or r['sha256']!=STLPORT_SHA256
+                        or not AEABI_SYMBOLS.issubset(imports)
+                        or 'libelharika_aeabi_compat' in needed):
+                    raise ValueError('Unexpected SM-P900 libstlport ABI')
+                needed.append('libelharika_aeabi_compat')
             # Legacy source HALs are Android.mk modules. Soong cannot depend on
             # Make-only modules; define their consumers in Make as well.
             if name in ('libexynoscamera', 'gpsd'):
@@ -99,6 +109,22 @@ def generate(baseline,stage,output):
                     target='$(TARGET_COPY_OUT_VENDOR)/'+dest[len('vendor/'):]
                 else:target='$(TARGET_COPY_OUT_SYSTEM)/'+dest
                 mk+=f'PRODUCT_COPY_FILES += vendor/samsung/{owner}/proprietary/{dest}:{target}\n'
+        if owner=='universal5420-common':
+            bp+='''// Exact SM-P900 legacy STLport ARM EABI dependency; not a runtime approval.
+cc_library_shared {
+    name: "libelharika_aeabi_compat",
+    owner: "elharika",
+    srcs: ["compat/aeabi_divmod.S"],
+    compile_multilib: "32",
+    vendor: true,
+    stl: "none",
+}
+'''
+            mk+='PRODUCT_PACKAGES += libelharika_aeabi_compat\n'
+            (directory/'compat').mkdir()
+            for filename in ('aeabi_divmod.S','LICENSE.TXT'):
+                shutil.copyfile(Path(__file__).resolve().parents[1]/'rom/compat'/filename,
+                                directory/'compat'/filename)
         if aliases[owner]:
             legacy+='ifeq ($(TARGET_DEVICE),v1awifi)\n'
             for dest,soname in aliases[owner]:

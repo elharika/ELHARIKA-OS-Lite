@@ -96,5 +96,20 @@ class VendorRuleTests(unittest.TestCase):
                             '-o',str(library),str(source)],check=True)
             self.assertEqual(elf_info(library)['soname'],'libLifevibes_lvverx.so')
 
+    def test_stlport_requires_exact_stock_hash_and_aeabi_imports(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);baseline,stage=self.fixture(root)
+            baseline['comparison']['records'][0]['destination']='vendor/lib/libstlport.so'
+            stock=stage/'proprietary/vendor/lib/libstlport.so'
+            stock.parent.mkdir(parents=True,exist_ok=True)
+            stock.write_bytes(b'fixture-stlport')
+            baseline['comparison']['records'][0]['sha256']=hashlib.sha256(stock.read_bytes()).hexdigest()
+            with patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':['libc.so'],
+                    'soname':'libstlport.so',
+                    'undefined_symbols':[{'name':s} for s in ('__aeabi_ldivmod','__aeabi_uldivmod')]}):
+                with self.assertRaisesRegex(ValueError,'Unexpected SM-P900 libstlport ABI'):
+                    generate(baseline,stage,root/'out')
+
 if __name__=='__main__':unittest.main()
 
