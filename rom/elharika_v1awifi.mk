@@ -14,7 +14,7 @@ PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD := false
 
 # Keep the initial bring-up image lean. These apps are not required to validate
 # boot, display, touch, Wi-Fi, pen, audio, or core framework bring-up.
-PRODUCT_PACKAGES -= Updater Gallery2 ThemePicker
+PRODUCT_PACKAGES := $(filter-out Updater Gallery2 ThemePicker,$(PRODUCT_PACKAGES))
 
 # No Google package bundle or root package is added here.
 # Upstream base apps and fingerprint still require review before a final release.
