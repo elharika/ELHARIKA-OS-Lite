@@ -39,11 +39,12 @@ def generate(baseline,stage,output):
             if shared and soname and soname!=relative[-1]:
                 # The exact-model sound effects and GPS HAL use different
                 # internal SONAMEs. Keep stock bytes and provide load aliases.
-                approved=(owner=='universal5420-common' and (
-                    (dest in ('vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so')
+                approved=(
+                    (owner=='universal5420-common'
+                     and dest in ('vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so')
                      and soname=='libLifevibes_'+name[3:]+'.so') or
-                    (dest=='vendor/lib/hw/gps.universal5420.so'
-                     and soname=='gps.samsungAdonisandroid.so')))
+                    (owner=='v1awifi' and dest=='vendor/lib/hw/gps.universal5420.so'
+                     and soname=='gps.samsungAdonisandroid.so'))
                 if approved:
                     stem=soname[:-3]
                     aliases[owner].append((dest,soname))

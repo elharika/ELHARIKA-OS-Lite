@@ -76,12 +76,13 @@ class VendorRuleTests(unittest.TestCase):
             fixture.parent.mkdir(parents=True)
             fixture.write_bytes(b'fixture-gps')
             baseline['comparison']['records'][0]['destination']=dest
+            baseline['comparison']['records'][0]['tree']='android_device_samsung_v1awifi'
             baseline['comparison']['records'][0]['sha256']=hashlib.sha256(fixture.read_bytes()).hexdigest()
             with patch('generate_vendor_rules.elf_info',return_value={
                     'arm32_little_endian':True,'needed':['libc.so'],
                     'soname':'gps.samsungAdonisandroid.so'}):
                 generate(baseline,stage,root/'out')
-            vendor=root/'out/samsung/universal5420-common'
+            vendor=root/'out/samsung/v1awifi'
             self.assertIn('stem: "gps.samsungAdonisandroid"',(vendor/'Android.bp').read_text())
             self.assertIn('$(TARGET_OUT_VENDOR)/lib/hw/gps.universal5420.so: $(TARGET_OUT_VENDOR)/lib/hw/gps.samsungAdonisandroid.so',(vendor/'Android.mk').read_text())
             self.assertEqual(fixture.read_bytes(),b'fixture-gps')
