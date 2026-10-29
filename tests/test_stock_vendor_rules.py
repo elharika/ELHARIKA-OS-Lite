@@ -4,14 +4,16 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import subprocess
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from generate_vendor_rules import generate
+from verify_stock_blobs import elf_info
 
 class VendorRuleTests(unittest.TestCase):
     def fixture(self,root):
         stage=root/'stage';f=stage/'proprietary/vendor/lib/egl/probe.so';f.parent.mkdir(parents=True);f.write_bytes(b'fixture')
-        b={'profile':{'name':'experimental-stock-candidates'},'comparison':{'records':[{
+        b={'identity':{'model':'SM-P900','build':'P900XXS0BPL4'},'profile':{'name':'experimental-stock-candidates'},'comparison':{'records':[{
           'tree':'android_device_samsung_universal5420-common','destination':'vendor/lib/egl/probe.so','sha256':hashlib.sha256(b'fixture').hexdigest()}]}}
         return b,stage
     def test_elf_uses_checked_module_not_copy(self):
@@ -34,5 +36,46 @@ class VendorRuleTests(unittest.TestCase):
             with patch('generate_vendor_rules.elf_info',return_value={'arm32_little_endian':False}):
                 with self.assertRaises(ValueError):generate(b,stage,root/'out')
             self.assertFalse((root/'out').exists())
+    def test_soundfx_soname_keeps_original_bytes_and_installs_alias(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);baseline,stage=self.fixture(root)
+            dest='vendor/lib/soundfx/liblvverx.so'
+            fixture=stage/'proprietary'/dest
+            fixture.parent.mkdir(parents=True)
+            fixture.write_bytes(b'fixture-audio')
+            baseline['comparison']['records'][0]['destination']=dest
+            baseline['comparison']['records'][0]['sha256']=hashlib.sha256(fixture.read_bytes()).hexdigest()
+            with patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':['libc.so'],
+                    'soname':'libLifevibes_lvverx.so'}):
+                generate(baseline,stage,root/'out')
+            vendor=root/'out/samsung/universal5420-common'
+            bp=(vendor/'Android.bp').read_text()
+            mk=(vendor/'Android.mk').read_text()
+            self.assertIn('stem: "libLifevibes_lvverx"',bp)
+            self.assertIn('check_elf_files: true',bp)
+            self.assertIn('$(TARGET_OUT_VENDOR)/lib/soundfx/liblvverx.so: $(TARGET_OUT_VENDOR)/lib/soundfx/libLifevibes_lvverx.so',mk)
+            self.assertEqual(fixture.read_bytes(),b'fixture-audio')
+
+    def test_unexpected_soname_and_wrong_model_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);baseline,stage=self.fixture(root)
+            with patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':[],'soname':'bad.so'}):
+                with self.assertRaisesRegex(ValueError,'Unexpected SONAME'):
+                    generate(baseline,stage,root/'out')
+            baseline['identity']['model']='SM-P905'
+            with self.assertRaisesRegex(ValueError,'Wrong stock image identity'):
+                generate(baseline,stage,root/'out')
+
+    def test_readelf_detects_real_soname(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            source=root/'fixture.c';source.write_text('int fixture(void) { return 7; }\n')
+            library=root/'fixture.so'
+            subprocess.run(['cc','-shared','-fPIC','-Wl,-soname,libLifevibes_lvverx.so',
+                            '-o',str(library),str(source)],check=True)
+            self.assertEqual(elf_info(library)['soname'],'libLifevibes_lvverx.so')
 
 if __name__=='__main__':unittest.main()
+

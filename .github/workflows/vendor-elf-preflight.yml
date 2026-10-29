@@ -1,0 +1,56 @@
+name: SM-P900 vendor ELF preflight
+
+on:
+  push:
+    branches:
+      - audit/legacy-elf-preflight
+    paths:
+      - scripts/generate_vendor_rules.py
+      - scripts/verify_stock_blobs.py
+      - tests/test_stock_vendor_rules.py
+      - .github/workflows/vendor-elf-preflight.yml
+
+permissions:
+  contents: read
+
+jobs:
+  vendor-elf-preflight:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test vendor generation
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -v
+          python3 -m compileall -q scripts tests
+      - name: Inspect exact-model stock binaries and generated rules
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs binutils
+          mkdir -p evidence
+          python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$RUNNER_TEMP/stock.zip"
+          python3 scripts/unpack_stock_system.py "$RUNNER_TEMP/stock.zip" "$RUNNER_TEMP/expanded"
+          python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$RUNNER_TEMP/minimal.json"
+          python3 scripts/stock_candidate_baseline.py "$RUNNER_TEMP/minimal.json" "$RUNNER_TEMP/candidates.json"
+          python3 scripts/stage_stock_vendor.py --system-image "$RUNNER_TEMP/expanded/system.ext4" --baseline "$RUNNER_TEMP/candidates.json" --output "$RUNNER_TEMP/stage"
+          python3 scripts/generate_vendor_rules.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/vendor-rules"
+          cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.bp" evidence/Android.bp
+          cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.mk" evidence/Android.mk
+          for name in liblvverx liblvvetx libstlport; do
+            case "$name" in
+              libstlport) path="$RUNNER_TEMP/stage/proprietary/vendor/lib/libstlport.so" ;;
+              *) path="$RUNNER_TEMP/stage/proprietary/vendor/lib/soundfx/$name.so" ;;
+            esac
+            readelf -W -d --dyn-syms "$path" > "evidence/$name.readelf.txt"
+          done
+      - name: Upload preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SM-P900-vendor-elf-preflight-evidence
+          path: evidence/
+          retention-days: 7

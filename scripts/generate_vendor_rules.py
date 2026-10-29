@@ -10,7 +10,9 @@ TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-com
 
 def generate(baseline,stage,output):
     if baseline.get('profile',{}).get('name')!='experimental-stock-candidates':raise ValueError('Wrong profile')
-    groups={n:[] for n in TREES.values()};seen={};modules=set()
+    if (baseline.get('identity',{}).get('model'),baseline.get('identity',{}).get('build'))!=('SM-P900','P900XXS0BPL4'):
+        raise ValueError('Wrong stock image identity')
+    groups={n:[] for n in TREES.values()};seen={};modules=set();aliases={n:[] for n in TREES.values()}
     for r in baseline['comparison']['records']:
         dest=safe_path(r['destination']);path=stage/'proprietary'/dest
         if r['tree'] not in TREES:raise ValueError('Unexpected device tree')
@@ -31,6 +33,17 @@ def generate(baseline,stage,output):
             name=relative[-1][:-3] if shared else relative[-1]
             if name in modules:raise ValueError('Duplicate module: '+name)
             modules.add(name)
+            soname=info.get('soname')
+            stem=None
+            if shared and soname and soname!=relative[-1]:
+                # Only two hash-verified SM-P900 sound effects are known to
+                # carry Lifevibes SONAMEs while audio policy loads short names.
+                if (owner!='universal5420-common' or dest not in (
+                        'vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so')
+                        or soname!='libLifevibes_'+name[3:]+'.so'):
+                    raise ValueError('Unexpected SONAME: '+dest+' -> '+soname)
+                stem=soname[:-3]
+                aliases[owner].append((dest,soname))
             needed=[]
             for lib in info['needed']:
                 if not re.fullmatch(r'[A-Za-z0-9_.+-]+\.so',lib):raise ValueError('Review versioned dependency: '+lib)
@@ -54,6 +67,7 @@ def generate(baseline,stage,output):
             block=('cc_prebuilt_library_shared' if shared else 'cc_prebuilt_binary')+' {\n'
             block+=f'    name: {json.dumps(name)},\n    owner: "samsung",\n'
             block+=f'    srcs: [{json.dumps("proprietary/"+dest)}],\n'
+            if stem:block+=f'    stem: {json.dumps(stem)},\n'
             block+='    compile_multilib: "32",\n    strip: { none: true },\n    check_elf_files: true,\n'
             block+='    shared_libs: '+json.dumps(sorted(set(needed)))+',\n'
             if vendor:block+='    vendor: true,\n'
@@ -77,6 +91,14 @@ def generate(baseline,stage,output):
                     target='$(TARGET_COPY_OUT_VENDOR)/'+dest[len('vendor/'):]
                 else:target='$(TARGET_COPY_OUT_SYSTEM)/'+dest
                 mk+=f'PRODUCT_COPY_FILES += vendor/samsung/{owner}/proprietary/{dest}:{target}\n'
+        if aliases[owner]:
+            legacy+='ifeq ($(TARGET_DEVICE),v1awifi)\n'
+            for dest,soname in aliases[owner]:
+                alias='$(TARGET_OUT_VENDOR)/'+dest[len('vendor/'):]
+                actual='$(TARGET_OUT_VENDOR)/'+str(PurePosixPath(dest).parent)[len('vendor/'):]+'/'+soname
+                legacy+=alias+': '+actual+'\n\t@mkdir -p $(dir $@)\n\tln -sfn '+soname+' $@\n'
+                legacy+='ALL_DEFAULT_INSTALLED_MODULES += '+alias+'\n'
+            legacy+='endif\n'
         (directory/'Android.mk').write_text(legacy)
         (directory/'Android.bp').write_text(bp)
         (directory/(owner+'-vendor.mk')).write_text(mk)
@@ -86,3 +108,4 @@ def generate(baseline,stage,output):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('baseline',type=Path);p.add_argument('stage',type=Path);p.add_argument('output',type=Path)
     a=p.parse_args();print(json.dumps(generate(json.loads(a.baseline.read_text()),a.stage,a.output),indent=2))
+
