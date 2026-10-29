@@ -1,0 +1,24 @@
+name: Trigger SM-P900 system image build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trigger-system-image-build.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-system-build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Dispatch system image workflow on latest main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            repos/${{ github.repository }}/actions/workflows/android11-systemimage-after-boot.yml/dispatches \
+            -f ref=main
