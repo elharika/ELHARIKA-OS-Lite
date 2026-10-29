@@ -1,4 +1,4 @@
-name: Release SM-P900 system build queue
+name: Trigger SM-P900 system image build
 
 on:
   push:
@@ -13,12 +13,13 @@ permissions:
   contents: read
 
 jobs:
-  release-system-build-queue:
+  dispatch-system-build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Force-cancel stale system build holding the concurrency group
+      - name: Dispatch latest system image workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api --method POST \
-            repos/${{ github.repository }}/actions/runs/40928326941/force-cancel || true
+            repos/${{ github.repository }}/actions/workflows/android11-systemimage-after-boot.yml/dispatches \
+            -f ref=main
