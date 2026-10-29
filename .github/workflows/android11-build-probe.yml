@@ -2,6 +2,7 @@ name: Android 11 SM-P900 build probe
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - .github/workflows/android11-build-probe.yml
       - scripts/bounded_build.py
@@ -256,3 +257,4 @@ jobs:
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
+

@@ -68,6 +68,24 @@ class VendorRuleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Wrong stock image identity'):
                 generate(baseline,stage,root/'out')
 
+    def test_gps_soname_preserves_hal_filename_alias(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);baseline,stage=self.fixture(root)
+            dest='vendor/lib/hw/gps.universal5420.so'
+            fixture=stage/'proprietary'/dest
+            fixture.parent.mkdir(parents=True)
+            fixture.write_bytes(b'fixture-gps')
+            baseline['comparison']['records'][0]['destination']=dest
+            baseline['comparison']['records'][0]['sha256']=hashlib.sha256(fixture.read_bytes()).hexdigest()
+            with patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':['libc.so'],
+                    'soname':'gps.samsungAdonisandroid.so'}):
+                generate(baseline,stage,root/'out')
+            vendor=root/'out/samsung/universal5420-common'
+            self.assertIn('stem: "gps.samsungAdonisandroid"',(vendor/'Android.bp').read_text())
+            self.assertIn('$(TARGET_OUT_VENDOR)/lib/hw/gps.universal5420.so: $(TARGET_OUT_VENDOR)/lib/hw/gps.samsungAdonisandroid.so',(vendor/'Android.mk').read_text())
+            self.assertEqual(fixture.read_bytes(),b'fixture-gps')
+
     def test_readelf_detects_real_soname(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)

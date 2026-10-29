@@ -13,6 +13,7 @@ def generate(baseline,stage,output):
     if (baseline.get('identity',{}).get('model'),baseline.get('identity',{}).get('build'))!=('SM-P900','P900XXS0BPL4'):
         raise ValueError('Wrong stock image identity')
     groups={n:[] for n in TREES.values()};seen={};modules=set();aliases={n:[] for n in TREES.values()}
+    unexpected_sonames=[]
     for r in baseline['comparison']['records']:
         dest=safe_path(r['destination']);path=stage/'proprietary'/dest
         if r['tree'] not in TREES:raise ValueError('Unexpected device tree')
@@ -36,14 +37,18 @@ def generate(baseline,stage,output):
             soname=info.get('soname')
             stem=None
             if shared and soname and soname!=relative[-1]:
-                # Only two hash-verified SM-P900 sound effects are known to
-                # carry Lifevibes SONAMEs while audio policy loads short names.
-                if (owner!='universal5420-common' or dest not in (
-                        'vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so')
-                        or soname!='libLifevibes_'+name[3:]+'.so'):
-                    raise ValueError('Unexpected SONAME: '+dest+' -> '+soname)
-                stem=soname[:-3]
-                aliases[owner].append((dest,soname))
+                # The exact-model sound effects and GPS HAL use different
+                # internal SONAMEs. Keep stock bytes and provide load aliases.
+                approved=(owner=='universal5420-common' and (
+                    (dest in ('vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so')
+                     and soname=='libLifevibes_'+name[3:]+'.so') or
+                    (dest=='vendor/lib/hw/gps.universal5420.so'
+                     and soname=='gps.samsungAdonisandroid.so')))
+                if approved:
+                    stem=soname[:-3]
+                    aliases[owner].append((dest,soname))
+                else:
+                    unexpected_sonames.append(dest+' -> '+soname)
             needed=[]
             for lib in info['needed']:
                 if not re.fullmatch(r'[A-Za-z0-9_.+-]+\.so',lib):raise ValueError('Review versioned dependency: '+lib)
@@ -75,6 +80,8 @@ def generate(baseline,stage,output):
             block+='}\n'
             groups[owner].append((dest,name,block))
         else:groups[owner].append((dest,None,None))
+    if unexpected_sonames:
+        raise ValueError('Unexpected SONAME: '+', '.join(unexpected_sonames))
     output.mkdir(parents=True,exist_ok=False)
     for owner,items in groups.items():
         directory=output/'samsung'/owner;directory.mkdir(parents=True)

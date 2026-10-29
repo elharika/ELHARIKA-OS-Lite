@@ -37,6 +37,25 @@ jobs:
           python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$RUNNER_TEMP/minimal.json"
           python3 scripts/stock_candidate_baseline.py "$RUNNER_TEMP/minimal.json" "$RUNNER_TEMP/candidates.json"
           python3 scripts/stage_stock_vendor.py --system-image "$RUNNER_TEMP/expanded/system.ext4" --baseline "$RUNNER_TEMP/candidates.json" --output "$RUNNER_TEMP/stage"
+          python3 - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from verify_stock_blobs import elf_info
+          base=json.loads(Path(os.environ['RUNNER_TEMP'], 'candidates.json').read_text())
+          staged=Path(os.environ['RUNNER_TEMP'], 'stage/proprietary')
+          entries=[]
+          for r in base['comparison']['records']:
+              path=staged/r['destination']
+              info=elf_info(path)
+              if info:
+                  entries.append({'destination':r['destination'], 'sha256':r['sha256'],
+                                  'soname':info['soname'], 'needed':info['needed'],
+                                  'arm32':info['arm32_little_endian'],
+                                  'undefined_symbols':len(info['undefined_symbols'])})
+          Path('evidence/elf-inventory.json').write_text(json.dumps(entries,indent=2)+'\n')
+          print('Inspected ELF modules:',len(entries))
+          PY
           python3 scripts/generate_vendor_rules.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/vendor-rules"
           cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.bp" evidence/Android.bp
           cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.mk" evidence/Android.mk
