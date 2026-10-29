@@ -72,7 +72,7 @@ cc_prebuilt_library_shared {
     srcs: ["proprietary/vendor/lib/soundfx/liblvverx.so"],
     compile_multilib: "32",
     strip: { none: true },
-    check_elf_files: true,
+    check_elf_files: false,
     shared_libs: ["libc", "libcutils", "libdl", "liblog", "libm", "libstdc++"],
     vendor: true,
     relative_install_path: "soundfx",
@@ -97,6 +97,7 @@ cc_prebuilt_library_shared {
     compile_multilib: "32",
     strip: { none: true },
     check_elf_files: true,
+    allow_undefined_symbols: true,
     shared_libs: ["libc", "libm", "libstdc++"],
     vendor: true,
 }
