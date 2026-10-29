@@ -19,6 +19,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Dispatch the existing verified build workflow against the latest main.
           gh api --method POST \
             repos/${{ github.repository }}/actions/workflows/android11-systemimage-after-boot.yml/dispatches \
             -f ref=main
