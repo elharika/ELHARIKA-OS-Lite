@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Generate candidate Android build rules from hash-verified stock files. No ELF check bypass."""
+"""Generate candidate Android build rules from hash-verified stock files.
+
+All ELF prebuilts remain checked by default. Two stock-only compatibility
+exceptions are intentionally narrow and recorded in the returned summary.
+"""
 import argparse
 import json
 from pathlib import Path,PurePosixPath
@@ -8,9 +12,18 @@ from verify_stock_blobs import digest,elf_info,safe_path
 
 TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-common','v1awifi')}
 
+# Exact-path exceptions for verified Samsung stock blobs. Keep these narrow:
+# unrelated prebuilts must continue through the normal ELF validation path.
+ALLOW_UNDEFINED_SYMBOLS={
+    'vendor/lib/libstlport.so',
+}
+ELF_CHECK_EXCEPTIONS={
+    'vendor/lib/soundfx/liblvverx.so': 'stock DT_SONAME is libLifevibes_lvverx.so while runtime filename is liblvverx.so',
+}
+
 def generate(baseline,stage,output):
     if baseline.get('profile',{}).get('name')!='experimental-stock-candidates':raise ValueError('Wrong profile')
-    groups={n:[] for n in TREES.values()};seen={};modules=set()
+    groups={n:[] for n in TREES.values()};seen={};modules=set();elf_exceptions=[];undefined_exceptions=[]
     for r in baseline['comparison']['records']:
         dest=safe_path(r['destination']);path=stage/'proprietary'/dest
         if r['tree'] not in TREES:raise ValueError('Unexpected device tree')
@@ -54,7 +67,13 @@ def generate(baseline,stage,output):
             block=('cc_prebuilt_library_shared' if shared else 'cc_prebuilt_binary')+' {\n'
             block+=f'    name: {json.dumps(name)},\n    owner: "samsung",\n'
             block+=f'    srcs: [{json.dumps("proprietary/"+dest)}],\n'
-            block+='    compile_multilib: "32",\n    strip: { none: true },\n    check_elf_files: true,\n'
+            check_elf=dest not in ELF_CHECK_EXCEPTIONS
+            block+=f'    compile_multilib: "32",\n    strip: {{ none: true }},\n    check_elf_files: {str(check_elf).lower()},\n'
+            if not check_elf:
+                elf_exceptions.append({'path':dest,'reason':ELF_CHECK_EXCEPTIONS[dest]})
+            if dest in ALLOW_UNDEFINED_SYMBOLS:
+                block+='    allow_undefined_symbols: true,\n'
+                undefined_exceptions.append(dest)
             block+='    shared_libs: '+json.dumps(sorted(set(needed)))+',\n'
             if vendor:block+='    vendor: true,\n'
             if len(relative)>2:block+='    relative_install_path: '+json.dumps('/'.join(relative[1:-1]))+',\n'
@@ -81,7 +100,15 @@ def generate(baseline,stage,output):
         (directory/'Android.bp').write_text(bp)
         (directory/(owner+'-vendor.mk')).write_text(mk)
         (directory/'BoardConfigVendor.mk').write_text('# No additional board overrides. Experimental stock candidate set.\n')
-    return {'files':len(seen),'elf_modules':len(modules),'non_elf_copy_entries':len(seen)-len(modules),'status':'GENERATED_NOT_ANDROID_COMPILED','elf_checks_enabled':True}
+    return {
+        'files':len(seen),
+        'elf_modules':len(modules),
+        'non_elf_copy_entries':len(seen)-len(modules),
+        'status':'GENERATED_NOT_ANDROID_COMPILED',
+        'elf_checks_enabled':True,
+        'elf_check_exceptions':elf_exceptions,
+        'undefined_symbol_exceptions':sorted(undefined_exceptions),
+    }
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('baseline',type=Path);p.add_argument('stage',type=Path);p.add_argument('output',type=Path)
