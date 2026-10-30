@@ -14,4 +14,6 @@
   <project name="LineageOS/android_device_lineage_sepolicy" path="device/lineage/sepolicy" remote="github" revision="02f04d2b0a57f1c7435dc9f2ce8fac2640b38782" />
   <!-- Keep the shell APN generator: later upstream requires a pyyaml Soong module absent from this Android 11 tree. -->
   <project name="LineageOS/android_vendor_apn" path="vendor/apn" remote="github" revision="cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e" />
+  <!-- suite_harness references cts_error_prone_rules even in a reduced source graph; restore only the pinned CTS root, not the CTS group. -->
+  <project name="LineageOS/android_cts" path="cts" remote="github" revision="c554ab005261d4cd194b9a19aa5dd68c72d7df6e" />
 </manifest>
