@@ -1,4 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
 Do not build system.img.
-Trigger revision: 3
+Trigger revision: 4
+Reason: re-add pinned kernel/configs only after reduced-group sync omitted kernel-config-soong-rules.
