@@ -163,6 +163,21 @@ jobs:
             --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
             --minutes 35 --reserve-gib 6 -- \
             bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 liblvverx liblvvetx gps.universal5420 libstlport libelharika_aeabi_compat'
+          python3 - "$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib" <<'PYABI'
+          import pathlib, subprocess, sys
+          root=pathlib.Path(sys.argv[1])
+          shim=root/'libelharika_aeabi_compat.so'
+          exports=subprocess.check_output(['readelf','-W','--dyn-syms',str(shim)],text=True)
+          for symbol in ('__aeabi_idiv','__aeabi_idivmod','__aeabi_ldivmod',
+                         '__aeabi_uidiv','__aeabi_uidivmod','__aeabi_uldivmod',
+                         '__popcountsi2'):
+              assert any(symbol in line.split()[-1] and 'GLOBAL' in line and ' UND ' not in line
+                         for line in exports.splitlines()),symbol
+          for name in ('liblvverx.so','liblvvetx.so','libstlport.so'):
+              dynamic=subprocess.check_output(['readelf','-W','-d',str(root/name if name=='libstlport.so' else root/'soundfx'/name)],text=True)
+              assert '[libelharika_aeabi_compat.so]' in dynamic,name
+          print('ARM EABI exports and three explicit ELF dependencies checked')
+          PYABI
 
       - name: Build system image only
         shell: bash
