@@ -52,6 +52,9 @@ def elf_info(path):
     if result.returncode:
         raise ValueError('readelf failed: ' + result.stderr[:300])
     needed = re.findall(r'\(NEEDED\).*?\[([^\]]+)\]', result.stdout)
+    sonames = re.findall(r'\(SONAME\).*?\[([^\]]+)\]', result.stdout)
+    if len(sonames) > 1:
+        raise ValueError('Multiple ELF SONAME tags')
     undefined = []
     for line in result.stdout.splitlines():
         cols = line.split()
@@ -59,7 +62,8 @@ def elf_info(path):
             undefined.append({'name': cols[7], 'binding': cols[4]})
     return {'class': header[4], 'machine': machine, 'endianness': header[5],
             'arm32_little_endian': header[4] == 1 and header[5] == 1 and machine == 40,
-            'needed': sorted(set(needed)), 'undefined_symbols': undefined}
+            'needed': sorted(set(needed)), 'soname': sonames[0] if sonames else None,
+            'undefined_symbols': undefined}
 
 
 def verify(image, baseline, output):
@@ -116,3 +120,4 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
+

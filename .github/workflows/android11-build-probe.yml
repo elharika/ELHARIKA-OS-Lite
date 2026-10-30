@@ -1,27 +1,6 @@
 name: Android 11 SM-P900 build probe
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/android11-build-probe.yml
-      - scripts/bounded_build.py
-      - apps/**
-      - tests/test_android_manifests.py
-      - scripts/generate_vendor_rules.py
-      - scripts/assemble_vendor_tree.py
-      - rom/roomservice.xml
-      - scripts/prepare_product.py
-      - scripts/harden_sepolicy.py
-      - scripts/fix_wifi_policy.py
-      - scripts/fix_touch_policy.py
-      - scripts/fix_graphics_policy.py
-      - scripts/fix_init_policy.py
-      - scripts/fix_camera_hosting.py
-      - scripts/fix_modem_policy.py
-      - scripts/fix_sensor_policy.py
-      - scripts/fix_core_data_labels.py
-      - scripts/apply_device_fixes.py
-      - scripts/apply_minimal_profile.py
 permissions:
   contents: read
 concurrency:
@@ -68,7 +47,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p test_stock_download.py -v
           sudo apt-get update -qq
-          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf
           stock_work="$RUNNER_TEMP/elharika-stock-input"
           mkdir -p "$stock_work"
           python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
@@ -256,3 +235,4 @@ jobs:
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
+
