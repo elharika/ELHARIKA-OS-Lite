@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
 Do not build system.img.
-Trigger revision: 5
-Reason: replace upstream kernel/configs with one fully pinned no-groups declaration to avoid duplicate path while retaining kernel-config-soong-rules.
+Trigger revision: 6
+Reason: restore only the pinned platform/test/suite_harness project required to register tradefed_binary_host in the reduced source graph.
