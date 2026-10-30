@@ -12,26 +12,36 @@ class SyncTests(unittest.TestCase):
     def test_collision_removed_and_pins_kept(self):
         base=ET.fromstring('<manifest><project name="old" path="device/samsung/v1awifi"/></manifest>')
         out=overlay(base,self._hardware())
-        self.assertEqual(out.find('remove-project').get('name'),'old')
+        removes=[p for p in out.findall('remove-project') if p.get('name')=='old']
+        self.assertEqual(len(removes),1)
         hardware=[p for p in out.findall('project') if p.get('path')=='device/samsung/v1awifi'][0]
         self.assertEqual(hardware.get('revision'),'a'*40)
         self.assertEqual(hardware.get('remote'),'elharika-hardware')
 
-    def test_reduced_manifest_readds_only_pinned_kernel_configs(self):
+    def test_reduced_manifest_replaces_kernel_configs_with_single_pin(self):
         base=ET.fromstring('<manifest><project name="LineageOS/android_build" path="build/make"/></manifest>')
         out=overlay(base,self._hardware())
         required=[p for p in out.findall('project') if p.get('path')=='kernel/configs']
+        removes=[p for p in out.findall('remove-project') if p.get('name')=='kernel/configs']
         self.assertEqual(len(required),1)
+        self.assertEqual(len(removes),1)
+        self.assertEqual(removes[0].get('optional'),'true')
         self.assertEqual(required[0].get('name'),'kernel/configs')
         self.assertEqual(required[0].get('remote'),'elharika-aosp')
         self.assertEqual(required[0].get('revision'),REQUIRED_PLATFORM_PROJECTS[0]['revision'])
         self.assertIsNone(required[0].get('groups'))
 
-    def test_full_manifest_does_not_duplicate_kernel_configs(self):
+    def test_full_manifest_replaces_not_duplicates_kernel_configs(self):
         pin=REQUIRED_PLATFORM_PROJECTS[0]['revision']
-        base=ET.fromstring('<manifest><project name="kernel/configs" path="kernel/configs" remote="aosp" revision="'+pin+'"/></manifest>')
+        base=ET.fromstring('<manifest><project name="kernel/configs" path="kernel/configs" remote="aosp" revision="'+pin+'" groups="pdk,vts"/></manifest>')
         out=overlay(base,self._hardware())
-        self.assertFalse(any(p.get('path')=='kernel/configs' for p in out.findall('project')))
+        required=[p for p in out.findall('project') if p.get('path')=='kernel/configs']
+        removes=[p for p in out.findall('remove-project') if p.get('name')=='kernel/configs']
+        self.assertEqual(len(required),1)
+        self.assertEqual(len(removes),1)
+        self.assertEqual(removes[0].get('optional'),'true')
+        self.assertIsNone(required[0].get('groups'))
+        self.assertEqual(required[0].get('revision'),pin)
 
     def test_required_platform_project_is_fully_pinned(self):
         for project in REQUIRED_PLATFORM_PROJECTS:
