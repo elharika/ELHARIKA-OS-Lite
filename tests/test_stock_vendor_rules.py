@@ -7,7 +7,7 @@ import unittest
 import subprocess
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from generate_vendor_rules import generate,SONAME_FIXUPS
+from generate_vendor_rules import generate,SONAME_FIXUPS,AUDIO_SYMBOLS
 from verify_stock_blobs import elf_info
 
 class VendorRuleTests(unittest.TestCase):
@@ -47,13 +47,15 @@ class VendorRuleTests(unittest.TestCase):
             baseline['comparison']['records'][0]['sha256']=hashlib.sha256(fixture.read_bytes()).hexdigest()
             with patch.dict(SONAME_FIXUPS,{dest:(baseline['comparison']['records'][0]['sha256'],'libLifevibes_lvverx.so')}), patch('generate_vendor_rules.elf_info',return_value={
                     'arm32_little_endian':True,'needed':['libc.so'],
-                    'soname':'libLifevibes_lvverx.so'}):
+                    'soname':'libLifevibes_lvverx.so',
+                    'undefined_symbols':[{'name':s} for s in AUDIO_SYMBOLS]}):
                 generate(baseline,stage,root/'out')
             vendor=root/'out/samsung/universal5420-common'
             bp=(vendor/'Android.bp').read_text()
             mk=(vendor/'Android.mk').read_text()
             self.assertNotIn('stem:',bp)
             self.assertIn('check_elf_files: true',bp)
+            self.assertIn('libelharika_aeabi_compat',bp)
             self.assertIn('$(TARGET_OUT_VENDOR)/lib/soundfx/libLifevibes_lvverx.so: $(TARGET_OUT_VENDOR)/lib/soundfx/liblvverx.so',mk)
             self.assertEqual(fixture.read_bytes(),b'fixture-audio')
 

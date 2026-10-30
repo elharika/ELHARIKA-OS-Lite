@@ -3,7 +3,7 @@ name: SM-P900 vendor ELF preflight
 on:
   push:
     branches:
-      - fix/verified-stock-elf-build
+      - fix/legacy-audio-builtins
     paths:
       - scripts/assemble_vendor_tree.py
       - scripts/generate_vendor_rules.py
@@ -61,6 +61,18 @@ jobs:
           python3 scripts/assemble_vendor_tree.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/assembled"
           (cd "$RUNNER_TEMP/assembled" && sha256sum --check --quiet SHA256SUMS)
           cp "$RUNNER_TEMP/assembled/assembly-report.json" evidence/assembly-report.json
+          python3 - <<'PYAUDIO'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from verify_stock_blobs import elf_info
+          root=Path(os.environ['RUNNER_TEMP'],'assembled/samsung/universal5420-common/proprietary/vendor/lib/soundfx')
+          for name in ('liblvverx.so','liblvvetx.so'):
+              info=elf_info(root/name)
+              assert info['soname']==name
+              assert 'libelharika_aeabi_compat.so' in info['needed']
+              print(name,'ELF dependency checked')
+          PYAUDIO
           python3 - <<'PYSONAME'
           import json, os, sys
           from pathlib import Path

@@ -10,6 +10,8 @@ from verify_stock_blobs import digest,elf_info,safe_path
 TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-common','v1awifi')}
 STLPORT_SHA256='9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a'
 AEABI_SYMBOLS={'__aeabi_ldivmod','__aeabi_uldivmod'}
+AUDIO_SYMBOLS={'__aeabi_idiv','__aeabi_idivmod','__aeabi_ldivmod',
+               '__aeabi_uidiv','__aeabi_uidivmod','__popcountsi2'}
 SONAME_FIXUPS={
     'vendor/lib/soundfx/liblvverx.so': ('3bcaa67077d80db7deb7dd6849e0abb4772ccdb238752a2de133cd140288685a', 'libLifevibes_lvverx.so'),
     'vendor/lib/soundfx/liblvvetx.so': ('18e517b4533cf4f53f3b911b3b635f65f7d9bfcc766f073e9646ed7e486238a2', 'libLifevibes_lvvetx.so'),
@@ -62,6 +64,14 @@ def generate(baseline,stage,output):
                         or 'libelharika_aeabi_compat' in needed):
                     raise ValueError('Unexpected SM-P900 libstlport ABI')
                 needed.append('libelharika_aeabi_compat')
+            if dest in ('vendor/lib/soundfx/liblvverx.so','vendor/lib/soundfx/liblvvetx.so'):
+                imports={s['name'] for s in info['undefined_symbols']}
+                if (owner!='universal5420-common' or
+                        SONAME_FIXUPS[dest]!=(r['sha256'],soname) or
+                        not AUDIO_SYMBOLS.issubset(imports) or
+                        'libelharika_aeabi_compat' in needed):
+                    raise ValueError('Unexpected SM-P900 Lifevibes ABI: '+dest)
+                needed.append('libelharika_aeabi_compat')
             # Legacy source HALs are Android.mk modules. Soong cannot depend on
             # Make-only modules; define their consumers in Make as well.
             if name in ('libexynoscamera', 'gpsd'):
@@ -107,7 +117,7 @@ def generate(baseline,stage,output):
                 else:target='$(TARGET_COPY_OUT_SYSTEM)/'+dest
                 mk+=f'PRODUCT_COPY_FILES += vendor/samsung/{owner}/proprietary/{dest}:{target}\n'
         if owner=='universal5420-common':
-            bp+='''// Exact SM-P900 legacy STLport ARM EABI dependency; not a runtime approval.
+            bp+='''// Exact SM-P900 legacy ARM EABI dependency; not a runtime approval.
 cc_library_shared {
     name: "libelharika_aeabi_compat",
     owner: "elharika",

@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import subprocess
-from generate_vendor_rules import generate,TREES,STLPORT_SHA256,AEABI_SYMBOLS,SONAME_FIXUPS
+from generate_vendor_rules import generate,TREES,STLPORT_SHA256,AEABI_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
 from verify_stock_blobs import safe_path,elf_info,digest
 
 
@@ -69,6 +69,31 @@ def normalize_pinned_soname(path, destination):
             'runtime_tested':False}
 
 
+def add_audio_compat_dependency(path, destination):
+    """Attach the audited EABI bridge after normalizing the stock SONAME."""
+    if destination not in ('vendor/lib/soundfx/liblvverx.so',
+                           'vendor/lib/soundfx/liblvvetx.so'):
+        raise ValueError('Unexpected sound effect path')
+    before=elf_info(path)
+    if (not before or not before['arm32_little_endian'] or
+            before['soname']!=Path(destination).name or
+            not AUDIO_SYMBOLS.issubset({s['name'] for s in before['undefined_symbols']}) or
+            'libelharika_aeabi_compat.so' in before['needed']):
+        raise ValueError('Unexpected Lifevibes ELF: '+destination)
+    old_sha=digest(path)
+    subprocess.run(['patchelf','--add-needed','libelharika_aeabi_compat.so',str(path)],
+                   check=True,timeout=30)
+    after=elf_info(path)
+    if (not after or not after['arm32_little_endian'] or
+            after['soname']!=before['soname'] or
+            set(after['needed'])!=set(before['needed'])|{'libelharika_aeabi_compat.so'} or
+            after['undefined_symbols']!=before['undefined_symbols']):
+        raise ValueError('Lifevibes dependency patch changed ELF imports: '+destination)
+    return {'file':destination,
+            'change':'Add explicit ARM EABI compatibility dependency for six stock imports',
+            'before_sha256':old_sha,'after_sha256':digest(path),'runtime_tested':False}
+
+
 def assemble(baseline,stage,output):
     if output.exists():raise ValueError('Output must be new')
     output.parent.mkdir(parents=True,exist_ok=True)
@@ -94,6 +119,8 @@ def assemble(baseline,stage,output):
             owner=TREES[record['tree']]
             path=root/'samsung'/owner/'proprietary'/dest
             summary['fixups'].append(normalize_pinned_soname(path,dest))
+            if dest.startswith('vendor/lib/soundfx/'):
+                summary['fixups'].append(add_audio_compat_dependency(path,dest))
         # Explicit dependency on Mali output, not an unrelated LOCAL_INSTALLED_MODULE.
         links='''# Experimental SM-P900 OpenCL aliases; runtime untested.
 ifeq ($(TARGET_DEVICE),v1awifi)
