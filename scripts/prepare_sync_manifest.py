@@ -6,15 +6,23 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# repo init group filtering drops kernel/configs because upstream marks it pdk,vts,
-# but Soong still needs kernel-config-soong-rules during ordinary product graph setup.
-# Keep exactly the revision observed in the last known-good full Android 11 sync.
+# Reduced repo groups save tens of GB, but a few build-critical projects are
+# tagged upstream as pdk/cts/vts and therefore disappear even though ordinary
+# Soong product graph setup still references their module types/rules.
+# Keep only the exact projects proven necessary by failed preflights, pinned to
+# revisions captured from the last known-good full Android 11 sync.
 REQUIRED_PLATFORM_PROJECTS = (
     {
         'name': 'kernel/configs',
         'path': 'kernel/configs',
         'remote': 'elharika-aosp',
         'revision': 'e4102999005f8f3c8db1fdacfba80a2c581a72f1',
+    },
+    {
+        'name': 'platform/test/suite_harness',
+        'path': 'test/suite_harness',
+        'remote': 'elharika-aosp',
+        'revision': '3a5b1207c2177d72db24da78aba86574d95c26f8',
     },
 )
 
@@ -28,12 +36,10 @@ def overlay(platform, hardware):
     removed = set()
     paths = set()
 
-    # kernel/configs can still exist in the upstream manifest even when the
-    # selected repo groups exclude it from the exported/synced project set.
-    # A second project with the same path therefore causes repo to abort before
-    # sync.  Remove the upstream declaration first (optionally, because the
-    # exported manifest may not show it), then add one fully-pinned declaration
-    # without pdk/vts groups.  Do not restore the complete pdk/vts groups.
+    # These projects can still exist in the upstream manifest while repo group
+    # filtering omits them from the actual sync. Adding a second declaration at
+    # the same path causes repo to abort. Remove the upstream declaration first,
+    # then re-add exactly one fully pinned declaration without pdk/cts/vts groups.
     for required in REQUIRED_PLATFORM_PROJECTS:
         ET.SubElement(
             out,
