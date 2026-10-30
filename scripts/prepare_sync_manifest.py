@@ -28,13 +28,19 @@ def overlay(platform, hardware):
     removed = set()
     paths = set()
 
-    # Re-add only build-critical platform projects that repo group filtering can
-    # legitimately omit.  Do not restore whole pdk/vts groups.
-    platform_paths = {p.get('path', p.get('name')) for p in projects}
-    platform_names = {p.get('name') for p in projects}
+    # kernel/configs can still exist in the upstream manifest even when the
+    # selected repo groups exclude it from the exported/synced project set.
+    # A second project with the same path therefore causes repo to abort before
+    # sync.  Remove the upstream declaration first (optionally, because the
+    # exported manifest may not show it), then add one fully-pinned declaration
+    # without pdk/vts groups.  Do not restore the complete pdk/vts groups.
     for required in REQUIRED_PLATFORM_PROJECTS:
-        if required['path'] in platform_paths or required['name'] in platform_names:
-            continue
+        ET.SubElement(
+            out,
+            'remove-project',
+            {'name': required['name'], 'optional': 'true'},
+        )
+        removed.add(required['name'])
         out.append(ET.Element('project', required))
 
     for project in hardware.findall('project'):
