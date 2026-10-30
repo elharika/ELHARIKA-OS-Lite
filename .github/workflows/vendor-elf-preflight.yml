@@ -1,0 +1,99 @@
+name: SM-P900 vendor ELF preflight
+
+on:
+  push:
+    branches:
+      - fix/verified-stock-elf-build
+    paths:
+      - scripts/assemble_vendor_tree.py
+      - scripts/generate_vendor_rules.py
+      - scripts/verify_stock_blobs.py
+      - tests/test_stock_vendor_rules.py
+      - .github/workflows/vendor-elf-preflight.yml
+
+permissions:
+  contents: read
+
+jobs:
+  vendor-elf-preflight:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test vendor generation
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -v
+          python3 -m compileall -q scripts tests
+      - name: Inspect exact-model stock binaries and generated rules
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs binutils patchelf
+          mkdir -p evidence
+          python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$RUNNER_TEMP/stock.zip"
+          python3 scripts/unpack_stock_system.py "$RUNNER_TEMP/stock.zip" "$RUNNER_TEMP/expanded"
+          python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$RUNNER_TEMP/minimal.json"
+          python3 scripts/stock_candidate_baseline.py "$RUNNER_TEMP/minimal.json" "$RUNNER_TEMP/candidates.json"
+          python3 scripts/stage_stock_vendor.py --system-image "$RUNNER_TEMP/expanded/system.ext4" --baseline "$RUNNER_TEMP/candidates.json" --output "$RUNNER_TEMP/stage"
+          python3 - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from verify_stock_blobs import elf_info
+          base=json.loads(Path(os.environ['RUNNER_TEMP'], 'candidates.json').read_text())
+          staged=Path(os.environ['RUNNER_TEMP'], 'stage/proprietary')
+          entries=[]
+          for r in base['comparison']['records']:
+              path=staged/r['destination']
+              info=elf_info(path)
+              if info:
+                  entries.append({'destination':r['destination'], 'sha256':r['sha256'],
+                                  'soname':info['soname'], 'needed':info['needed'],
+                                  'arm32':info['arm32_little_endian'],
+                                  'undefined_symbols':len(info['undefined_symbols'])})
+          Path('evidence/elf-inventory.json').write_text(json.dumps(entries,indent=2)+'\n')
+          print('Inspected ELF modules:',len(entries))
+          PY
+          python3 scripts/generate_vendor_rules.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/vendor-rules"
+          python3 scripts/assemble_vendor_tree.py "$RUNNER_TEMP/candidates.json" "$RUNNER_TEMP/stage" "$RUNNER_TEMP/assembled"
+          (cd "$RUNNER_TEMP/assembled" && sha256sum --check --quiet SHA256SUMS)
+          cp "$RUNNER_TEMP/assembled/assembly-report.json" evidence/assembly-report.json
+          python3 - <<'PYSONAME'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from generate_vendor_rules import SONAME_FIXUPS,TREES
+          from verify_stock_blobs import elf_info,digest
+          base=json.loads(Path(os.environ['RUNNER_TEMP'],'candidates.json').read_text())
+          root=Path(os.environ['RUNNER_TEMP'],'assembled')
+          for dest,(old_sha,old_soname) in SONAME_FIXUPS.items():
+              row=next(r for r in base['comparison']['records'] if r['destination']==dest)
+              assert row['sha256']==old_sha
+              path=root/'samsung'/TREES[row['tree']]/'proprietary'/dest
+              info=elf_info(path)
+              assert info['soname']==Path(dest).name,(dest,info['soname'])
+              print(dest,old_soname,'->',info['soname'],digest(path))
+          PYSONAME
+          readelf -W -d --dyn-syms "$RUNNER_TEMP/assembled/samsung/universal5420-common/proprietary/vendor/lib/libstlport.so" > evidence/libstlport-patched.readelf.txt
+          cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.bp" evidence/Android.bp
+          cp "$RUNNER_TEMP/vendor-rules/samsung/universal5420-common/Android.mk" evidence/Android.mk
+          cp "$RUNNER_TEMP/vendor-rules/samsung/v1awifi/Android.bp" evidence/gps-Android.bp
+          cp "$RUNNER_TEMP/vendor-rules/samsung/v1awifi/Android.mk" evidence/gps-Android.mk
+          for name in liblvverx liblvvetx libstlport; do
+            case "$name" in
+              libstlport) path="$RUNNER_TEMP/stage/proprietary/vendor/lib/libstlport.so" ;;
+              *) path="$RUNNER_TEMP/stage/proprietary/vendor/lib/soundfx/$name.so" ;;
+            esac
+            readelf -W -d --dyn-syms "$path" > "evidence/$name.readelf.txt"
+          done
+      - name: Upload preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SM-P900-vendor-elf-preflight-evidence
+          path: evidence/
+          retention-days: 7
+

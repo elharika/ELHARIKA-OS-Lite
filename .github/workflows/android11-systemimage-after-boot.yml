@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf
           stock_work="$RUNNER_TEMP/elharika-stock-input"
           mkdir -p "$stock_work"
           python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
@@ -148,6 +148,22 @@ jobs:
           lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
           env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
 
+      - name: Check disk budget before compiling and validate legacy ELF modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_bytes=$(df -B1 --output=avail "$RUNNER_TEMP/android11" | tail -1)
+          test "$free_bytes" -ge $((35 * 1024 * 1024 * 1024)) || {
+            echo "Insufficient free disk after source sync: $free_bytes bytes" >&2
+            exit 1
+          }
+          cd "$RUNNER_TEMP/android11"
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
+            --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
+            --minutes 35 --reserve-gib 6 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 liblvverx liblvvetx gps.universal5420 libstlport libelharika_aeabi_compat'
+
       - name: Build system image only
         shell: bash
         run: |
@@ -204,3 +220,4 @@ jobs:
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
+
