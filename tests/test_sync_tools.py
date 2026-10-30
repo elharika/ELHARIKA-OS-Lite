@@ -9,6 +9,9 @@ class SyncTests(unittest.TestCase):
     def _hardware(self):
         return ET.fromstring('<manifest><project name="new" path="device/samsung/v1awifi" revision="'+('a'*40)+'"/></manifest>')
 
+    def _required_by_path(self):
+        return {p['path']: p for p in REQUIRED_PLATFORM_PROJECTS}
+
     def test_collision_removed_and_pins_kept(self):
         base=ET.fromstring('<manifest><project name="old" path="device/samsung/v1awifi"/></manifest>')
         out=overlay(base,self._hardware())
@@ -18,34 +21,47 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(hardware.get('revision'),'a'*40)
         self.assertEqual(hardware.get('remote'),'elharika-hardware')
 
-    def test_reduced_manifest_replaces_kernel_configs_with_single_pin(self):
+    def _assert_required_replaced_once(self, out, path):
+        expected=self._required_by_path()[path]
+        required=[p for p in out.findall('project') if p.get('path')==path]
+        removes=[p for p in out.findall('remove-project') if p.get('name')==expected['name']]
+        self.assertEqual(len(required),1)
+        self.assertEqual(len(removes),1)
+        self.assertEqual(removes[0].get('optional'),'true')
+        self.assertEqual(required[0].get('name'),expected['name'])
+        self.assertEqual(required[0].get('remote'),'elharika-aosp')
+        self.assertEqual(required[0].get('revision'),expected['revision'])
+        self.assertIsNone(required[0].get('groups'))
+
+    def test_reduced_manifest_readds_only_required_platform_pins(self):
         base=ET.fromstring('<manifest><project name="LineageOS/android_build" path="build/make"/></manifest>')
         out=overlay(base,self._hardware())
-        required=[p for p in out.findall('project') if p.get('path')=='kernel/configs']
-        removes=[p for p in out.findall('remove-project') if p.get('name')=='kernel/configs']
-        self.assertEqual(len(required),1)
-        self.assertEqual(len(removes),1)
-        self.assertEqual(removes[0].get('optional'),'true')
-        self.assertEqual(required[0].get('name'),'kernel/configs')
-        self.assertEqual(required[0].get('remote'),'elharika-aosp')
-        self.assertEqual(required[0].get('revision'),REQUIRED_PLATFORM_PROJECTS[0]['revision'])
-        self.assertIsNone(required[0].get('groups'))
+        self._assert_required_replaced_once(out,'kernel/configs')
+        self._assert_required_replaced_once(out,'test/suite_harness')
+        paths=[p.get('path') for p in out.findall('project')]
+        self.assertEqual(paths.count('kernel/configs'),1)
+        self.assertEqual(paths.count('test/suite_harness'),1)
 
-    def test_full_manifest_replaces_not_duplicates_kernel_configs(self):
-        pin=REQUIRED_PLATFORM_PROJECTS[0]['revision']
-        base=ET.fromstring('<manifest><project name="kernel/configs" path="kernel/configs" remote="aosp" revision="'+pin+'" groups="pdk,vts"/></manifest>')
+    def test_full_manifest_replaces_not_duplicates_required_projects(self):
+        pins=self._required_by_path()
+        base=ET.fromstring(
+            '<manifest>'
+            '<project name="kernel/configs" path="kernel/configs" remote="aosp" revision="'+pins['kernel/configs']['revision']+'" groups="pdk,vts"/>'
+            '<project name="platform/test/suite_harness" path="test/suite_harness" remote="aosp" revision="'+pins['test/suite_harness']['revision']+'" groups="cts,pdk-cw-fs,pdk-fs"/>'
+            '</manifest>'
+        )
         out=overlay(base,self._hardware())
-        required=[p for p in out.findall('project') if p.get('path')=='kernel/configs']
-        removes=[p for p in out.findall('remove-project') if p.get('name')=='kernel/configs']
-        self.assertEqual(len(required),1)
-        self.assertEqual(len(removes),1)
-        self.assertEqual(removes[0].get('optional'),'true')
-        self.assertIsNone(required[0].get('groups'))
-        self.assertEqual(required[0].get('revision'),pin)
+        self._assert_required_replaced_once(out,'kernel/configs')
+        self._assert_required_replaced_once(out,'test/suite_harness')
 
-    def test_required_platform_project_is_fully_pinned(self):
+    def test_required_platform_projects_are_exact_and_fully_pinned(self):
+        projects=self._required_by_path()
+        self.assertEqual(set(projects),{'kernel/configs','test/suite_harness'})
+        self.assertEqual(projects['kernel/configs']['revision'],'e4102999005f8f3c8db1fdacfba80a2c581a72f1')
+        self.assertEqual(projects['test/suite_harness']['revision'],'3a5b1207c2177d72db24da78aba86574d95c26f8')
         for project in REQUIRED_PLATFORM_PROJECTS:
             self.assertRegex(project['revision'],r'^[0-9a-f]{40}$')
+            self.assertEqual(project['remote'],'elharika-aosp')
 
     def test_unpinned_rejected(self):
         with self.assertRaises(ValueError):overlay(ET.Element('manifest'),ET.fromstring('<manifest><project name="x" path="device/samsung/v1awifi" revision="main"/></manifest>'))
