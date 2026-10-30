@@ -1,0 +1,225 @@
+name: SM-P900 Android 11 full preflight (no system image)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android11-full-preflight.yml'
+      - 'ci/run-android11-full-preflight.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android11-v1awifi-full-preflight
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 210
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate repository tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest discover -s tests -v 2>&1 | tee evidence/project-tests.log
+          python3 -m compileall -q scripts tests
+          for script in scripts/*.sh; do bash -n "$script"; done
+
+      - name: Reclaim hosted runner disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTIONS:-}" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          df -B1 > evidence/disk-before-cleanup.txt
+          if command -v docker >/dev/null 2>&1; then
+            docker image prune --all --force > evidence/docker-cleanup.txt
+            docker builder prune --all --force >> evidence/docker-cleanup.txt
+          fi
+          sudo apt-get clean
+          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/Go /opt/hostedtoolcache/Ruby /opt/hostedtoolcache/Java_Temurin /opt/hostedtoolcache/Java_Adopt_jdk /opt/hostedtoolcache/Java_Zulu_jdk /opt/hostedtoolcache/Java_Microsoft_jdk /opt/hostedtoolcache/node /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /usr/local/julia /usr/local/share/powershell /usr/share/miniconda /opt/az /opt/microsoft /opt/google /usr/local/share/chromium /usr/share/gradle /usr/share/sbt /usr/local/share/vcpkg; do
+            if [ -L "$tool_path" ]; then
+              continue
+            fi
+            if [ -d "$tool_path" ]; then
+              sudo du -sx -B1 "$tool_path" >> evidence/removed-tools-sizes.txt
+              sudo rm -rf --one-file-system -- "$tool_path"
+            fi
+          done
+          df -B1 | tee evidence/disk-after-cleanup.txt
+
+      - name: Install and verify required host tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf
+          {
+            python3 --version
+            git --version
+            patchelf --version
+            readelf --version | head -1
+            debugfs -V 2>&1 | head -1
+            lzop --version | head -1
+          } | tee evidence/tool-versions.txt
+          for tool in python3 git patchelf readelf debugfs sha256sum lzop bc; do
+            command -v "$tool" >/dev/null
+          done
+
+      - name: Assemble and audit exact SM-P900 vendor tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          stock_work="$RUNNER_TEMP/elharika-stock-input"
+          mkdir -p "$stock_work"
+          python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
+          python3 scripts/unpack_stock_system.py "$stock_work/stock.zip" "$stock_work/expanded"
+          python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$stock_work/minimal.json"
+          python3 scripts/stock_candidate_baseline.py "$stock_work/minimal.json" "$stock_work/candidates.json"
+          python3 scripts/stage_stock_vendor.py --system-image "$stock_work/expanded/system.ext4" --baseline "$stock_work/candidates.json" --output "$stock_work/stage"
+          python3 scripts/assemble_vendor_tree.py "$stock_work/candidates.json" "$stock_work/stage" "$RUNNER_TEMP/elharika-vendor"
+          (cd "$RUNNER_TEMP/elharika-vendor" && sha256sum --check --quiet SHA256SUMS)
+          python3 scripts/audit_assembled_vendor.py "$RUNNER_TEMP/elharika-vendor" evidence/vendor-elf-audit.json
+          cp "$RUNNER_TEMP/elharika-vendor/assembly-report.json" evidence/vendor-assembly.json
+          cp "$RUNNER_TEMP/elharika-vendor/SHA256SUMS" evidence/vendor-source-sha256.txt
+          rm -rf -- "$stock_work"
+          df -B1 > evidence/disk-after-vendor.txt
+
+      - name: Sync reduced Android 11 source set for Linux ARM build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/android11"
+          git clone --depth=1 https://gerrit.googlesource.com/git-repo "$RUNNER_TEMP/repo-tool"
+          cd "$RUNNER_TEMP/android11"
+          python3 "$RUNNER_TEMP/repo-tool/repo" init \
+            -u https://github.com/LineageOS/android \
+            -b 88e370827501474db8f1905128fdea2e8128ead4 \
+            -g default,-cts,-vts,-pdk-fs,-pdk-cw-fs -p linux \
+            --depth=1 --no-clone-bundle \
+            --repo-url=https://gerrit.googlesource.com/git-repo --repo-rev=stable
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
+          mkdir -p .repo/local_manifests
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_sync_manifest.py" \
+            "$GITHUB_WORKSPACE/evidence/base-manifest.xml" \
+            "$GITHUB_WORKSPACE/rom/roomservice.xml" .repo/local_manifests/elharika.xml
+          cp .repo/local_manifests/elharika.xml "$GITHUB_WORKSPACE/evidence/hardware-overlay.xml"
+          python3 "$RUNNER_TEMP/repo-tool/repo" sync -c -j4 \
+            --no-clone-bundle --no-tags --optimized-fetch --fail-fast \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/sync.log"
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
+          test "$(git -C vendor/apn rev-parse HEAD)" = cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e
+          du -sh . > "$GITHUB_WORKSPACE/evidence/source-size.txt"
+          du -x -B1 --max-depth=2 . > "$GITHUB_WORKSPACE/evidence/source-footprint.txt"
+          df -B1 | tee "$GITHUB_WORKSPACE/evidence/disk-after-sync.txt"
+          free_bytes=$(df -B1 --output=avail . | tail -1)
+          test "$free_bytes" -ge 50000000000 || {
+            echo "PRECHECK_BLOCKED: need at least 50,000,000,000 free bytes after sync; got $free_bytes" >&2
+            exit 1
+          }
+
+      - name: Integrate vendor tree and product fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          android_root="$RUNNER_TEMP/android11"
+          mkdir -p "$android_root/vendor/samsung"
+          for device in universal5420-common v1a-common v1awifi; do
+            test ! -e "$android_root/vendor/samsung/$device"
+            test -f "$RUNNER_TEMP/elharika-vendor/samsung/$device/$device-vendor.mk"
+            mv "$RUNNER_TEMP/elharika-vendor/samsung/$device" "$android_root/vendor/samsung/"
+          done
+          python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/prepare_product.py "$android_root"
+          python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_touch_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_init_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_camera_hosting.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
+
+      - name: Validate product graph without building system image
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android11"
+          set +u
+          source build/envsetup.sh
+          lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
+          env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
+          set -u
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
+            --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence/graph-check" \
+            --minutes 35 --reserve-gib 12 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 nothing'
+
+      - name: Compile all 14 legacy ELF modules and custom apps only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android11"
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
+            --root "$RUNNER_TEMP/android11" \
+            --evidence "$GITHUB_WORKSPACE/evidence/vendor-module-build" \
+            --minutes 90 --reserve-gib 10 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 libexynoscamera libvdis libGLES_mali mcDriverDaemon libMcClient libMcRegistry liblvverx liblvvetx libstlport libak8963c liboemcrypto gpsd gps.universal5420 sensors.universal5420 libelharika_aeabi_compat ElharikaLauncherLite ElharikaPenTools'
+          df -B1 | tee "$GITHUB_WORKSPACE/evidence/disk-after-module-preflight.txt"
+          free_bytes=$(df -B1 --output=avail . | tail -1)
+          test "$free_bytes" -ge 25000000000 || {
+            echo "PRECHECK_BLOCKED: module preflight left less than 25,000,000,000 bytes free: $free_bytes" >&2
+            exit 1
+          }
+
+      - name: Verify generated EABI bridge and fixed vendor ELFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib"
+          test -f "$root/libelharika_aeabi_compat.so"
+          exports=$(readelf -W --dyn-syms "$root/libelharika_aeabi_compat.so")
+          for symbol in __aeabi_idiv __aeabi_idivmod __aeabi_ldivmod __aeabi_uidiv __aeabi_uidivmod __aeabi_uldivmod __popcountsi2; do
+            grep -E "GLOBAL.*${symbol}$" <<<"$exports" >/dev/null
+          done
+          for file in "$root/libstlport.so" "$root/soundfx/liblvverx.so" "$root/soundfx/liblvvetx.so"; do
+            readelf -W -d "$file" | grep -F '[libelharika_aeabi_compat.so]' >/dev/null
+          done
+          for pair in \
+            "$root/soundfx/liblvverx.so:liblvverx.so" \
+            "$root/soundfx/liblvvetx.so:liblvvetx.so" \
+            "$root/hw/gps.universal5420.so:gps.universal5420.so"; do
+            file=${pair%%:*}; expected=${pair##*:}
+            readelf -W -d "$file" | grep -F "(SONAME)" | grep -F "[$expected]" >/dev/null
+          done
+          echo 'All pinned ELF fixups verified after Android module build.' | tee evidence/final-elf-check.txt
+
+      - name: Record final preflight footprint
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          df -B1 > evidence/disk-final.txt
+          if [ -d "$RUNNER_TEMP/android11/out" ]; then
+            timeout 90 du -x -B1 --max-depth=2 "$RUNNER_TEMP/android11/out" > evidence/out-footprint.txt || true
+          fi
+
+      - name: Upload preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-full-preflight-evidence
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: error
