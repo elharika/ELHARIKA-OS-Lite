@@ -37,6 +37,18 @@ def dynamic_tags(path: Path):
     }
 
 
+def expected_alias_rule(dest: str, old_soname: str) -> str:
+    """Return the exact Android.mk alias rule emitted by generate_vendor_rules."""
+    path = PurePosixPath(dest)
+    if not dest.startswith('vendor/'):
+        raise ValueError('SONAME alias destination must live under vendor/: ' + dest)
+    relative = dest[len('vendor/'):]
+    parent = str(PurePosixPath(relative).parent)
+    target = '$(TARGET_OUT_VENDOR)/' + (parent + '/' if parent != '.' else '') + old_soname
+    source = '$(TARGET_OUT_VENDOR)/' + relative
+    return f'{target}: {source}'
+
+
 def audit(root: Path, report: Path):
     root = root.resolve()
     if not (root / 'SHA256SUMS').is_file():
@@ -96,10 +108,10 @@ def audit(root: Path, report: Path):
             raise ValueError('Pinned SONAME fixup ELF missing: ' + dest)
         owner = matched[0]['tree']
         makefile = (root / 'samsung' / owner / 'Android.mk').read_text()
-        expected_target = str(PurePosixPath(dest).parent / old_soname)
-        if expected_target not in makefile:
-            raise ValueError('Legacy SONAME alias rule missing: ' + expected_target)
-        alias_checks.append({'destination': dest, 'legacy_soname': old_soname})
+        rule = expected_alias_rule(dest, old_soname)
+        if rule not in makefile:
+            raise ValueError('Legacy SONAME alias rule missing: ' + rule)
+        alias_checks.append({'destination': dest, 'legacy_soname': old_soname, 'rule': rule})
 
     bp_text = '\n'.join(p.read_text() for p in sorted((root / 'samsung').glob('*/Android.bp')))
     mk_text = '\n'.join(p.read_text() for p in sorted((root / 'samsung').glob('*/Android.mk')))
