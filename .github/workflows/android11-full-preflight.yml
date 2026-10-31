@@ -198,7 +198,7 @@ jobs:
           for symbol in __aeabi_idiv __aeabi_idivmod __aeabi_ldivmod __aeabi_uidiv __aeabi_uidivmod __aeabi_uldivmod __popcountsi2; do
             grep -E "GLOBAL.*${symbol}$" <<<"$exports" >/dev/null
           done
-          for file in "$root/libstlport.so" "$root/soundfx/liblvverx.so" "$root/soundfx/liblvvetx.so"; do
+          for file in "$root/libstlport.so" "$root/soundfx/liblvverx.so" "$root/soundfx/liblvvetx.so" "$root/hw/sensors.universal5420.so"; do
             readelf -W -d "$file" | grep -F '[libelharika_aeabi_compat.so]' >/dev/null
           done
           for pair in \
