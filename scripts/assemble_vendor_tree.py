@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import subprocess
 from generate_vendor_rules import generate,TREES,STLPORT_SHA256,SENSOR_SHA256,AEABI_SYMBOLS,SENSOR_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
+from patch_mali_compat import patch_tree
 from verify_stock_blobs import safe_path,elf_info,digest
 
 
@@ -166,6 +167,8 @@ endif
         files=sorted(p for p in root.rglob('*') if p.is_file())
         (root/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.relative_to(root).as_posix()+'\n' for p in files))
         root.rename(output)
+        patch_tree(output, output/'mali-compat-report.json')
+        summary=json.loads((output/'assembly-report.json').read_text())
     return summary
 
 if __name__=='__main__':
