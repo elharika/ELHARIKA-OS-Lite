@@ -9,7 +9,9 @@ from verify_stock_blobs import digest,elf_info,safe_path
 
 TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-common','v1awifi')}
 STLPORT_SHA256='9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a'
+SENSOR_SHA256='4e7ab23e9fe49e2650c3f52a17f3d7433b76c4c89733b02d9a7e5dcc742db848'
 AEABI_SYMBOLS={'__aeabi_ldivmod','__aeabi_uldivmod'}
+SENSOR_SYMBOLS={'__aeabi_ldivmod'}
 AUDIO_SYMBOLS={'__aeabi_idiv','__aeabi_idivmod','__aeabi_ldivmod',
                '__aeabi_uidiv','__aeabi_uidivmod','__popcountsi2'}
 SONAME_FIXUPS={
@@ -71,6 +73,13 @@ def generate(baseline,stage,output):
                         not AUDIO_SYMBOLS.issubset(imports) or
                         'libelharika_aeabi_compat' in needed):
                     raise ValueError('Unexpected SM-P900 Lifevibes ABI: '+dest)
+                needed.append('libelharika_aeabi_compat')
+            if dest=='vendor/lib/sensors.universal5420.so':
+                imports={s['name'] for s in info['undefined_symbols']}
+                if (owner!='v1awifi' or r['sha256']!=SENSOR_SHA256
+                        or not SENSOR_SYMBOLS.issubset(imports)
+                        or 'libelharika_aeabi_compat' in needed):
+                    raise ValueError('Unexpected SM-P900 sensors HAL ABI')
                 needed.append('libelharika_aeabi_compat')
             # Legacy source HALs are Android.mk modules. Soong cannot depend on
             # Make-only modules; define their consumers in Make as well.
