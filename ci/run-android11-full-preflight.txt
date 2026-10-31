@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
 Do not build system.img.
-Trigger revision: 9
-Reason: replace the conflicting CTS checkout with exact pinned CTS java_defaults copied into vendor/elharika so suite_harness resolves cts_error_prone_rules without syncing the CTS project.
+Trigger revision: 10
+Reason: restore the exact pinned LineageOS frameworks/base project from the last known-good full Android 11 sync because SettingsLibDefaults and core framework modules are required by the product graph, while keeping the rest of pdk-fs excluded.
