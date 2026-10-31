@@ -14,6 +14,8 @@ class ProductSetupTests(unittest.TestCase):
             root = Path(d)
             (root / 'build').mkdir()
             (root / 'build/envsetup.sh').write_text(ENV_OLD)
+            (root / 'cts').mkdir()
+            (root / 'cts/Android.bp').write_text('// pinned CTS fixture\n')
             for fixture, destination in [('mobicore', 'hardware/samsung_slsi/exynos5420/mobicore/daemon/Android.mk'), ('camera', 'device/samsung/universal5420-common/camera/Android.mk')]:
                 path = root / destination
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -22,6 +24,7 @@ class ProductSetupTests(unittest.TestCase):
             self.assertIn('ElharikaPenTools', (target/'elharika_v1awifi.mk').read_text())
             self.assertTrue((target/'apps/pen/src/main/java/org/elharika/pen/InkView.java').is_file())
             self.assertTrue((target/'apps/launcher/src/main/res/values-ar/strings.xml').is_file())
+            self.assertFalse((target/'compat/cts-defaults/Android.bp').exists())
             with self.assertRaises(ValueError): prepare(PROJECT, root)
             self.assertEqual((root/'build/envsetup.sh').read_text(), ENV_NEW)
 
@@ -41,7 +44,6 @@ class ProductSetupTests(unittest.TestCase):
             ('mobicore', mobicore_selection, {'libMcClient', 'libMcRegistry', 'mcDriverDaemon'}),
         ]:
             text = patch((PROJECT/'tests/fixtures'/f'{fixture}.mk').read_text())
-            # Evaluate actual Make conditionals; avoid executing Android compilation.
             text = re.sub(r'^include \$\(BUILD_(SHARED_LIBRARY|EXECUTABLE)\)$',
                           '$(info MODULE=$(LOCAL_MODULE))', text, flags=re.M)
             text = re.sub(r'^include .*$', '', text, flags=re.M)
@@ -53,10 +55,14 @@ class ProductSetupTests(unittest.TestCase):
                 self.assertEqual(bool(modules & excluded), device != 'v1awifi')
                 if fixture == 'mobicore': self.assertIn('libPaApi', modules)
 
-    def test_missing_platform_rejected(self):
+    def test_missing_platform_or_cts_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             with self.assertRaises(ValueError): prepare(PROJECT, root)
             self.assertFalse((root/'vendor').exists())
+            (root/'build').mkdir()
+            (root/'build/envsetup.sh').write_text(ENV_OLD)
+            with self.assertRaises(ValueError): prepare(PROJECT, root)
+            self.assertFalse((root/'vendor').exists())
 
-if __name__ == '__main__': unittest.main()
+if __name__=='__main__': unittest.main()
