@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
 Do not build system.img.
-Trigger revision: 11
-Reason: restore the exact pinned platform/packages/modules/NetworkStack project from the last known-good full Android 11 sync because frameworks/base TetheringCoverageTests requires libnetworkstackutilsjni_deps, while keeping the rest of pdk-fs excluded.
+Trigger revision: 12
+Reason: restore exact pinned CTS, frameworks/ex, and tools/dexter projects from the last known-good full Android 11 sync so compatibility-device-util-axt, android-common, and slicer_ndk_no_rtti resolve from their real source modules; remove the temporary local CTS defaults copy to avoid duplicate module definitions.
