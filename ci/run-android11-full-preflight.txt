@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
 Do not build system.img.
-Trigger revision: 12
-Reason: restore exact pinned CTS, frameworks/ex, and tools/dexter projects from the last known-good full Android 11 sync so compatibility-device-util-axt, android-common, and slicer_ndk_no_rtti resolve from their real source modules; remove the temporary local CTS defaults copy to avoid duplicate module definitions.
+Trigger revision: 13
+Reason: restore the complete exact-pinned provider batch for every undefined module exposed by preflight #13: development, deqp, robolectric-shadows, frameworks libs/net and minikin, IMS, vCard, Wilhelm, IPsec, SdkExtensions, Car, platform_testing, and platform-compat. Keep source sync reduced and preserve all disk guards.
