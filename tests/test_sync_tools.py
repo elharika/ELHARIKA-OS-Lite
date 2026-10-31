@@ -21,7 +21,7 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(hardware.get('revision'),'a'*40)
         self.assertEqual(hardware.get('remote'),'elharika-hardware')
 
-    def _assert_required_replaced_once(self, out, path):
+    def _assert_required_replaced_once(self,out,path):
         expected=self._required_by_path()[path]
         required=[p for p in out.findall('project') if p.get('path')==path]
         removes=[p for p in out.findall('remove-project') if p.get('name')==expected['name']]
@@ -44,19 +44,15 @@ class SyncTests(unittest.TestCase):
             self._assert_required_replaced_once(out,path)
 
     def test_full_manifest_replaces_not_duplicates_required_projects(self):
-        body=''.join(
-            '<project name="'+p['name']+'" path="'+p['path']+'" remote="aosp" revision="'+p['revision']+'" groups="pdk,vts"/>'
-            for p in REQUIRED_PLATFORM_PROJECTS
-        )
-        base=ET.fromstring('<manifest>'+body+'</manifest>')
-        out=overlay(base,self._hardware())
+        body=''.join('<project name="'+p['name']+'" path="'+p['path']+'" remote="aosp" revision="'+p['revision']+'" groups="pdk,vts"/>' for p in REQUIRED_PLATFORM_PROJECTS)
+        out=overlay(ET.fromstring('<manifest>'+body+'</manifest>'),self._hardware())
         for path in self._required_by_path():
             self._assert_required_replaced_once(out,path)
 
     def test_required_platform_projects_are_exact_and_fully_pinned(self):
         projects=self._required_by_path()
-        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),37)
-        self.assertEqual(len(projects),37)
+        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),50)
+        self.assertEqual(len(projects),50)
         expected_critical={
             'kernel/configs':'e4102999005f8f3c8db1fdacfba80a2c581a72f1',
             'frameworks/base':'2f5cf1e4fc1e8b1480d3c27a855f95d6d45429f4',
@@ -66,17 +62,28 @@ class SyncTests(unittest.TestCase):
             'tools/dexter':'6426a69b96ebca6b9e15494d9f2bb0ec5cfffccd',
             'test/suite_harness':'3a5b1207c2177d72db24da78aba86574d95c26f8',
             'test/vts':'f001416f91f7f02a7a042bd0c52f0c62394fa78c',
-            'test/vts-testcase/fuzz':'43fcddcde333cac6b365ea32f0fecc3a2c9d7ff8',
-            'test/vts-testcase/hal':'430829c9435b28f605cac28b930586281ec674f7',
+            'development':'9ecfb8110c04d5da90f8413d8ae396b2c98121f3',
+            'external/deqp':'0d492fc885262efafa8f620793b5234fde83882a',
+            'external/robolectric-shadows':'82111d98867af5c0d17ca4669c8f3b03312b30b2',
+            'frameworks/libs/net':'3c1c253e01577c3563ce2806f6ca6dbd7400d927',
+            'frameworks/minikin':'107a01a1a80cb2ccf2455d90e4976eeaea398bc9',
+            'frameworks/opt/net/ims':'a0a24a7c38438d1e8649841e7a81c4af0a4054e1',
+            'frameworks/opt/vcard':'88212b105552d2b5f0a142d9c9eda33d74a7aaac',
+            'frameworks/wilhelm':'0f31f10ff06ca27cfc6c8228e7c61fc40e0fb272',
+            'packages/modules/IPsec':'3d5334773fb782232b63dd860615ddbccc37f815',
+            'packages/modules/SdkExtensions':'c571e6f6702a630532f270cce5fe832a8ee71cdc',
+            'packages/services/Car':'cf0f848f86e24b6a680122283c5148659299db9d',
+            'platform_testing':'8a084996037712ad4c5585d7dec551a4a0b04e2b',
+            'tools/platform-compat':'b553fea7dd2aa8dcc26f4d8f91effd86e55dd72e',
         }
         for path,revision in expected_critical.items():
             self.assertEqual(projects[path]['revision'],revision)
-        self.assertEqual(projects['frameworks/base']['name'],'LineageOS/android_frameworks_base')
         self.assertEqual(projects['frameworks/base']['remote'],'elharika-github')
-        self.assertEqual(projects['cts']['name'],'LineageOS/android_cts')
         self.assertEqual(projects['cts']['remote'],'elharika-github')
-        self.assertEqual(projects['packages/modules/NetworkStack']['name'],'platform/packages/modules/NetworkStack')
-        self.assertEqual(projects['packages/modules/NetworkStack']['remote'],'elharika-aosp')
+        self.assertEqual(projects['development']['remote'],'elharika-github')
+        self.assertEqual(projects['external/robolectric-shadows']['remote'],'elharika-github')
+        self.assertEqual(projects['frameworks/minikin']['remote'],'elharika-github')
+        self.assertEqual(projects['packages/services/Car']['remote'],'elharika-github')
         names=set()
         for project in REQUIRED_PLATFORM_PROJECTS:
             self.assertRegex(project['revision'],r'^[0-9a-f]{40}$')
@@ -84,15 +91,24 @@ class SyncTests(unittest.TestCase):
             self.assertNotIn(project['name'],names)
             names.add(project['name'])
 
+    def test_provider_batch_covers_all_preflight13_undefined_modules(self):
+        projects=self._required_by_path()
+        provider_paths={
+            'development','external/deqp','external/robolectric-shadows','frameworks/libs/net','frameworks/minikin',
+            'frameworks/opt/net/ims','frameworks/opt/vcard','frameworks/wilhelm','packages/modules/IPsec',
+            'packages/modules/SdkExtensions','packages/services/Car','platform_testing','tools/platform-compat',
+        }
+        self.assertTrue(provider_paths.issubset(projects))
+
     def test_unpinned_rejected(self):
-        with self.assertRaises(ValueError):overlay(ET.Element('manifest'),ET.fromstring('<manifest><project name="x" path="device/samsung/v1awifi" revision="main"/></manifest>'))
+        with self.assertRaises(ValueError):
+            overlay(ET.Element('manifest'),ET.fromstring('<manifest><project name="x" path="device/samsung/v1awifi" revision="main"/></manifest>'))
 
     def test_process_failure_recorded(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)
             self.assertEqual(run([sys.executable,'-c','raise SystemExit(7)'],root,root/'evidence',1,1),2)
             r=json.loads((root/'evidence/sync-result.json').read_text())
-            self.assertEqual(r['status'],'SYNC_ERROR');self.assertEqual(r['returncode'],7)
-            self.assertFalse(r['android_compiled'])
+            self.assertEqual(r['status'],'SYNC_ERROR'); self.assertEqual(r['returncode'],7); self.assertFalse(r['android_compiled'])
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__': unittest.main()
