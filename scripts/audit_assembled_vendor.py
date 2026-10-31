@@ -3,7 +3,7 @@
 
 This does not claim runtime compatibility. It verifies that every candidate ELF is
 32-bit ARM, all known stock SONAME mismatches were normalized, the EABI bridge is
-attached only to the three audited blobs, and Android build rules keep ELF checks
+attached only to the four audited blobs, and Android build rules keep ELF checks
 enabled. A JSON report is written for CI evidence.
 """
 import argparse
@@ -12,7 +12,7 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-from generate_vendor_rules import AEABI_SYMBOLS, AUDIO_SYMBOLS, SONAME_FIXUPS
+from generate_vendor_rules import AEABI_SYMBOLS, SENSOR_SYMBOLS, AUDIO_SYMBOLS, SONAME_FIXUPS
 from verify_stock_blobs import digest, elf_info
 
 EXPECTED_ELF_COUNT = 14
@@ -21,6 +21,7 @@ COMPAT_PATHS = {
     'vendor/lib/libstlport.so': AEABI_SYMBOLS,
     'vendor/lib/soundfx/liblvverx.so': AUDIO_SYMBOLS,
     'vendor/lib/soundfx/liblvvetx.so': AUDIO_SYMBOLS,
+    'vendor/lib/sensors.universal5420.so': SENSOR_SYMBOLS,
 }
 
 
