@@ -6,11 +6,12 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# Reduced repo groups save tens of GB, but Soong still parses generated VTS/HIDL
-# modules during the product graph. Re-add the exact VTS-group projects from the
-# last known-good full Android 11 sync, plus suite_harness, without restoring CTS
-# or the full PDK groups. Every project is pinned to its captured revision.
-REQUIRED_PLATFORM_PROJECTS = ({'name': 'kernel/configs',
+# Reduced repo groups save tens of GB, but Soong still needs a small set of
+# build-critical projects that upstream classifies inside VTS/PDK filesystem
+# groups. Re-add only the exact projects proven necessary by the preflight/full
+# Android 11 evidence. Every project is pinned to its captured revision.
+REQUIRED_PLATFORM_PROJECTS = (
+ {'name': 'kernel/configs',
   'path': 'kernel/configs',
   'remote': 'elharika-aosp',
   'revision': 'e4102999005f8f3c8db1fdacfba80a2c581a72f1'},
@@ -137,13 +138,19 @@ REQUIRED_PLATFORM_PROJECTS = ({'name': 'kernel/configs',
  {'name': 'platform/test/suite_harness',
   'path': 'test/suite_harness',
   'remote': 'elharika-aosp',
-  'revision': '3a5b1207c2177d72db24da78aba86574d95c26f8'})
+  'revision': '3a5b1207c2177d72db24da78aba86574d95c26f8'},
+ {'name': 'LineageOS/android_frameworks_base',
+  'path': 'frameworks/base',
+  'remote': 'elharika-github',
+  'revision': '2f5cf1e4fc1e8b1480d3c27a855f95d6d45429f4'},
+)
 
 
 def overlay(platform, hardware):
     out = ET.Element('manifest')
     ET.SubElement(out, 'remote', {'name': 'elharika-hardware', 'fetch': 'https://github.com/'})
     ET.SubElement(out, 'remote', {'name': 'elharika-aosp', 'fetch': 'https://android.googlesource.com/'})
+    ET.SubElement(out, 'remote', {'name': 'elharika-github', 'fetch': 'https://github.com/'})
 
     projects = platform.findall('project')
     removed = set()
