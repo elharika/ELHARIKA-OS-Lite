@@ -55,12 +55,15 @@ class SyncTests(unittest.TestCase):
 
     def test_required_platform_projects_are_exact_and_fully_pinned(self):
         projects=self._required_by_path()
-        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),34)
-        self.assertEqual(len(projects),34)
+        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),37)
+        self.assertEqual(len(projects),37)
         expected_critical={
             'kernel/configs':'e4102999005f8f3c8db1fdacfba80a2c581a72f1',
             'frameworks/base':'2f5cf1e4fc1e8b1480d3c27a855f95d6d45429f4',
             'packages/modules/NetworkStack':'88d4fd9cd4e49102d92cd7e6d8e270284e00e76e',
+            'cts':'c554ab005261d4cd194b9a19aa5dd68c72d7df6e',
+            'frameworks/ex':'5050934c425fa1c775d31a1c2ab7bbe6f8fe5bc6',
+            'tools/dexter':'6426a69b96ebca6b9e15494d9f2bb0ec5cfffccd',
             'test/suite_harness':'3a5b1207c2177d72db24da78aba86574d95c26f8',
             'test/vts':'f001416f91f7f02a7a042bd0c52f0c62394fa78c',
             'test/vts-testcase/fuzz':'43fcddcde333cac6b365ea32f0fecc3a2c9d7ff8',
@@ -70,6 +73,8 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(projects[path]['revision'],revision)
         self.assertEqual(projects['frameworks/base']['name'],'LineageOS/android_frameworks_base')
         self.assertEqual(projects['frameworks/base']['remote'],'elharika-github')
+        self.assertEqual(projects['cts']['name'],'LineageOS/android_cts')
+        self.assertEqual(projects['cts']['remote'],'elharika-github')
         self.assertEqual(projects['packages/modules/NetworkStack']['name'],'platform/packages/modules/NetworkStack')
         self.assertEqual(projects['packages/modules/NetworkStack']['remote'],'elharika-aosp')
         names=set()
