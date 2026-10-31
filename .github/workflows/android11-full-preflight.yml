@@ -103,7 +103,7 @@ jobs:
           python3 "$RUNNER_TEMP/repo-tool/repo" init \
             -u https://github.com/LineageOS/android \
             -b 88e370827501474db8f1905128fdea2e8128ead4 \
-            -g default,-cts,-vts,-pdk-fs,-pdk-cw-fs -p linux \
+            -g default,pdk,-cts,-vts,-pdk-fs,-pdk-cw-fs -p linux \
             --depth=1 --no-clone-bundle \
             --repo-url=https://gerrit.googlesource.com/git-repo --repo-rev=stable
           python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
