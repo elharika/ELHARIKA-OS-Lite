@@ -151,7 +151,6 @@ def patch_tree(root: Path, report_path: Path):
         'hardware_tested': False,
     }
     assembly_report.write_text(json.dumps(report, indent=2) + '\n')
-    rewrite_checksums(root)
 
     result = {
         'status': 'MALI_COMPAT_PATCHED_STRUCTURAL_ONLY',
@@ -163,6 +162,7 @@ def patch_tree(root: Path, report_path: Path):
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(result, indent=2) + '\n')
+    rewrite_checksums(root)
     return result
 
 
