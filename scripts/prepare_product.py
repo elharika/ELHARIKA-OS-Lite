@@ -19,11 +19,6 @@ ENV_NEW = """    elif [ "$1" = "elharika_v1awifi" ]; then
     fi
     export LINEAGE_BUILD"""
 
-# Exact local copy of the CTS root java_defaults from pinned revision
-# c554ab005261d4cd194b9a19aa5dd68c72d7df6e. This avoids syncing the full CTS
-# project merely to satisfy suite_harness defaults in the reduced product graph.
-CTS_DEFAULTS_SHA256 = '24e2f431ba8383f1538ff11fe9c2085f5a10328f18e92091eb02416b1c01ff7d'
-
 
 def product_environment(text):
     if text.count(ENV_NEW) == 1:
@@ -56,21 +51,18 @@ def camera_selection(text):
 def prepare(project, android):
     if not (android / 'build/envsetup.sh').is_file():
         raise ValueError('An existing Android platform checkout is required')
+    if not (android / 'cts/Android.bp').is_file():
+        raise ValueError('Pinned CTS checkout is required for the product graph')
     environment = android / 'build/envsetup.sh'
     patched_environment = product_environment(environment.read_text())
     mobicore = android / 'hardware/samsung_slsi/exynos5420/mobicore/daemon/Android.mk'
     patched_mobicore = mobicore_selection(mobicore.read_text())
     camera = android / 'device/samsung/universal5420-common/camera/Android.mk'
     patched_camera = camera_selection(camera.read_text())
-    cts_defaults = project / 'rom/compat/cts-defaults/Android.bp'
-    if not cts_defaults.is_file():
-        raise ValueError('Pinned CTS compatibility defaults are missing')
-    if hashlib.sha256(cts_defaults.read_bytes()).hexdigest() != CTS_DEFAULTS_SHA256:
-        raise ValueError('Pinned CTS compatibility defaults changed; review before build')
     destination = android / 'vendor/elharika'
     if destination.exists():
         raise ValueError('vendor/elharika already exists; refusing to overwrite')
-    inputs = [project / 'rom/AndroidProducts.mk', project / 'rom/elharika_v1awifi.mk', cts_defaults]
+    inputs = [project / 'rom/AndroidProducts.mk', project / 'rom/elharika_v1awifi.mk']
     for module in ['pen','launcher']:
         inputs += [project / 'apps' / module / 'Android.bp', project / 'apps' / module / 'src/main/AndroidManifest.xml']
     if any(not f.is_file() for f in inputs):
@@ -81,9 +73,6 @@ def prepare(project, android):
         staged.mkdir()
         for name in ['AndroidProducts.mk','elharika_v1awifi.mk']:
             shutil.copyfile(project / 'rom' / name, staged / name)
-        compat_dir = staged / 'compat/cts-defaults'
-        compat_dir.mkdir(parents=True)
-        shutil.copyfile(cts_defaults, compat_dir / 'Android.bp')
         for module in ['pen','launcher']:
             module_dir = staged / 'apps' / module
             module_dir.mkdir(parents=True)
