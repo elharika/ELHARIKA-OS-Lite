@@ -24,10 +24,15 @@ class SensorAeabiBridgeTests(unittest.TestCase):
         self.assertEqual(COMPAT_NEEDED, 'libelharika_aeabi_compat.so')
 
     def test_no_elf_validation_bypass_is_introduced(self):
-        for rel in ('scripts/generate_vendor_rules.py', 'scripts/audit_assembled_vendor.py'):
-            text = (ROOT / rel).read_text()
-            self.assertNotIn('check_elf_files: false', text)
-            self.assertNotIn('allow_undefined_symbols: true', text)
+        # Check the rule generator, not the audit checker: the audit checker
+        # intentionally contains the forbidden strings because it rejects them.
+        generator = (ROOT / 'scripts/generate_vendor_rules.py').read_text()
+        self.assertNotIn('check_elf_files: false', generator)
+        self.assertNotIn('allow_undefined_symbols: true', generator)
+
+        audit = (ROOT / 'scripts/audit_assembled_vendor.py').read_text()
+        self.assertIn("if 'check_elf_files: false' in bp_text", audit)
+        self.assertIn("if 'LOCAL_CHECK_ELF_FILES := false' in mk_text", audit)
 
 
 if __name__ == '__main__':
