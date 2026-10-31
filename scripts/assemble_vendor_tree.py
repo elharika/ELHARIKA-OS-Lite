@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import subprocess
-from generate_vendor_rules import generate,TREES,STLPORT_SHA256,AEABI_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
+from generate_vendor_rules import generate,TREES,STLPORT_SHA256,SENSOR_SHA256,AEABI_SYMBOLS,SENSOR_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
 from verify_stock_blobs import safe_path,elf_info,digest
 
 
@@ -41,6 +41,32 @@ def add_aeabi_compat_dependency(path):
         raise ValueError('Patched libstlport ELF failed structural audit')
     return {'file':'vendor/lib/libstlport.so',
             'change':'Add explicit libelharika_aeabi_compat.so DT_NEEDED for two ARM EABI symbols',
+            'before_sha256':hashlib.sha256(original).hexdigest(),
+            'after_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+            'runtime_tested':False}
+
+
+def add_sensor_compat_dependency(path):
+    """Attach the audited EABI bridge to the exact SM-P900 sensors HAL."""
+    original=path.read_bytes()
+    if hashlib.sha256(original).hexdigest()!=SENSOR_SHA256:
+        raise ValueError('Unexpected SM-P900 sensors HAL bytes')
+    before=elf_info(path)
+    if (not before or not before['arm32_little_endian'] or
+            before['soname']!='sensors.universal5420.so' or
+            not SENSOR_SYMBOLS.issubset({s['name'] for s in before['undefined_symbols']}) or
+            'libelharika_aeabi_compat.so' in before['needed']):
+        raise ValueError('Unexpected SM-P900 sensors HAL ELF')
+    subprocess.run(['patchelf','--add-needed','libelharika_aeabi_compat.so',str(path)],
+                   check=True,timeout=30)
+    after=elf_info(path)
+    if (not after or not after['arm32_little_endian'] or
+            after['soname']!=before['soname'] or
+            set(after['needed'])!=set(before['needed'])|{'libelharika_aeabi_compat.so'} or
+            after['undefined_symbols']!=before['undefined_symbols']):
+        raise ValueError('Patched sensors HAL failed structural audit')
+    return {'file':'vendor/lib/sensors.universal5420.so',
+            'change':'Add explicit libelharika_aeabi_compat.so DT_NEEDED for __aeabi_ldivmod',
             'before_sha256':hashlib.sha256(original).hexdigest(),
             'after_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
             'runtime_tested':False}
@@ -114,6 +140,8 @@ def assemble(baseline,stage,output):
                           'before_sha256':hashlib.sha256(old).hexdigest(),'after_sha256':hashlib.sha256(new).hexdigest()}]
         stlport=root/'samsung/universal5420-common/proprietary/vendor/lib/libstlport.so'
         summary['fixups'].append(add_aeabi_compat_dependency(stlport))
+        sensors=root/'samsung/v1awifi/proprietary/vendor/lib/sensors.universal5420.so'
+        summary['fixups'].append(add_sensor_compat_dependency(sensors))
         for dest in SONAME_FIXUPS:
             record=next(r for r in baseline['comparison']['records'] if r['destination']==dest)
             owner=TREES[record['tree']]
