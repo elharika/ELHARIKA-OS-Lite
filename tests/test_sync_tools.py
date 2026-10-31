@@ -29,11 +29,11 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(len(removes),1)
         self.assertEqual(removes[0].get('optional'),'true')
         self.assertEqual(required[0].get('name'),expected['name'])
-        self.assertEqual(required[0].get('remote'),'elharika-aosp')
+        self.assertEqual(required[0].get('remote'),expected['remote'])
         self.assertEqual(required[0].get('revision'),expected['revision'])
         self.assertIsNone(required[0].get('groups'))
 
-    def test_reduced_manifest_readds_complete_pinned_vts_closure(self):
+    def test_reduced_manifest_readds_complete_pinned_build_closure(self):
         base=ET.fromstring('<manifest><project name="LineageOS/android_build" path="build/make"/></manifest>')
         out=overlay(base,self._hardware())
         paths=[p.get('path') for p in out.findall('project')]
@@ -55,10 +55,11 @@ class SyncTests(unittest.TestCase):
 
     def test_required_platform_projects_are_exact_and_fully_pinned(self):
         projects=self._required_by_path()
-        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),32)
-        self.assertEqual(len(projects),32)
+        self.assertEqual(len(REQUIRED_PLATFORM_PROJECTS),33)
+        self.assertEqual(len(projects),33)
         expected_critical={
             'kernel/configs':'e4102999005f8f3c8db1fdacfba80a2c581a72f1',
+            'frameworks/base':'2f5cf1e4fc1e8b1480d3c27a855f95d6d45429f4',
             'test/suite_harness':'3a5b1207c2177d72db24da78aba86574d95c26f8',
             'test/vts':'f001416f91f7f02a7a042bd0c52f0c62394fa78c',
             'test/vts-testcase/fuzz':'43fcddcde333cac6b365ea32f0fecc3a2c9d7ff8',
@@ -66,10 +67,12 @@ class SyncTests(unittest.TestCase):
         }
         for path,revision in expected_critical.items():
             self.assertEqual(projects[path]['revision'],revision)
+        self.assertEqual(projects['frameworks/base']['name'],'LineageOS/android_frameworks_base')
+        self.assertEqual(projects['frameworks/base']['remote'],'elharika-github')
         names=set()
         for project in REQUIRED_PLATFORM_PROJECTS:
             self.assertRegex(project['revision'],r'^[0-9a-f]{40}$')
-            self.assertEqual(project['remote'],'elharika-aosp')
+            self.assertIn(project['remote'],{'elharika-aosp','elharika-github'})
             self.assertNotIn(project['name'],names)
             names.add(project['name'])
 
