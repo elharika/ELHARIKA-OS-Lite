@@ -1,0 +1,71 @@
+// Exact CTS root defaults captured from LineageOS/android_cts
+// revision c554ab005261d4cd194b9a19aa5dd68c72d7df6e.
+// Kept locally so the reduced source graph does not need the full CTS project.
+
+java_defaults {
+    name: "cts_error_prone_rules",
+    errorprone: {
+        javacflags: [
+            "-Xep:ArrayToString:ERROR",
+            "-Xep:BoxedPrimitiveConstructor:ERROR",
+            "-Xep:ConstantField:ERROR",
+            "-Xep:EqualsIncompatibleType:ERROR",
+            "-Xep:FormatString:ERROR",
+            "-Xep:GetClassOnClass:ERROR",
+            "-Xep:IdentityBinaryExpression:ERROR",
+            "-Xep:JUnit3TestNotRun:ERROR",
+            "-Xep:JUnit4ClassUsedInJUnit3:ERROR",
+            "-Xep:JUnitAmbiguousTestClass:ERROR",
+            "-Xep:MissingFail:ERROR",
+            "-Xep:MissingOverride:ERROR",
+            "-Xep:Overrides:ERROR",
+            "-Xep:ReferenceEquality:ERROR",
+            "-Xep:RemoveUnusedImports:ERROR",
+            "-Xep:ReturnValueIgnored:ERROR",
+            "-Xep:SelfEquals:ERROR",
+            "-Xep:SizeGreaterThanOrEqualsZero:ERROR",
+            "-Xep:TryFailThrowable:ERROR",
+        ],
+    },
+}
+
+java_defaults {
+    name: "cts_error_prone_rules_tests",
+    errorprone: {
+        javacflags: [
+            "-Xep:ArrayToString:ERROR",
+            "-Xep:CollectionIncompatibleType:ERROR",
+            "-Xep:EqualsIncompatibleType:ERROR",
+            "-Xep:EqualsNaN:ERROR",
+            "-Xep:FormatString:ERROR",
+            "-Xep:IdentityBinaryExpression:ERROR",
+            "-Xep:JUnit3TestNotRun:ERROR",
+            "-Xep:JUnit4ClassUsedInJUnit3:ERROR",
+            "-Xep:JUnitAmbiguousTestClass:ERROR",
+            "-Xep:MissingFail:ERROR",
+            "-Xep:SizeGreaterThanOrEqualsZero:ERROR",
+            "-Xep:TryFailThrowable:ERROR",
+        ],
+    },
+}
+
+java_defaults {
+    name: "cts_support_defaults",
+    defaults: ["cts_error_prone_rules_tests"],
+    dex_preopt: {
+        enabled: false,
+    },
+    optimize: {
+        enabled: false,
+    },
+}
+
+java_defaults {
+    name: "cts_defaults",
+    defaults: ["cts_support_defaults"],
+    target: {
+        android: {
+            static_libs: ["platform-test-annotations"],
+        },
+    },
+}
