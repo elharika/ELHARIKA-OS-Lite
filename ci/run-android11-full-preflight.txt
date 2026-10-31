@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
-Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, reduced source sync, build graph, custom apps, and disk headroom.
+Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, full Android 11 source sync, repo metadata prune, build graph, custom apps, final EABI verification, and disk headroom.
 Do not build system.img.
-Trigger revision: 13
-Reason: restore the complete exact-pinned provider batch for every undefined module exposed by preflight #13: development, deqp, robolectric-shadows, frameworks libs/net and minikin, IMS, vCard, Wilhelm, IPsec, SdkExtensions, Car, platform_testing, and platform-compat. Keep source sync reduced and preserve all disk guards.
+Trigger revision: 18
+Reason: retry after fixing the sensor EABI bridge regression test so it validates generated build rules instead of matching the audit checker's forbidden-string guards. Keep the pinned sensors.universal5420.so EABI bridge fix, full source sync, repo prune, and all disk guards.
