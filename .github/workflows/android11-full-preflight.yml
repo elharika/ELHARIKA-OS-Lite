@@ -93,7 +93,7 @@ jobs:
           rm -rf -- "$stock_work"
           df -B1 > evidence/disk-after-vendor.txt
 
-      - name: Sync reduced Android 11 source set for Linux ARM build
+      - name: Sync full Android 11 source set then reclaim repo metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -103,7 +103,6 @@ jobs:
           python3 "$RUNNER_TEMP/repo-tool/repo" init \
             -u https://github.com/LineageOS/android \
             -b 88e370827501474db8f1905128fdea2e8128ead4 \
-            -g default,pdk,-cts,-vts,-pdk-fs,-pdk-cw-fs -p linux \
             --depth=1 --no-clone-bundle \
             --repo-url=https://gerrit.googlesource.com/git-repo --repo-rev=stable
           python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
@@ -117,12 +116,18 @@ jobs:
             2>&1 | tee "$GITHUB_WORKSPACE/evidence/sync.log"
           python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
           test "$(git -C vendor/apn rev-parse HEAD)" = cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e
+          du -sh . > "$GITHUB_WORKSPACE/evidence/source-size-before-repo-prune.txt"
+          du -x -B1 --max-depth=2 . > "$GITHUB_WORKSPACE/evidence/source-footprint-before-repo-prune.txt"
+          du -sx -B1 .repo | tee "$GITHUB_WORKSPACE/evidence/repo-metadata-size.txt"
+          df -B1 | tee "$GITHUB_WORKSPACE/evidence/disk-after-full-sync-before-repo-prune.txt"
+          rm -rf -- .repo
+          test ! -e .repo
           du -sh . > "$GITHUB_WORKSPACE/evidence/source-size.txt"
           du -x -B1 --max-depth=2 . > "$GITHUB_WORKSPACE/evidence/source-footprint.txt"
           df -B1 | tee "$GITHUB_WORKSPACE/evidence/disk-after-sync.txt"
           free_bytes=$(df -B1 --output=avail . | tail -1)
           test "$free_bytes" -ge 50000000000 || {
-            echo "PRECHECK_BLOCKED: need at least 50,000,000,000 free bytes after sync; got $free_bytes" >&2
+            echo "PRECHECK_BLOCKED: need at least 50,000,000,000 free bytes after full sync and repo metadata prune; got $free_bytes" >&2
             exit 1
           }
 
