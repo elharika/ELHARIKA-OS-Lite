@@ -143,6 +143,10 @@ REQUIRED_PLATFORM_PROJECTS = (
   'path': 'frameworks/base',
   'remote': 'elharika-github',
   'revision': '2f5cf1e4fc1e8b1480d3c27a855f95d6d45429f4'},
+ {'name': 'platform/packages/modules/NetworkStack',
+  'path': 'packages/modules/NetworkStack',
+  'remote': 'elharika-aosp',
+  'revision': '88d4fd9cd4e49102d92cd7e6d8e270284e00e76e'},
 )
 
 
