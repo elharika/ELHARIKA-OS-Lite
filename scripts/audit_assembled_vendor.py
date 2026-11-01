@@ -2,9 +2,9 @@
 """Fail-closed structural audit for the assembled SM-P900 vendor ELF set.
 
 This does not claim runtime compatibility. It verifies that every candidate ELF is
-32-bit ARM, all known stock SONAME mismatches were normalized, the EABI bridge is
-attached only to the four audited blobs, and Android build rules keep ELF checks
-enabled. A JSON report is written for CI evidence.
+32-bit ARM, all known stock SONAME mismatches were normalized, compatibility
+bridges are attached only to audited blobs, and Android build rules keep ELF
+checks enabled. A JSON report is written for CI evidence.
 """
 import argparse
 import json
@@ -13,6 +13,13 @@ import re
 import subprocess
 
 from generate_vendor_rules import AEABI_SYMBOLS, SENSOR_SYMBOLS, AUDIO_SYMBOLS, SONAME_FIXUPS
+from patch_mali_compat import (
+    MALI_AEABI_NEEDED,
+    MALI_AEABI_SYMBOLS,
+    MALI_DESTINATION,
+    MALI_NEEDED,
+    MALI_REQUIRED_SYMBOLS,
+)
 from verify_stock_blobs import digest, elf_info
 
 EXPECTED_ELF_COUNT = 14
@@ -22,6 +29,7 @@ COMPAT_PATHS = {
     'vendor/lib/soundfx/liblvverx.so': AUDIO_SYMBOLS,
     'vendor/lib/soundfx/liblvvetx.so': AUDIO_SYMBOLS,
     'vendor/lib/sensors.universal5420.so': SENSOR_SYMBOLS,
+    MALI_DESTINATION: MALI_AEABI_SYMBOLS,
 }
 
 
@@ -39,7 +47,6 @@ def dynamic_tags(path: Path):
 
 
 def expected_alias_rule(dest: str, old_soname: str) -> str:
-    """Return the exact Android.mk alias rule emitted by generate_vendor_rules."""
     path = PurePosixPath(dest)
     if not dest.startswith('vendor/'):
         raise ValueError('SONAME alias destination must live under vendor/: ' + dest)
@@ -87,6 +94,15 @@ def audit(root: Path, report: Path):
             elif COMPAT_NEEDED in needed:
                 raise ValueError('Unexpected EABI bridge dependency: ' + dest)
 
+            if dest == MALI_DESTINATION:
+                missing_mali = sorted(MALI_REQUIRED_SYMBOLS - imports)
+                if missing_mali:
+                    raise ValueError('Pinned Mali imports changed: ' + ','.join(missing_mali))
+                if MALI_NEEDED not in needed or MALI_AEABI_NEEDED not in needed:
+                    raise ValueError('Mali compatibility dependencies missing from DT_NEEDED')
+            elif MALI_NEEDED in needed:
+                raise ValueError('Unexpected Mali compatibility dependency: ' + dest)
+
             tags = dynamic_tags(path)
             records.append({
                 'tree': owner_dir.name,
@@ -101,7 +117,6 @@ def audit(root: Path, report: Path):
     if len(records) != EXPECTED_ELF_COUNT:
         raise ValueError(f'Expected {EXPECTED_ELF_COUNT} ELF modules, found {len(records)}')
 
-    # The three pinned original SONAMEs must be preserved as runtime aliases.
     alias_checks = []
     for dest, (_, old_soname) in SONAME_FIXUPS.items():
         matched = [r for r in records if r['destination'] == dest]
