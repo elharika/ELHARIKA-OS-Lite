@@ -56,6 +56,7 @@ class MaliCompatTests(unittest.TestCase):
         self.assertIn('"compat/mali_legacy_compat.c"', patched)
         self.assertIn('"compat/mali_aeabi_exports.S"', patched)
         self.assertIn('whole_static_libs: ["libclang_rt.builtins-arm-android"]', patched)
+        self.assertIn('ldflags: ["-Wl,--allow-multiple-definition"]', patched)
         self.assertIn('check_elf_files: true', patched)
         self.assertNotIn('check_elf_files: false', patched)
         self.assertNotIn('allow_undefined_symbols: true', patched)
