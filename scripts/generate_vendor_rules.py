@@ -10,6 +10,7 @@ from verify_stock_blobs import digest,elf_info,safe_path
 TREES={f'android_device_samsung_{n}':n for n in ('universal5420-common','v1a-common','v1awifi')}
 STLPORT_SHA256='9b81b3116f93661c5bb614b84ce5b571ae552b57ebff4fa00f5f06442a7abc6a'
 SENSOR_SHA256='4e7ab23e9fe49e2650c3f52a17f3d7433b76c4c89733b02d9a7e5dcc742db848'
+AK8963C_SHA256='777d5a0ab0d504e3db1317eae6955efc2f73dcadb80e3e5387fb35ea4469b73b'
 AEABI_SYMBOLS={'__aeabi_ldivmod','__aeabi_uldivmod'}
 SENSOR_SYMBOLS={'__aeabi_ldivmod'}
 AUDIO_SYMBOLS={'__aeabi_idiv','__aeabi_idivmod','__aeabi_ldivmod',
@@ -59,6 +60,13 @@ def generate(baseline,stage,output):
             for lib in info['needed']:
                 if not re.fullmatch(r'[A-Za-z0-9_.+-]+\.so',lib):raise ValueError('Review versioned dependency: '+lib)
                 needed.append(lib[:-3])
+            if dest=='vendor/lib/libak8963c.so':
+                imports={s['name'] for s in info['undefined_symbols']}
+                if (owner!='v1a-common' or r['sha256']!=AK8963C_SHA256
+                        or soname!='libak8963c.so' or '__android_log_print' not in imports
+                        or 'liblog' in needed):
+                    raise ValueError('Unexpected SM-P900 AK8963C logging ABI')
+                needed.append('liblog')
             if dest=='vendor/lib/libstlport.so':
                 imports={s['name'] for s in info['undefined_symbols']}
                 if (owner!='universal5420-common' or r['sha256']!=STLPORT_SHA256

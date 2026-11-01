@@ -162,7 +162,7 @@ jobs:
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
             --minutes 35 --reserve-gib 6 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 liblvverx liblvvetx gps.universal5420 libstlport libelharika_aeabi_compat libelharika_mali_compat libGLES_mali'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 mcDriverDaemon libGLES_mali libMcClient libMcRegistry libexynoscamera libstlport libvdis liblvverx liblvvetx libak8963c gpsd gps.universal5420 liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
           python3 - "$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib" <<'PYABI'
           import pathlib, subprocess, sys
           root=pathlib.Path(sys.argv[1])
@@ -184,7 +184,9 @@ jobs:
           for symbol in mali_symbols:
               assert any(parts[-1].split('@',1)[0] == symbol and 'GLOBAL' in parts and 'UND' not in parts
                          for line in mali_exports.splitlines() if (parts := line.split())),symbol
-          print('ARM EABI and Mali compatibility exports and explicit ELF dependencies checked')
+          compass=subprocess.check_output(['readelf','-W','-d',str(root/'libak8963c.so')],text=True)
+          assert '[liblog.so]' in compass,'compass liblog dependency missing'
+          print('All 14 stock ELF modules compiled; ARM EABI, Mali, and compass dependencies checked')
           PYABI
 
       - name: Build system image only

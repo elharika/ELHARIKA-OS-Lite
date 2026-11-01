@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import subprocess
-from generate_vendor_rules import generate,TREES,STLPORT_SHA256,SENSOR_SHA256,AEABI_SYMBOLS,SENSOR_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
+from generate_vendor_rules import generate,TREES,STLPORT_SHA256,SENSOR_SHA256,AK8963C_SHA256,AEABI_SYMBOLS,SENSOR_SYMBOLS,AUDIO_SYMBOLS,SONAME_FIXUPS
 from patch_mali_compat import patch_tree
 from verify_stock_blobs import safe_path,elf_info,digest
 
@@ -46,6 +46,31 @@ def add_aeabi_compat_dependency(path):
             'after_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
             'runtime_tested':False}
 
+
+def add_compass_log_dependency(path):
+    """Link the exact SM-P900 compass library to Android's logging library."""
+    original=path.read_bytes()
+    if hashlib.sha256(original).hexdigest()!=AK8963C_SHA256:
+        raise ValueError('Unexpected SM-P900 libak8963c bytes')
+    before=elf_info(path)
+    if (not before or not before['arm32_little_endian'] or
+            before['soname']!='libak8963c.so' or
+            '__android_log_print' not in {s['name'] for s in before['undefined_symbols']} or
+            'liblog.so' in before['needed']):
+        raise ValueError('Unexpected SM-P900 libak8963c ELF')
+    subprocess.run(['patchelf','--add-needed','liblog.so',str(path)],
+                   check=True,timeout=30)
+    after=elf_info(path)
+    if (not after or not after['arm32_little_endian'] or
+            after['soname']!=before['soname'] or
+            set(after['needed'])!=set(before['needed'])|{'liblog.so'} or
+            after['undefined_symbols']!=before['undefined_symbols']):
+        raise ValueError('Patched libak8963c ELF failed structural audit')
+    return {'file':'vendor/lib/libak8963c.so',
+            'change':'Add explicit liblog.so DT_NEEDED for __android_log_print',
+            'before_sha256':hashlib.sha256(original).hexdigest(),
+            'after_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+            'runtime_tested':False}
 
 def add_sensor_compat_dependency(path):
     """Attach the audited EABI bridge to the exact SM-P900 sensors HAL."""
@@ -141,6 +166,8 @@ def assemble(baseline,stage,output):
                           'before_sha256':hashlib.sha256(old).hexdigest(),'after_sha256':hashlib.sha256(new).hexdigest()}]
         stlport=root/'samsung/universal5420-common/proprietary/vendor/lib/libstlport.so'
         summary['fixups'].append(add_aeabi_compat_dependency(stlport))
+        compass=root/'samsung/v1a-common/proprietary/vendor/lib/libak8963c.so'
+        summary['fixups'].append(add_compass_log_dependency(compass))
         sensors=root/'samsung/v1awifi/proprietary/vendor/lib/sensors.universal5420.so'
         summary['fixups'].append(add_sensor_compat_dependency(sensors))
         for dest in SONAME_FIXUPS:
