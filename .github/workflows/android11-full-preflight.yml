@@ -180,7 +180,7 @@ jobs:
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/vendor-module-build" \
             --minutes 90 --reserve-gib 10 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 libexynoscamera libvdis libGLES_mali mcDriverDaemon libMcClient libMcRegistry liblvverx liblvvetx libstlport libak8963c liboemcrypto gpsd gps.universal5420 sensors.universal5420 libelharika_aeabi_compat ElharikaLauncherLite ElharikaPenTools'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 libexynoscamera libvdis libGLES_mali mcDriverDaemon libMcClient libMcRegistry liblvverx liblvvetx libstlport libak8963c liboemcrypto gpsd gps.universal5420 sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat ElharikaLauncherLite ElharikaPenTools'
           df -B1 | tee "$GITHUB_WORKSPACE/evidence/disk-after-module-preflight.txt"
           free_bytes=$(df -B1 --output=avail . | tail -1)
           test "$free_bytes" -ge 25000000000 || {
@@ -194,13 +194,26 @@ jobs:
           set -euo pipefail
           root="$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib"
           test -f "$root/libelharika_aeabi_compat.so"
+          test -f "$root/libelharika_mali_compat.so"
+
           exports=$(readelf -W --dyn-syms "$root/libelharika_aeabi_compat.so")
           for symbol in __aeabi_idiv __aeabi_idivmod __aeabi_ldivmod __aeabi_uidiv __aeabi_uidivmod __aeabi_uldivmod __popcountsi2; do
             grep -E "GLOBAL.*${symbol}$" <<<"$exports" >/dev/null
           done
+
+          mali_exports=$(readelf -W --dyn-syms "$root/libelharika_mali_compat.so")
+          for symbol in __aeabi_d2lz __aeabi_d2ulz __aeabi_f2lz __aeabi_f2ulz __aeabi_l2d __aeabi_l2f __aeabi_llsr __aeabi_ul2d __aeabi_ul2f __popcount_tab get_process_name; do
+            grep -E "GLOBAL.*${symbol}$" <<<"$mali_exports" >/dev/null
+          done
+
           for file in "$root/libstlport.so" "$root/soundfx/liblvverx.so" "$root/soundfx/liblvvetx.so" "$root/hw/sensors.universal5420.so"; do
             readelf -W -d "$file" | grep -F '[libelharika_aeabi_compat.so]' >/dev/null
           done
+
+          mali="$root/egl/libGLES_mali.so"
+          readelf -W -d "$mali" | grep -F '[libelharika_aeabi_compat.so]' >/dev/null
+          readelf -W -d "$mali" | grep -F '[libelharika_mali_compat.so]' >/dev/null
+
           for pair in \
             "$root/soundfx/liblvverx.so:liblvverx.so" \
             "$root/soundfx/liblvvetx.so:liblvvetx.so" \
@@ -208,7 +221,7 @@ jobs:
             file=${pair%%:*}; expected=${pair##*:}
             readelf -W -d "$file" | grep -F "(SONAME)" | grep -F "[$expected]" >/dev/null
           done
-          echo 'All pinned ELF fixups verified after Android module build.' | tee evidence/final-elf-check.txt
+          echo 'All pinned ELF and Mali compatibility fixups verified after Android module build.' | tee evidence/final-elf-check.txt
 
       - name: Record final preflight footprint
         if: always()
