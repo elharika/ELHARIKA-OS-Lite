@@ -70,7 +70,7 @@ def patch_android_bp_text(text: str) -> str:
 
     if f'name: "{MALI_MODULE}"' in text:
         raise ValueError('Mali compat module already exists before patching')
-    text += '''\n// Exact SM-P900 Android 5 Mali compatibility shim; runtime untested.\ncc_library_shared {\n    name: "libelharika_mali_compat",\n    owner: "elharika",\n    srcs: [\n        "compat/mali_legacy_compat.c",\n        "compat/mali_aeabi_exports.S",\n    ],\n    whole_static_libs: ["libclang_rt.builtins-arm-android"],\n    compile_multilib: "32",\n    vendor: true,\n    stl: "none",\n    cflags: ["-Wall", "-Wextra", "-Werror"],\n}\n'''
+    text += '''\n// Exact SM-P900 Android 5 Mali compatibility shim; runtime untested.\ncc_library_shared {\n    name: "libelharika_mali_compat",\n    owner: "elharika",\n    srcs: [\n        "compat/mali_legacy_compat.c",\n        "compat/mali_aeabi_exports.S",\n    ],\n    whole_static_libs: ["libclang_rt.builtins-arm-android"],\n    // compiler-rt embeds strong ARM EABI aliases for these same nine routines.\n    // Retain our explicit exported trampolines and verify them in the build gate.\n    ldflags: ["-Wl,--allow-multiple-definition"],\n    compile_multilib: "32",\n    vendor: true,\n    stl: "none",\n    cflags: ["-Wall", "-Wextra", "-Werror"],\n}\n'''
     return text
 
 
