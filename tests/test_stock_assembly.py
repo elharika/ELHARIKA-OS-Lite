@@ -20,6 +20,14 @@ class AssemblyFixupTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Unexpected SM-P900 libstlport bytes'):
                 add_aeabi_compat_dependency(path)
             self.assertEqual(path.read_bytes(),b'not exact stock')
+    def test_compass_rejects_unverified_stock_without_patching(self):
+        import tempfile
+        from assemble_vendor_tree import add_compass_log_dependency
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'libak8963c.so';path.write_bytes(b'not stock')
+            with self.assertRaisesRegex(ValueError,'Unexpected SM-P900 libak8963c bytes'):
+                add_compass_log_dependency(path)
+            self.assertEqual(path.read_bytes(),b'not stock')
     def test_soname_fixup_rejects_unverified_bytes_without_patching(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
