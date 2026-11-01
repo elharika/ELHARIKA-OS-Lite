@@ -89,6 +89,32 @@ class VendorRuleTests(unittest.TestCase):
             self.assertIn('$(TARGET_OUT_VENDOR)/lib/hw/gps.samsungAdonisandroid.so: $(TARGET_OUT_VENDOR)/lib/hw/gps.universal5420.so',(vendor/'Android.mk').read_text())
             self.assertEqual(fixture.read_bytes(),b'fixture-gps')
 
+    def test_compass_rule_requires_exact_blob_and_adds_liblog(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);baseline,stage=self.fixture(root)
+            dest='vendor/lib/libak8963c.so'
+            stock=stage/'proprietary'/dest
+            stock.parent.mkdir(parents=True)
+            stock.write_bytes(b'fixture-compass')
+            record=baseline['comparison']['records'][0]
+            record.update(destination=dest,tree='android_device_samsung_v1a-common',
+                          sha256=hashlib.sha256(stock.read_bytes()).hexdigest())
+            from generate_vendor_rules import AK8963C_SHA256
+            with patch('generate_vendor_rules.AK8963C_SHA256',record['sha256']), patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':['libc.so'],
+                    'soname':'libak8963c.so',
+                    'undefined_symbols':[{'name':'__android_log_print'}]}):
+                generate(baseline,stage,root/'out')
+            bp=(root/'out/samsung/v1a-common/Android.bp').read_text()
+            self.assertIn('shared_libs: ["libc", "liblog"]',bp)
+            self.assertIn('check_elf_files: true',bp)
+            with patch('generate_vendor_rules.elf_info',return_value={
+                    'arm32_little_endian':True,'needed':['libc.so'],
+                    'soname':'libak8963c.so',
+                    'undefined_symbols':[{'name':'__android_log_print'}]}):
+                with self.assertRaisesRegex(ValueError,'Unexpected SM-P900 AK8963C logging ABI'):
+                    generate(baseline,stage,root/'other')
+
     def test_readelf_detects_real_soname(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)
