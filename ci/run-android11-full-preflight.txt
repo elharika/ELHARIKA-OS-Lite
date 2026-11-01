@@ -1,5 +1,5 @@
 Run full SM-P900 Android 11 preflight only.
 Checks: all 14 vendor ELF modules, exact stock fixups, required host tools, full Android 11 source sync, repo metadata prune, build graph, custom apps, final EABI verification, and disk headroom.
 Do not build system.img.
-Trigger revision: 19
-Reason: preflight #18 reached 96% of the targeted module build and exposed the exact SM-P900 libGLES_mali.so legacy ABI gap. Apply a fail-closed Mali compatibility shim only to the pinned blob SHA, keep ELF checks enabled, provide compiler-rt ARM builtins plus legacy get_process_name/__popcount_tab, and preserve full source sync, repo prune, and all disk guards.
+Trigger revision: 20
+Reason: preflight #19 proved the Mali shim was attached but compiler-rt legacy aliases stayed hidden from the shared-library dynamic symbol table. Export the nine conversion/shift ARM EABI entry points explicitly, attach the existing audited EABI bridge directly to the pinned Mali blob for division/popcount symbols, verify both DT_NEEDED entries and exported symbols, and keep all ELF checks and disk guards enabled.
