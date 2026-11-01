@@ -94,7 +94,7 @@ class VendorRuleTests(unittest.TestCase):
             root=Path(d);baseline,stage=self.fixture(root)
             dest='vendor/lib/libak8963c.so'
             stock=stage/'proprietary'/dest
-            stock.parent.mkdir(parents=True)
+            stock.parent.mkdir(parents=True,exist_ok=True)
             stock.write_bytes(b'fixture-compass')
             record=baseline['comparison']['records'][0]
             record.update(destination=dest,tree='android_device_samsung_v1a-common',
