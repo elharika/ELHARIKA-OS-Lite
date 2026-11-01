@@ -171,8 +171,8 @@ jobs:
           for symbol in ('__aeabi_idiv','__aeabi_idivmod','__aeabi_ldivmod',
                          '__aeabi_uidiv','__aeabi_uidivmod','__aeabi_uldivmod',
                          '__popcountsi2'):
-              assert any(symbol in line.split()[-1] and 'GLOBAL' in line and ' UND ' not in line
-                         for line in exports.splitlines()),symbol
+              assert any(parts[-1].split('@', 1)[0] == symbol and 'GLOBAL' in parts and 'UND' not in parts
+                         for line in exports.splitlines() if (parts := line.split())),symbol
           for name in ('liblvverx.so','liblvvetx.so','libstlport.so'):
               dynamic=subprocess.check_output(['readelf','-W','-d',str(root/name if name=='libstlport.so' else root/'soundfx'/name)],text=True)
               assert '[libelharika_aeabi_compat.so]' in dynamic,name
