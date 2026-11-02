@@ -230,6 +230,33 @@ jobs:
           print('Selected bring-up ELF modules compiled; ARM EABI, Mali, and compass dependencies checked')
           PYABI
 
+      - name: Reclaim toolchains unused by the generated Ninja graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/android11" <<'PY'
+          import pathlib,re,sys,shutil,json
+          root=pathlib.Path(sys.argv[1])
+          # Graph generation is complete. Preserve every Clang directory named by
+          # any generated Ninja file, including auxiliary runtime toolchains.
+          used=set()
+          graphs=list((root/'out').rglob('*.ninja'))
+          if not graphs: raise SystemExit('No Ninja graph; refusing cleanup')
+          pattern=re.compile(r'prebuilts/clang/host/linux-x86/(clang-[A-Za-z0-9_.-]+)')
+          for graph in graphs:
+              with graph.open(errors='replace') as stream:
+                  for line in stream: used.update(pattern.findall(line))
+          if not used: raise SystemExit('No Clang references; refusing cleanup')
+          report={'retained':sorted(used),'removed':[]}
+          for p in (root/'prebuilts/clang/host/linux-x86').glob('clang-*'):
+              if p.is_dir() and not p.is_symlink() and p.name not in used:
+                  report['removed'].append(p.name)
+                  shutil.rmtree(p)
+          pathlib.Path('evidence/toolchain-cleanup.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report))
+          PY
+          df -B1 | tee evidence/disk-before-system-build.txt
+
       - name: Build system image only
         shell: bash
         run: |
