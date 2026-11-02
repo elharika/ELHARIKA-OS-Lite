@@ -127,14 +127,6 @@ jobs:
           done
           python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
-          # Prefer the platform ICU module exported to Make for APEX consumers.
-          gpsmk="$android_root/vendor/samsung/v1awifi/Android.mk"
-          sed -n '/^LOCAL_MODULE := gpsd$/,/^include /p' "$gpsmk" > evidence/gpsd-rule-before.txt
-          readelf -WdWs "$android_root/vendor/samsung/v1awifi/proprietary/vendor/bin/gpsd" > evidence/gpsd-elf.txt
-          if grep -RqE 'name: "libicuuc.bootstrap"' "$android_root/external/icu"; then
-            sed -i '/^LOCAL_MODULE := gpsd$/,/^include /{ /^LOCAL_SHARED_LIBRARIES :=/s/\<libicuuc\>/libicuuc.bootstrap/g; }' "$gpsmk"
-          fi
-          sed -n '/^LOCAL_MODULE := gpsd$/,/^include /p' "$gpsmk" > evidence/gpsd-rule-after.txt
           python3 scripts/prepare_product.py "$android_root"
           python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
