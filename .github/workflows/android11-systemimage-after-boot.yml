@@ -127,6 +127,14 @@ jobs:
           done
           python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
+          # Prefer the platform ICU module exported to Make for APEX consumers.
+          gpsmk="$android_root/vendor/samsung/v1awifi/Android.mk"
+          sed -n '/^LOCAL_MODULE := gpsd$/,/^include /p' "$gpsmk" > evidence/gpsd-rule-before.txt
+          readelf -WdWs "$android_root/vendor/samsung/v1awifi/proprietary/vendor/bin/gpsd" > evidence/gpsd-elf.txt
+          if grep -RqE 'name: "libicuuc.bootstrap"' "$android_root/external/icu"; then
+            sed -i '/^LOCAL_MODULE := gpsd$/,/^include /{ /^LOCAL_SHARED_LIBRARIES :=/s/\<libicuuc\>/libicuuc.bootstrap/g; }' "$gpsmk"
+          fi
+          sed -n '/^LOCAL_MODULE := gpsd$/,/^include /p' "$gpsmk" > evidence/gpsd-rule-after.txt
           python3 scripts/prepare_product.py "$android_root"
           python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
@@ -161,8 +169,8 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
-            --minutes 35 --reserve-gib 6 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 mcDriverDaemon libGLES_mali libMcClient libMcRegistry libexynoscamera libstlport libvdis liblvverx liblvvetx libak8963c gpsd gps.universal5420 liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
+            --minutes 55 --reserve-gib 6 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -k0 -j2 mcDriverDaemon libGLES_mali libMcClient libMcRegistry libexynoscamera libstlport libvdis liblvverx liblvvetx libak8963c gpsd gps.universal5420 liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
           python3 - "$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib" <<'PYABI'
           import pathlib, subprocess, sys
           root=pathlib.Path(sys.argv[1])
