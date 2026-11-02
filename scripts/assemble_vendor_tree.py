@@ -177,6 +177,34 @@ def assemble(baseline,stage,output):
             summary['fixups'].append(normalize_pinned_soname(path,dest))
             if dest.startswith('vendor/lib/soundfx/'):
                 summary['fixups'].append(add_audio_compat_dependency(path,dest))
+        # Exact SM-P900 copies only; retain the normal Android ELF checker.
+        for owner, dest, sha, dependency, add in (
+            ('v1awifi','vendor/bin/gpsd','8662da3f34f5b2e5945eed95f8c50ede2cfdeb2c03420d9b522c86da6f8b72a9','libicuuc.so',False),
+            ('universal5420-common','vendor/lib/libvdis.so','d9b81a5951f13120ce9c2152508a3d1121589f419a3a2eddf69d25adcdaaa17c','libelharika_aeabi_compat.so',True)):
+            folder=root/'samsung'/owner
+            blob=folder/'proprietary'/dest
+            before=elf_info(blob)
+            if digest(blob)!=sha or not before['arm32_little_endian'] or (dependency in before['needed'])==add:
+                raise ValueError('Unexpected input: '+dest)
+            if add and '__aeabi_ldivmod' not in {s['name'] for s in before['undefined_symbols']}:
+                raise ValueError('Unexpected VDIS ABI')
+            rule=folder/('Android.bp' if add else 'Android.mk')
+            blocks=rule.read_text().split('\n\n')
+            matches=[i for i,b in enumerate(blocks) if 'proprietary/'+dest in b]
+            if len(matches)!=1: raise ValueError('Ambiguous rule: '+dest)
+            i=matches[0]
+            old='shared_libs: [' if add else ' libicuuc '
+            new='shared_libs: ["libelharika_aeabi_compat", ' if add else ' '
+            if blocks[i].count(old)!=1: raise ValueError('Unexpected dependency rule')
+            blocks[i]=blocks[i].replace(old,new)
+            rule.write_text('\n\n'.join(blocks))
+            subprocess.run(['patchelf','--add-needed' if add else '--remove-needed',dependency,str(blob)],check=True)
+            after=elf_info(blob)
+            expected=set(before['needed'])
+            (expected.add if add else expected.remove)(dependency)
+            if set(after['needed'])!=expected or before['undefined_symbols']!=after['undefined_symbols'] or before['soname']!=after['soname']:
+                raise ValueError('Unexpected ELF change: '+dest)
+            summary['fixups'].append(dict(file=dest,before_sha256=sha,after_sha256=digest(blob),dependency=dependency,added=add,runtime_tested=False))
         # Explicit dependency on Mali output, not an unrelated LOCAL_INSTALLED_MODULE.
         links='''# Experimental SM-P900 OpenCL aliases; runtime untested.
 ifeq ($(TARGET_DEVICE),v1awifi)
