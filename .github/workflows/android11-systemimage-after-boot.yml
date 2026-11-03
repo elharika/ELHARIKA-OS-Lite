@@ -23,7 +23,7 @@ jobs:
   build-systemimage:
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 330
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:
@@ -281,8 +281,8 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" \
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/system-build" \
-            --minutes 285 --reserve-gib 5 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j2 systemimage'
+            --minutes 300 --reserve-gib 5 -- \
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j3 systemimage'
 
       - name: Verify system image
         shell: bash
