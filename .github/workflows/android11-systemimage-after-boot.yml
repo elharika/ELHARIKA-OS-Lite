@@ -253,6 +253,22 @@ jobs:
                   report['removed'].append(p.name)
                   shutil.rmtree(p)
           pathlib.Path('evidence/toolchain-cleanup.json').write_text(json.dumps(report,indent=2))
+          # This disposable checkout will never sync again. Release only Git
+          # object stores of locked prebuilts; working files and Ninja inputs stay.
+          import xml.etree.ElementTree as ET
+          lock=ET.parse('evidence/platform-lock.xml')
+          archives=[]
+          for project in lock.getroot().findall('project'):
+              if not project.get('path','').startswith('prebuilts/'): continue
+              name=pathlib.PurePosixPath(project.get('name',''))
+              if name.is_absolute() or '..' in name.parts: raise SystemExit('Unsafe project name')
+              objects=root/'.repo/project-objects'/(str(name)+'.git')/'objects'
+              if objects.is_dir() and not objects.is_symlink():
+                  shutil.rmtree(objects)
+                  archives.append(str(name))
+          pathlib.Path('evidence/prebuilt-git-cleanup.json').write_text(json.dumps({
+              'removed_object_stores':archives,'working_files_preserved':True,
+              'resync_supported':False,'source_revisions':'platform-lock.xml'},indent=2))
           print(json.dumps(report))
           PY
           df -B1 | tee evidence/disk-before-system-build.txt
