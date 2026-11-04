@@ -1,0 +1,31 @@
+{
+  "run_id": 41862679569,
+  "source_commit": "722f4946f393f404413bc4e60fb195fd12695ed5",
+  "system_image_sha256": "fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61",
+  "sparse_size_bytes": 949993848,
+  "expanded_size_bytes": 2299998208,
+  "sha256_matched": true,
+  "filesystem_check": {
+    "command": "e2fsck -fn system.ext4",
+    "version": "1.47.0",
+    "exit_code": 0,
+    "passes_completed": 5
+  },
+  "build_properties": {
+    "release": "11",
+    "sdk": "30",
+    "device": "v1awifi",
+    "model": "SM-P900",
+    "build_type": "userdebug",
+    "tags": "test-keys"
+  },
+  "hardware_tested": false,
+  "flash_approved": false,
+  "limitations": [
+    "Camera disabled",
+    "GPS disabled",
+    "Matching boot image integration and validation still required",
+    "Boot, graphics, input, pressure and sleep/wake are not hardware verified",
+    "Inherited stock fingerprint differs from actual Android 11 build; review before release"
+  ]
+}
