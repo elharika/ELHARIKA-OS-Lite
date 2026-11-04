@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf git-lfs
           stock_work="$RUNNER_TEMP/elharika-stock-input"
           mkdir -p "$stock_work"
           python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
@@ -113,6 +113,31 @@ jobs:
           du -sh . > "$GITHUB_WORKSPACE/evidence/source-size.txt"
           du -x -B1 --max-depth=2 . > "$GITHUB_WORKSPACE/evidence/source-footprint.txt"
           df -B1 > "$GITHUB_WORKSPACE/evidence/disk-after-sync.txt"
+
+      - name: Materialize and verify pinned ARM WebView APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          webview="$RUNNER_TEMP/android11/external/chromium-webview/prebuilt/arm"
+          test "$(git -C "$webview" rev-parse HEAD)" = 472d0ac3cf8e78982807bedd20279a537d6cdf68
+          git -C "$webview" lfs install --local
+          git -C "$webview" lfs pull --include=webview.apk --exclude=""
+          python3 - "$webview/webview.apk" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile
+          p=pathlib.Path(sys.argv[1])
+          expected='0dc261c3f37e9ac16a4f593ef316a097fc59815bb2082a8e38c519647bbcb3cc'
+          sha=hashlib.sha256(p.read_bytes()).hexdigest()
+          if p.stat().st_size!=98126751 or sha!=expected:
+              raise SystemExit('Pinned WebView size/SHA256 mismatch; refusing build')
+          with zipfile.ZipFile(p) as z:
+              bad=z.testzip()
+              names=set(z.namelist())
+              if bad or not {'AndroidManifest.xml','classes.dex','lib/armeabi-v7a/libwebviewchromium.so'}<=names:
+                  raise SystemExit('Invalid ARM WebView APK contents')
+          pathlib.Path('evidence/webview-input.json').write_text(json.dumps({
+              'sha256':sha,'bytes':p.stat().st_size,'architecture':'armeabi-v7a',
+              'zip_crc_checked':True,'hardware_tested':False},indent=2))
+          PY
 
       - name: Integrate SM-P900 vendor tree and product
         shell: bash
@@ -203,7 +228,7 @@ jobs:
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
             --minutes 55 --reserve-gib 6 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -k0 -j2 mcDriverDaemon libGLES_mali libMcClient libMcRegistry libstlport libvdis liblvverx liblvvetx libak8963c liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -k0 -j2 webview mcDriverDaemon libGLES_mali libMcClient libMcRegistry libstlport libvdis liblvverx liblvvetx libak8963c liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
           python3 - "$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib" <<'PYABI'
           import pathlib, subprocess, sys
           root=pathlib.Path(sys.argv[1])
