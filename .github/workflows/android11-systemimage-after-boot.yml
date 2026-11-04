@@ -228,7 +228,7 @@ jobs:
             --root "$RUNNER_TEMP/android11" \
             --evidence "$GITHUB_WORKSPACE/evidence/elf-build" \
             --minutes 55 --reserve-gib 6 -- \
-            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -k0 -j2 webview mcDriverDaemon libGLES_mali libMcClient libMcRegistry libstlport libvdis liblvverx liblvvetx libak8963c liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
+            bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -k0 -j2 mcDriverDaemon libGLES_mali libMcClient libMcRegistry libstlport libvdis liblvverx liblvvetx libak8963c liboemcrypto sensors.universal5420 libelharika_aeabi_compat libelharika_mali_compat'
           python3 - "$RUNNER_TEMP/android11/out/target/product/v1awifi/system/vendor/lib" <<'PYABI'
           import pathlib, subprocess, sys
           root=pathlib.Path(sys.argv[1])
