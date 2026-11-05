@@ -11,6 +11,28 @@ spec = importlib.util.spec_from_file_location('pack', ROOT/'scripts/package_expe
 pack = importlib.util.module_from_spec(spec); spec.loader.exec_module(pack)
 
 class PackagingTests(unittest.TestCase):
+    def test_capacity_boundaries_and_reported_device_size(self):
+        # Exercise the actual installer helper. Integers never reach sh/test.
+        template = (ROOT/'installer/update-binary.in').read_text()
+        helper = template.split('system_capacity_ok() {', 1)[1].split('\n}', 1)[0]
+        script = 'system_capacity_ok() {'+helper+'\n}\nsystem_capacity_ok "$1" "$2"\n'
+        for actual, required, succeeds in [
+            ('2491416576', '2299998208', True),
+            ('2299998208', '2299998208', True),
+            ('2299998207', '2299998208', False),
+            ('2147483647', '2299998208', False),
+            ('4294967296', '2299998208', True),
+            ('4294967297', '2299998208', False),
+            ('', '2299998208', False), ('bad', '2299998208', False),
+            ('2.491416576e9', '2299998208', False),
+            ('99999999999999999999', '2299998208', False),
+            ('2491416576', '0', False), ('2491416576', '-1', False),
+        ]:
+            with self.subTest(actual=actual, required=required):
+                result = subprocess.run(['/bin/sh', '-s', '--', actual, required],
+                                        input=script, text=True, capture_output=True)
+                self.assertEqual(result.returncode == 0, succeeds, result.stderr)
+
     def test_sparse_content_and_holes(self):
         with tempfile.TemporaryDirectory() as temp:
             src = Path(temp)/'s'; dst = Path(temp)/'r'
