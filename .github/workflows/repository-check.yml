@@ -13,5 +13,8 @@ jobs:
         run: |
           set -euo pipefail
           test -f README.md
-          grep -q 'NOT FLASHABLE' README.md
-          echo 'Repository documentation check passed. This is NOT an Android ROM build.'
+          grep -Fq 'not an approved or hardware-validated release' README.md
+          grep -Fq '**Physical-device boot and all hardware operation remain untested**' README.md
+          python3 -m unittest discover -s tests -p test_experimental_package.py -v
+          sh -n installer/update-binary.in
+          echo 'Development image documentation and installer safeguards passed; production approval remains blocked.'
