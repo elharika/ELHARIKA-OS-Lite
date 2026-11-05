@@ -1,0 +1,101 @@
+#!/sbin/sh
+set -eu
+OUTFD=$2
+ZIP=$3
+WORK=
+MOUNTED_SYSTEM=0
+MOUNTED_CACHE=0
+ADDED_SCRIPT=0
+ADDED_RC=0
+ADDED_FLAG=0
+COMMITTED=0
+ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
+die() { ui "ERROR: $*"; exit 1; }
+cleanup() {
+    if [ "$COMMITTED" = 0 ]; then
+        [ "$ADDED_SCRIPT" = 0 ] || rm -f "$SCRIPT"
+        [ "$ADDED_RC" = 0 ] || rm -f "$RC"
+        [ "$ADDED_FLAG" = 0 ] || rm -f "$CACHE_ROOT/elharika-gpu-capture.request"
+    fi
+    [ "$MOUNTED_SYSTEM" = 0 ] || umount "$WORK/system" || true
+    [ "$MOUNTED_CACHE" = 0 ] || umount "$WORK/cache" || true
+    [ -z "$WORK" ] || rm -rf "$WORK"
+}
+trap cleanup EXIT
+for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cp chmod chown chcon sync mktemp; do
+    command -v "$tool" >/dev/null 2>&1 || die "Recovery missing $tool"
+done
+[ "$(getprop ro.product.device)" = v1awifi ] || die 'Only SM-P900/v1awifi is supported'
+case "$(getprop ro.bootloader)" in P900*) ;; *) die 'SM-P900 bootloader not verified';; esac
+SYSTEM=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/SYSTEM)
+CACHE=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/CACHE)
+for target in "$SYSTEM" "$CACHE"; do
+    case "$target" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected block mapping';; esac
+    [ -b "$target" ] || die 'Missing block device'
+done
+[ "$SYSTEM" != "$CACHE" ] || die 'Overlapping partition mappings'
+while read -r source mountpoint rest; do
+    resolved=$(readlink -f "$source" 2>/dev/null || true)
+    [ "$resolved" != "$SYSTEM" ] || die 'Uncheck System in TWRP Mount first'
+done < /proc/mounts
+WORK=$(mktemp -d /tmp/elharika-gpu-kit.XXXXXX)
+mkdir "$WORK/system" "$WORK/cache"
+mount -t ext4 -o rw "$SYSTEM" "$WORK/system" || die 'Cannot mount SYSTEM'
+MOUNTED_SYSTEM=1
+ROOT="$WORK/system/system"
+[ -f "$ROOT/build.prop" ] || die 'Expected system-as-root image not found'
+grep -qx 'ro.product.system.device=v1awifi' "$ROOT/build.prop" || die 'Wrong installed product'
+grep -qx 'ro.build.version.sdk=30' "$ROOT/build.prop" || die 'Wrong Android API'
+ACTUAL=$(sha256sum "$ROOT/bin/surfaceflinger" | awk '{print $1}')
+[ "$ACTUAL" = @SURFACEFLINGER_SHA@ ] || die 'Installed SurfaceFlinger differs from the diagnosed build'
+SCRIPT="$ROOT/bin/elharika-gpu-capture.sh"
+RC="$ROOT/etc/init/elharika-gpu-capture.rc"
+if [ '@ACTION@' = install ]; then
+    [ ! -e "$SCRIPT" ] && [ ! -e "$RC" ] || die 'Diagnostic files already present; use removal ZIP before reinstalling'
+    unzip -p "$ZIP" gpu-capture.sh > "$WORK/gpu-capture.sh" || die 'Cannot extract collector'
+    unzip -p "$ZIP" gpu-capture.rc > "$WORK/gpu-capture.rc" || die 'Cannot extract init configuration'
+    echo '@SCRIPT_SHA@  gpu-capture.sh' > "$WORK/SHA256SUMS"
+    echo '@RC_SHA@  gpu-capture.rc' >> "$WORK/SHA256SUMS"
+    (cd "$WORK" && sha256sum -c SHA256SUMS) || die 'Payload checksum failed'
+else
+    # Remove only our exact known files; preserve unexpected user modifications.
+    for entry in "$SCRIPT:@SCRIPT_SHA@" "$RC:@RC_SHA@"; do
+        path=${entry%:*}; expected=${entry##*:}
+        [ ! -e "$path" ] || [ "$(sha256sum "$path" | awk '{print $1}')" = "$expected" ] || die 'Diagnostic file differs; no files removed'
+    done
+fi
+# Reuse only the exact CACHE mount, or mount it privately when not mounted.
+CACHE_ROOT=
+while read -r source mountpoint rest; do
+    resolved=$(readlink -f "$source" 2>/dev/null || true)
+    if [ "$resolved" = "$CACHE" ]; then CACHE_ROOT=$mountpoint; fi
+done < /proc/mounts
+if [ -z "$CACHE_ROOT" ]; then
+    mount -t ext4 -o rw "$CACHE" "$WORK/cache" || die 'Cannot mount CACHE'
+    MOUNTED_CACHE=1
+    CACHE_ROOT="$WORK/cache"
+fi
+if [ '@ACTION@' = install ]; then
+    [ ! -e "$CACHE_ROOT/elharika-gpu-diagnostics" ] || die 'Archive existing diagnostic logs before installing another capture'
+    # Prepare fully labeled files before publishing the init script.
+    ADDED_SCRIPT=1
+    cp "$WORK/gpu-capture.sh" "$SCRIPT"
+    chown 0:0 "$SCRIPT"
+    chmod 0755 "$SCRIPT"
+    chcon u:object_r:system_file:s0 "$SCRIPT" || { rm -f "$SCRIPT"; die 'Cannot label collector'; }
+    ADDED_RC=1
+    cp "$WORK/gpu-capture.rc" "$RC"
+    chown 0:0 "$RC"
+    chmod 0644 "$RC"
+    chcon u:object_r:system_file:s0 "$RC" || { rm -f "$SCRIPT" "$RC"; die 'Cannot label init file'; }
+    ADDED_FLAG=1
+    echo ELHARIKA-GPU-CAPTURE-v1 > "$CACHE_ROOT/elharika-gpu-capture.request"
+    chmod 0600 "$CACHE_ROOT/elharika-gpu-capture.request"
+    ui 'One-boot GPU logging installed. This is a diagnostic, NOT a boot fix.'
+    ui 'Reboot System once, wait 90 seconds, return to TWRP and collect /cache/elharika-gpu-diagnostics.'
+else
+    rm -f "$SCRIPT" "$RC" "$CACHE_ROOT/elharika-gpu-capture.request"
+    ui 'Diagnostic service removed. Captured logs were preserved.'
+fi
+sync
+COMMITTED=1
