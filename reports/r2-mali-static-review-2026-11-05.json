@@ -1,0 +1,22 @@
+{
+  "system_run": 41862679569,
+  "observed_crash": "47 supplied tombstones abort SurfaceFlinger after eglInitialize returns EGL_NOT_INITIALIZED",
+  "library_examined": "libGLES_mali.so extracted from the built system image",
+  "library_identity": "U:r4p0-00dev0-14wk04",
+  "library_origin": "Exact SM-P900 P900XXS0BPL4 stock input used by the system build",
+  "kernel_source_revision": "de0cdcf10dcca77b400f15d83c1edf4f264a0f02",
+  "kernel_gpu_selection": "CONFIG_MALI_T6XX_R15P0=y",
+  "legacy_abi_source_support": [
+    "UK6",
+    "UK7",
+    "UK8",
+    "UK9"
+  ],
+  "assessment": "Different DDK version labels are not enough to prove an ABI mismatch: selected kernel contains explicit legacy handshakes. Do not blindly switch kernels or substitute another model's blobs.",
+  "loaded_compat_shims_observed_in_tombstone": true,
+  "precise_egl_failure_cause": "NOT_YET_ESTABLISHED",
+  "confirmed_blocker": "Mali EGL initialization / SurfaceFlinger startup",
+  "next_required_validation": "Trace native Mali initialization/device ioctls and graphics HAL interaction on the installed Android kernel; qualify any change with an on-device EGL/SurfaceFlinger test.",
+  "rom_fix_claimed": false,
+  "release_approved": false
+}
