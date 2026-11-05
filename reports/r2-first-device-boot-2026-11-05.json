@@ -1,0 +1,17 @@
+{
+  "target": "SM-P900/v1awifi",
+  "installer_run": 42090849487,
+  "installer_revision": 2,
+  "observation_source": "User report in this conversation, 2026-11-05",
+  "installation": "USER_REPORTS_INSTALL_COMPLETES",
+  "boot": "USER_REPORTS_BLACK_SCREEN_AFTER_REBOOT",
+  "root_cause": "UNKNOWN_PENDING_BOOT_LOG",
+  "system_partition_bytes_user_reported": 2491416576,
+  "hardware_acceptance": "FAILED_BOOT_ACCEPTANCE",
+  "notes": [
+    "Installer completion is not proof of bootability.",
+    "Do not repartition or repeat wipes.",
+    "Collect preserved previous-boot kernel log through TWRP before further build changes.",
+    "Other hardware functions, including S Pen, remain unverified."
+  ]
+}
