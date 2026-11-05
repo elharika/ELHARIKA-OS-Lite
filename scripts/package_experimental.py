@@ -8,6 +8,7 @@ import hashlib
 import json
 import lzma
 from pathlib import Path
+import shutil
 import struct
 import subprocess
 import xml.etree.ElementTree as ET
@@ -150,15 +151,33 @@ def package(system_dir, boot_dir, se, be, output):
     (output / 'README.txt').write_text(readme)
     (output / 'boot-fstab.txt').write_text(fstab)
     archive = output / NAME
-    with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-        info = zipfile.ZipInfo('META-INF/com/google/android/update-binary', (2026,11,5,0,0,0))
-        info.external_attr = 0o100755 << 16; info.compress_type = zipfile.ZIP_DEFLATED
-        z.writestr(info, template)
-        z.writestr('META-INF/com/google/android/updater-script', '# Shell installer in update-binary\n')
-        z.write(raw, 'system.ext4'); z.write(boot, 'boot.img')
-        z.writestr('README.txt', readme)
-        z.writestr('package-validation.json', json.dumps(report, indent=2))
+    # ZIP32 supports sizes through 4 GiB. Python's conservative 2 GiB default
+    # would otherwise emit ZIP64 for our 2.3 GB raw image; older recovery ZIP
+    # parsers may reject ZIP64. Every entry and the archive remain below 4 GiB.
+    old_limit = zipfile.ZIP64_LIMIT
+    zipfile.ZIP64_LIMIT = 0xffffffff
+    try:
+        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, allowZip64=False, compresslevel=6) as z:
+            def add(name, content, mode=0o644):
+                info = zipfile.ZipInfo(name, (2026,11,5,0,0,0))
+                info.external_attr = (0o100000 | mode) << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                if isinstance(content, Path):
+                    info.file_size = content.stat().st_size
+                    with content.open('rb') as src, z.open(info, 'w') as dst:
+                        shutil.copyfileobj(src, dst, 1048576)
+                else:
+                    z.writestr(info, content)
+            add('META-INF/com/google/android/update-binary', template, 0o755)
+            add('META-INF/com/google/android/updater-script', '# Shell installer in update-binary\n')
+            add('system.ext4', raw); add('boot.img', boot)
+            add('README.txt', readme)
+            add('package-validation.json', json.dumps(report, indent=2))
+    finally:
+        zipfile.ZIP64_LIMIT = old_limit
     with zipfile.ZipFile(archive) as z:
+        if any(i.extract_version > 20 for i in z.infolist()):
+            raise ValueError('Unexpected ZIP64 or unsupported compression')
         if z.testzip() is not None:
             raise ValueError('Installer ZIP failed CRC verification')
     (output / (NAME+'.sha256')).write_text(sha(archive)+'  '+NAME+'\n')
