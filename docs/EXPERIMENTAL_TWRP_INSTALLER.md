@@ -28,7 +28,7 @@ configuration; this is compile-time evidence only, not a pen operation test.
    and EFS to external storage if those partitions still contain useful data.
    A backup after wiping cannot recover previously erased files.
 3. Download the GitHub Actions artifact, then extract the **outer download ZIP**.
-   The file to install is **ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP.zip**.
+   The file to install is **ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP-r2.zip**.
    Do not extract that inner installer ZIP and do not flash the older development
    image artifact. Verify the inner ZIP against the accompanying `.sha256` file.
 4. Copy the installer to removable microSD, mounted by TWRP at `/external_sd` or
@@ -60,3 +60,15 @@ with recovery logs; restore a known compatible backup or exact SM-P900 stock
 firmware. Do not flash another model's bootloader or PIT. Runtime tests must cover
 boot/reboot, sleep/wake, graphics, touch, pen pressure/hover/button/orientation,
 Wi-Fi, audio, Bluetooth, storage and APK installation before acceptance.
+
+## Installer revision 2
+
+The user-reported SYSTEM capacity is 2,491,416,576 bytes, larger than the
+2,299,998,208-byte image. Revision 1 nevertheless refused this size. Its shell
+integer comparisons can overflow in a 32-bit recovery, especially at the 4 GiB
+upper bound. Revision 2 uses validated decimal AWK comparisons, preserves the
+minimum/maximum bounds, and prints actual and required sizes. Boundary tests
+include the reported capacity, exact fit, one byte short, malformed values and
+4 GiB limits. This is a packaging fix; System and Boot image hashes are unchanged.
+No repartition, resize or extra wipe is required for this correction. Physical
+installation and boot still require on-device testing; keep recovery logs.
