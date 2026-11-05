@@ -1,0 +1,17 @@
+{
+  "boot_run": 42067803567,
+  "boot_sha256": "7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14",
+  "kernel_config_source": "IKCONFIG extracted from LZMA-compressed zImage inside actual boot.img",
+  "config": {
+    "CONFIG_V1A_WIFI": "y",
+    "CONFIG_INPUT_WACOM": "y",
+    "CONFIG_EPEN_WACOM_G9PLL": "y",
+    "CONFIG_RD_XZ": "y",
+    "CONFIG_XZ_DEC": "y",
+    "CONFIG_SECURITY_SELINUX": "y",
+    "CONFIG_CMDLINE": "\"console=ttySAC2,115200n8 vmalloc=512M androidboot.console=ttySAC2 androidboot.selinux=permissive\"",
+    "CONFIG_ANDROID_BINDER_IPC_32BIT": false
+  },
+  "hardware_tested": false,
+  "security_limitation": "Inherited kernel command line requests SELinux permissive; production release blocked"
+}
