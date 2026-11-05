@@ -19,8 +19,11 @@ EXPANDED = 2299998208
 NAME = 'ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP.zip'
 
 def sha(path):
+    digest = hashlib.sha256()
     with Path(path).open('rb') as f:
-        return hashlib.file_digest(f, 'sha256').hexdigest()
+        for chunk in iter(lambda: f.read(1048576), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 def lock(path):
     return {p.get('path', p.get('name')): (p.get('name'), p.get('revision'))
@@ -124,7 +127,8 @@ def package(system_dir, boot_dir, se, be, output):
         raise ValueError('Unexpanded installer placeholders')
     readme = ('EXPERIMENTAL FIRST-BOOT CANDIDATE, SM-P900/v1awifi ONLY.\n'
               'Hardware untested. Camera and GPS disabled. S Pen, GPU, Wi-Fi and boot unverified.\n'
-              'Android 11 userdebug/testkeys; not a security-maintained production release.\n'
+              'Android 11 userdebug/testkeys, SELinux PERMISSIVE in inherited kernel command line.\n'
+              'Not a security-maintained production release; do not use sensitive accounts/data.\n'
               'Requires TWRP on exact SM-P900, ro.product.device=v1awifi, P900 bootloader,\n'
               'unmounted SYSTEM, and at least 2.5 GB free on removable microSD.\n'
               'Back up Boot/System/Data/EFS to external storage first; preserve stock firmware.\n'
@@ -139,6 +143,8 @@ def package(system_dir, boot_dir, se, be, output):
               'matching_platform_lock': True, 'system_sparse_sha256': SYSTEM_SHA,
               'system_raw_sha256': values['SYSTEM_SHA'], 'boot_sha256': BOOT_SHA,
               'expanded_system_bytes': EXPANDED, 'filesystem_e2fsck_exit': result.returncode,
+              'selinux_kernel_cmdline': 'permissive', 'build_type': 'userdebug/testkeys',
+              'installer_hardware_tested': False,
               'disabled': ['camera', 'GPS'], 'hardware_tests': 'NOT_TESTED'}
     (output / 'package-validation.json').write_text(json.dumps(report, indent=2)+'\n')
     (output / 'README.txt').write_text(readme)
