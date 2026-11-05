@@ -46,14 +46,19 @@ It adds only /system/bin/elharika-gpu-capture.sh and
 It does not replace Boot, GPU libraries, permissions, SELinux policy, or partitions.
 Installation/removal has NOT been hardware-tested. Backups and recovery required.
 Uncheck System in TWRP Mount before installing either ZIP. Do not wipe anything.
-Revision 2 copies and verifies the original system_file xattr using a tiny,
+Revision 3 adds bounded syscall tracing of up to three SurfaceFlinger processes.
+The built-in /system/bin/strace and each target executable are verified.
+No SurfaceFlinger service settings, GPU library or kernel are replaced.
+Known r2 installations are upgraded; previous logs are moved to
+/cache/elharika-gpu-diagnostics.previous-r2, never overwritten.
+Labeling still copies and verifies the original system_file xattr using a tiny,
 static ARM32 Linux helper instead of recovery chcon. It does NOT disable SELinux.
-Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-INSTALL-r2.zip from TWRP Install.
+Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-INSTALL-r3.zip from TWRP Install.
 Reboot System ONCE, wait 90 seconds even if screen remains black, return to TWRP.
 In Mount, enable Cache, then use Terminal:
 tar -czf /external_sd/elharika-gpu-diagnostics.tgz -C /cache elharika-gpu-diagnostics
 Send that archive for analysis. It contains runtime logs, not just tombstone tails.
-Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-REMOVE-r2.zip to remove instrumentation.
+Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-REMOVE-r3.zip to remove instrumentation.
 Removal preserves captured logs. Capture request is consumed once only.
 No paid runner or device connection is needed to build these ZIPs.
 '''
@@ -69,7 +74,7 @@ No paid runner or device connection is needed to build these ZIPs.
         if any('@'+key+'@' in script for key in values):
             raise ValueError('Unexpanded installer token')
         subprocess.run(['sh','-n'], input=script, text=True, check=True)
-        archive = output/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action.upper()+'-r2.zip')
+        archive = output/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action.upper()+'-r3.zip')
         with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
             def add(name, data, mode=0o644):
                 info = zipfile.ZipInfo(name, (2026,11,5,0,0,0))
