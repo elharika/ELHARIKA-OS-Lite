@@ -1,0 +1,28 @@
+name: SM-P900 one-boot GPU diagnostic kit
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/gpu-diagnostic-kit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test and package diagnostic instrumentation
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_gpu_diagnostics.py -v
+          python3 scripts/package_gpu_diagnostics.py gpu-diagnostic-kit
+          (cd gpu-diagnostic-kit && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SM-P900-GPU-DIAGNOSTIC-KIT-NOT-A-ROM-FIX
+          path: gpu-diagnostic-kit/
+          if-no-files-found: error
+          retention-days: 7
