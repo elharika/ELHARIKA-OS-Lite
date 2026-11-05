@@ -1,0 +1,10 @@
+# Temporary, explicitly requested diagnostic service. Never production-enabled.
+service elharika_gpu_capture /system/bin/sh /system/bin/elharika-gpu-capture.sh
+    disabled
+    oneshot
+    user root
+    group root system graphics log
+    seclabel u:r:init:s0
+
+on post-fs-data
+    start elharika_gpu_capture
