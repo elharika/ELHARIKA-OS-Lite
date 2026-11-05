@@ -1,0 +1,59 @@
+#!/sbin/sh
+# ELHARIKA SM-P900 experimental installer. Only BOOT and SYSTEM may be written.
+set -eu
+OUTFD=$2
+ZIP=$3
+WORK=
+ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
+die() { ui "ERROR: $*"; exit 1; }
+cleanup() { [ -z "$WORK" ] || rm -rf "$WORK"; }
+trap cleanup EXIT
+ui 'ELHARIKA OS Lite Android 11: EXPERIMENTAL / HARDWARE UNTESTED'
+ui 'Camera and GPS disabled. Boot and S Pen operation are not verified.'
+for tool in getprop readlink blockdev unzip sha256sum dd head wc df awk sync tr mkdir rm; do
+    command -v "$tool" >/dev/null 2>&1 || die "Recovery missing $tool"
+done
+[ "$(getprop ro.product.device)" = v1awifi ] || die 'Only v1awifi is allowed'
+case "$(getprop ro.bootloader)" in P900*) ;; *) die 'Cannot verify SM-P900 bootloader identity';; esac
+case "$ZIP" in /external_sd/*|/external_sdcard/*) ;; *) die 'Copy installer ZIP to removable microSD first';; esac
+SYSTEM=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/SYSTEM) || die 'No SYSTEM mapping'
+BOOT=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/BOOT) || die 'No BOOT mapping'
+case "$SYSTEM" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected SYSTEM device';; esac
+case "$BOOT" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected BOOT device';; esac
+[ "$SYSTEM" != "$BOOT" ] || die 'Overlapping target partitions'
+[ -b "$SYSTEM" ] && [ -b "$BOOT" ] || die 'Targets must be block devices'
+[ "$(blockdev --getsize64 "$BOOT")" = 8388608 ] || die 'BOOT partition size differs from SM-P900 configuration'
+SYS_BYTES=$(blockdev --getsize64 "$SYSTEM") || die 'Cannot read SYSTEM capacity'
+[ "$SYS_BYTES" -ge @SYSTEM_SIZE@ ] && [ "$SYS_BYTES" -le 4294967296 ] || die 'SYSTEM capacity incompatible'
+# Abort if either target is mounted, including aliases. No automatic unmounts.
+while read -r source mountpoint rest; do
+    canonical=$(readlink -f "$source" 2>/dev/null || true)
+    [ "$canonical" != "$SYSTEM" ] && [ "$canonical" != "$BOOT" ] || die "Unmount $mountpoint in TWRP first"
+done < /proc/mounts
+DIR=${ZIP%/*}
+FREE_KB=$(df -Pk "$DIR" | awk 'END {print $4}')
+case "$FREE_KB" in ''|*[!0-9]*) die 'Cannot determine microSD free space';; esac
+[ "$FREE_KB" -ge @REQUIRED_KB@ ] || die 'Need at least 2.5 GB free on microSD for verified extraction'
+WORK="$DIR/elharika-install-$$"
+mkdir "$WORK" || die 'Cannot create temporary microSD directory'
+ui 'Extracting and checking images on microSD; this can take several minutes...'
+unzip -p "$ZIP" system.ext4 > "$WORK/system.ext4" || die 'SYSTEM extraction or ZIP CRC failed'
+unzip -p "$ZIP" boot.img > "$WORK/boot.img" || die 'BOOT extraction or ZIP CRC failed'
+[ "$(wc -c < "$WORK/system.ext4" | tr -d ' ')" = @SYSTEM_SIZE@ ] || die 'Wrong SYSTEM length'
+[ "$(wc -c < "$WORK/boot.img" | tr -d ' ')" = @BOOT_SIZE@ ] || die 'Wrong BOOT length'
+echo '@SYSTEM_SHA@  system.ext4' > "$WORK/SHA256SUMS"
+echo '@BOOT_SHA@  boot.img' >> "$WORK/SHA256SUMS"
+(cd "$WORK" && sha256sum -c SHA256SUMS) || die 'Image SHA-256 mismatch; nothing written'
+ui 'Preflight passed. Writing SYSTEM; keep power connected.'
+dd if="$WORK/system.ext4" of="$SYSTEM" bs=1048576 || die 'SYSTEM write failed; stay in recovery'
+sync
+ui 'Reading SYSTEM back to verify...'
+ACTUAL=$(head -c @SYSTEM_SIZE@ "$SYSTEM" | sha256sum | awk '{print $1}')
+[ "$ACTUAL" = @SYSTEM_SHA@ ] || die 'SYSTEM readback mismatch; stay in recovery'
+ui 'Writing matching BOOT...'
+dd if="$WORK/boot.img" of="$BOOT" bs=1048576 || die 'BOOT write failed; stay in recovery'
+sync
+ACTUAL=$(head -c @BOOT_SIZE@ "$BOOT" | sha256sum | awk '{print $1}')
+[ "$ACTUAL" = @BOOT_SHA@ ] || die 'BOOT readback mismatch; stay in recovery'
+ui 'Image installation verified. Hardware operation remains untested.'
+ui 'No data, EFS, recovery, bootloader or partition table was written.'
