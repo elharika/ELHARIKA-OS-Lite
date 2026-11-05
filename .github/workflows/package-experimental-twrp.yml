@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 7727018700ca0c246e03dda2c2ea62abd07c13ad
       - name: Verify packaging safeguards
         run: |
           set -euo pipefail
