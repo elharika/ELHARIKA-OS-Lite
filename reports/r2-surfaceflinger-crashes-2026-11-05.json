@@ -1,0 +1,46 @@
+{
+  "archive_sha256": "59d96f686f704f635302b6cb22cd4111b755f1b109bf426ada090fb012363aa5",
+  "empty_tombstones": 3,
+  "nonempty_tombstones": 47,
+  "crash_groups": [
+    {
+      "process": "/system/bin/surfaceflinger",
+      "abort": "eglQueryStringImplementationANDROID(EGL_VERSION) failed",
+      "reports": 47
+    }
+  ],
+  "selected_evidence": [
+    {
+      "member": "data/tombstones/tombstone_00",
+      "process": "/system/bin/surfaceflinger",
+      "abort": "eglQueryStringImplementationANDROID(EGL_VERSION) failed",
+      "graphics_log": [
+        "11-05 19:55:53.835  4264  4264 D libEGL  : loaded /vendor/lib/egl/libGLES_mali.so",
+        "11-05 19:55:53.905  4264  4264 W libEGL  : eglInitialize(0xb4a81c30) failed (EGL_NOT_INITIALIZED)",
+        "11-05 19:55:53.906  4264  4264 F RenderEngine: eglQueryStringImplementationANDROID(EGL_VERSION) failed"
+      ]
+    },
+    {
+      "member": "data/tombstones/tombstone_01",
+      "process": "/system/bin/surfaceflinger",
+      "abort": "eglQueryStringImplementationANDROID(EGL_VERSION) failed",
+      "graphics_log": [
+        "11-05 19:55:58.894  4329  4329 D libEGL  : loaded /vendor/lib/egl/libGLES_mali.so",
+        "11-05 19:55:58.964  4329  4329 W libEGL  : eglInitialize(0xb5a00eb0) failed (EGL_NOT_INITIALIZED)",
+        "11-05 19:55:58.964  4329  4329 F RenderEngine: eglQueryStringImplementationANDROID(EGL_VERSION) failed"
+      ]
+    },
+    {
+      "member": "data/tombstones/tombstone_02",
+      "process": "/system/bin/surfaceflinger",
+      "abort": "eglQueryStringImplementationANDROID(EGL_VERSION) failed",
+      "graphics_log": [
+        "11-05 19:56:03.907  4393  4393 D libEGL  : loaded /vendor/lib/egl/libGLES_mali.so",
+        "11-05 19:56:03.979  4393  4393 W libEGL  : eglInitialize(0xb0701e70) failed (EGL_NOT_INITIALIZED)",
+        "11-05 19:56:03.980  4393  4393 F RenderEngine: eglQueryStringImplementationANDROID(EGL_VERSION) failed"
+      ]
+    }
+  ],
+  "hardware_approved": false,
+  "warning": "Crash signatures locate a failure; they do not prove its underlying cause."
+}
