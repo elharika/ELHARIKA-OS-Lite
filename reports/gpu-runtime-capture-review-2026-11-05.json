@@ -1,0 +1,53 @@
+{
+  "input": "user-supplied elharika-gpu-diagnostics.tgz",
+  "input_sha256": "2283f71552ae192e4fe70b1ec484363c54e22ea49861718e478f5fb7ac24524a",
+  "collector_started_on_device": true,
+  "observations": {
+    "selinux_runtime": "Permissive",
+    "mali_node": {
+      "path": "/dev/mali0",
+      "mode": "0666",
+      "owner": "system",
+      "group": "system",
+      "context": "gpu_device"
+    },
+    "ion_node": {
+      "path": "/dev/ion",
+      "mode": "0666",
+      "owner": "system",
+      "group": "system",
+      "context": "ion_device"
+    },
+    "framebuffer_node": {
+      "path": "/dev/graphics/fb0",
+      "mode": "0660",
+      "owner": "root",
+      "group": "graphics"
+    },
+    "gpu_info": "Mali-T62x MP6 r0p1 0x0620",
+    "board_platform": "exynos5",
+    "surfaceflinger_failure": "eglInitialize returns EGL_NOT_INITIALIZED, followed by RenderEngine abort",
+    "hwcomposer_logs_display_mode": {
+      "width": 2560,
+      "height": 1600,
+      "refresh_hz": 60
+    },
+    "native_mali_failure_details": "NOT_REPORTED_BY_DRIVER_IN_LOGCAT",
+    "other_confirmed_issues": [
+      "Missing cpuset and other optional/required cgroup facilities",
+      "Audio effect liblvverx.so and liblvvetx.so rejected for text relocations"
+    ],
+    "hardware_rendering_verified": false
+  },
+  "assessment": "GPU device and ION are present and world-readable/writable in the supplied runtime capture; permissive SELinux audit messages do not establish an access denial. Need the actual native syscall failure before choosing a GPU fix.",
+  "next_diagnostic": {
+    "revision": 3,
+    "tool": "Existing /system/bin/strace",
+    "scope": "At most 3 verified SurfaceFlinger executable PIDs; open/openat/ioctl/mmap2/close only",
+    "bounded_trace_files": true,
+    "no_core_binary_or_gpu_library_replaced": true,
+    "previous_logs_preserved": true
+  },
+  "boot_approved": false,
+  "root_cause_fixed": false
+}
