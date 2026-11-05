@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import struct
+import time
 import unittest
 import zipfile
 
@@ -24,7 +25,7 @@ class GpuDiagnosticsTests(unittest.TestCase):
             helper.write_bytes(data)
             mod.build(Path(temp),helper)
             for action in ('INSTALL','REMOVE'):
-                with zipfile.ZipFile(Path(temp)/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action+'-r2.zip')) as z:
+                with zipfile.ZipFile(Path(temp)/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action+'-r3.zip')) as z:
                     s = z.read('META-INF/com/google/android/update-binary').decode()
                     self.assertIn(mod.SF_SHA, s)
                     self.assertNotIn('@ACTION@', s)
@@ -68,5 +69,37 @@ class GpuDiagnosticsTests(unittest.TestCase):
             self.assertNotEqual(r.returncode,0)
             self.assertIn(b'errno/status=2',r.stderr)
             with self.assertRaises(ValueError): mod.validate_helper(helper)
+
+    def test_trace_watcher_checks_executable_and_does_not_repeat_same_pid(self):
+        template=(ROOT/'diagnostics/gpu-capture.sh').read_text()
+        body=template.split('trace_surfaceflinger() {',1)[1].split('\n}',1)[0]
+        function='trace_surfaceflinger() {'+body+'\n}\ntrace_surfaceflinger "$@"\n'
+        with tempfile.TemporaryDirectory() as temp:
+            d=Path(temp); marker=d/'marker'
+            prop=d/'getprop';prop.write_text('#!/bin/sh\necho "$TEST_PID"\n');prop.chmod(0o755)
+            tracer=d/'strace';tracer.write_text('#!/bin/sh\n[ "$1" = -V ] && exit 0\necho "$*" >> "$MARKER"\n');tracer.chmod(0o755)
+            target=subprocess.Popen(['sleep','10'])
+            try:
+                executable=None
+                for _ in range(30):
+                    try:
+                        executable=os.readlink('/proc/'+str(target.pid)+'/exe');break
+                    except (PermissionError,FileNotFoundError):time.sleep(0.01)
+                if executable is None:
+                    if os.environ.get('GITHUB_ACTIONS') == 'true':
+                        self.fail('GitHub runner must execute the real child /proc executable guard test')
+                    self.skipTest('Host sandbox prevents reading child /proc/PID/exe; execute this test on the GitHub Linux runner')
+                env=dict(os.environ,PATH=str(d)+':'+os.environ['PATH'],TEST_PID=str(target.pid),MARKER=str(marker))
+                r=subprocess.run(['/bin/sh','-s','--',str(d),executable,str(tracer),'3'],input=function,text=True,env=env,capture_output=True)
+                self.assertEqual(r.returncode,0,r.stderr)
+                self.assertEqual(len(marker.read_text().splitlines()),1)
+                self.assertIn('-p '+str(target.pid),marker.read_text())
+                marker.unlink()
+                r=subprocess.run(['/bin/sh','-s','--',str(d),'/wrong/executable',str(tracer),'3'],input=function,text=True,env=env,capture_output=True)
+                self.assertEqual(r.returncode,0,r.stderr)
+                self.assertFalse(marker.exists())
+                self.assertIsNone(target.poll(), 'Watcher must not kill its target')
+            finally:
+                target.terminate();target.wait()
 
 if __name__ == '__main__': unittest.main()
