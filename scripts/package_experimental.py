@@ -17,7 +17,7 @@ import zipfile
 SYSTEM_SHA = 'fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61'
 BOOT_SHA = '7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
 EXPANDED = 2299998208
-NAME = 'ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP.zip'
+NAME = 'ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP-r2.zip'
 
 def sha(path):
     digest = hashlib.sha256()
@@ -140,6 +140,7 @@ def package(system_dir, boot_dir, se, be, output):
               'System build: 41862679569. Matching boot build: 42067803567.\n'
               'Sources and licenses: https://github.com/elharika/ELHARIKA-OS-Lite\n')
     report = {'status': 'EXPERIMENTAL_INSTALLER_BUILT_HARDWARE_UNTESTED',
+              'installer_revision': 2, 'capacity_check': 'bounded decimal AWK comparison',
               'flash_approved': False, 'system_run': 41862679569, 'boot_run': 42067803567,
               'matching_platform_lock': True, 'system_sparse_sha256': SYSTEM_SHA,
               'system_raw_sha256': values['SYSTEM_SHA'], 'boot_sha256': BOOT_SHA,
