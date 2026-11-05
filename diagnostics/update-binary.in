@@ -22,7 +22,7 @@ cleanup() {
     [ -z "$WORK" ] || rm -rf "$WORK"
 }
 trap cleanup EXIT
-for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cp chmod chown chcon sync mktemp; do
+for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cp chmod chown sync mktemp; do
     command -v "$tool" >/dev/null 2>&1 || die "Recovery missing $tool"
 done
 [ "$(getprop ro.product.device)" = v1awifi ] || die 'Only SM-P900/v1awifi is supported'
@@ -50,13 +50,17 @@ ACTUAL=$(sha256sum "$ROOT/bin/surfaceflinger" | awk '{print $1}')
 [ "$ACTUAL" = @SURFACEFLINGER_SHA@ ] || die 'Installed SurfaceFlinger differs from the diagnosed build'
 SCRIPT="$ROOT/bin/elharika-gpu-capture.sh"
 RC="$ROOT/etc/init/elharika-gpu-capture.rc"
+ui 'ELHARIKA GPU diagnostic installer revision 2'
 if [ '@ACTION@' = install ]; then
     [ ! -e "$SCRIPT" ] && [ ! -e "$RC" ] || die 'Diagnostic files already present; use removal ZIP before reinstalling'
     unzip -p "$ZIP" gpu-capture.sh > "$WORK/gpu-capture.sh" || die 'Cannot extract collector'
     unzip -p "$ZIP" gpu-capture.rc > "$WORK/gpu-capture.rc" || die 'Cannot extract init configuration'
+    unzip -p "$ZIP" label-copy > "$WORK/label-copy" || die 'Cannot extract label helper'
     echo '@SCRIPT_SHA@  gpu-capture.sh' > "$WORK/SHA256SUMS"
     echo '@RC_SHA@  gpu-capture.rc' >> "$WORK/SHA256SUMS"
+    echo '@HELPER_SHA@  label-copy' >> "$WORK/SHA256SUMS"
     (cd "$WORK" && sha256sum -c SHA256SUMS) || die 'Payload checksum failed'
+    chmod 0755 "$WORK/label-copy"
 else
     # Remove only our exact known files; preserve unexpected user modifications.
     for entry in "$SCRIPT:@SCRIPT_SHA@" "$RC:@RC_SHA@"; do
@@ -82,12 +86,18 @@ if [ '@ACTION@' = install ]; then
     cp "$WORK/gpu-capture.sh" "$SCRIPT"
     chown 0:0 "$SCRIPT"
     chmod 0755 "$SCRIPT"
-    chcon u:object_r:system_file:s0 "$SCRIPT" || { rm -f "$SCRIPT"; die 'Cannot label collector'; }
+    if ! "$WORK/label-copy" "$ROOT/etc/init/hw/init.rc" "$SCRIPT" > "$WORK/label-error.txt" 2>&1; then
+        while IFS= read -r line; do ui "$line"; done < "$WORK/label-error.txt"
+        die 'Cannot label collector; rollback requested'
+    fi
     ADDED_RC=1
     cp "$WORK/gpu-capture.rc" "$RC"
     chown 0:0 "$RC"
     chmod 0644 "$RC"
-    chcon u:object_r:system_file:s0 "$RC" || { rm -f "$SCRIPT" "$RC"; die 'Cannot label init file'; }
+    if ! "$WORK/label-copy" "$ROOT/etc/init/hw/init.rc" "$RC" > "$WORK/label-error.txt" 2>&1; then
+        while IFS= read -r line; do ui "$line"; done < "$WORK/label-error.txt"
+        die 'Cannot label init file; rollback requested'
+    fi
     ADDED_FLAG=1
     echo ELHARIKA-GPU-CAPTURE-v1 > "$CACHE_ROOT/elharika-gpu-capture.request"
     chmod 0600 "$CACHE_ROOT/elharika-gpu-capture.request"
