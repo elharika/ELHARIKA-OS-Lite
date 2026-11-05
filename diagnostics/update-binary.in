@@ -9,20 +9,28 @@ ADDED_SCRIPT=0
 ADDED_RC=0
 ADDED_FLAG=0
 COMMITTED=0
+UPGRADING=0
+MOVED_LOGS=0
 ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
 die() { ui "ERROR: $*"; exit 1; }
 cleanup() {
     if [ "$COMMITTED" = 0 ]; then
-        [ "$ADDED_SCRIPT" = 0 ] || rm -f "$SCRIPT"
-        [ "$ADDED_RC" = 0 ] || rm -f "$RC"
+        if [ "$UPGRADING" = 1 ]; then
+            cat "$WORK/previous-script" > "$SCRIPT"
+            cat "$WORK/previous-rc" > "$RC"
+        else
+            [ "$ADDED_SCRIPT" = 0 ] || rm -f "$SCRIPT"
+            [ "$ADDED_RC" = 0 ] || rm -f "$RC"
+        fi
         [ "$ADDED_FLAG" = 0 ] || rm -f "$CACHE_ROOT/elharika-gpu-capture.request"
+        [ "$MOVED_LOGS" = 0 ] || mv "$CACHE_ROOT/elharika-gpu-diagnostics.previous-r2" "$CACHE_ROOT/elharika-gpu-diagnostics"
     fi
     [ "$MOUNTED_SYSTEM" = 0 ] || umount "$WORK/system" || true
     [ "$MOUNTED_CACHE" = 0 ] || umount "$WORK/cache" || true
     [ -z "$WORK" ] || rm -rf "$WORK"
 }
 trap cleanup EXIT
-for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cp chmod chown sync mktemp; do
+for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cp cat mv chmod chown sync mktemp; do
     command -v "$tool" >/dev/null 2>&1 || die "Recovery missing $tool"
 done
 [ "$(getprop ro.product.device)" = v1awifi ] || die 'Only SM-P900/v1awifi is supported'
@@ -50,9 +58,17 @@ ACTUAL=$(sha256sum "$ROOT/bin/surfaceflinger" | awk '{print $1}')
 [ "$ACTUAL" = @SURFACEFLINGER_SHA@ ] || die 'Installed SurfaceFlinger differs from the diagnosed build'
 SCRIPT="$ROOT/bin/elharika-gpu-capture.sh"
 RC="$ROOT/etc/init/elharika-gpu-capture.rc"
-ui 'ELHARIKA GPU diagnostic installer revision 2'
+ui 'ELHARIKA GPU diagnostic installer revision 3: bounded SurfaceFlinger strace'
 if [ '@ACTION@' = install ]; then
-    [ ! -e "$SCRIPT" ] && [ ! -e "$RC" ] || die 'Diagnostic files already present; use removal ZIP before reinstalling'
+    [ "$(sha256sum "$ROOT/bin/strace" | awk '{print $1}')" = '3dc25044f47e7d336b4bb990b127af97317fbdb54feb0059217c5b5d31386752' ] || die 'Installed strace differs from diagnosed system'
+    if [ -e "$SCRIPT" ] || [ -e "$RC" ]; then
+        [ -f "$SCRIPT" ] && [ -f "$RC" ] || die 'Incomplete previous diagnostic installation'
+        [ "$(sha256sum "$SCRIPT" | awk '{print $1}')" = '1874b41696592f99f9b58915594cfced81a273881e3f67d9ffd9d81a9e152a6f' ] || die 'Previous collector differs from known r2; no changes made'
+        [ "$(sha256sum "$RC" | awk '{print $1}')" = '0f51e0aa4f700d0c68fa64f49ce3400a69dd4b6886d0b2b2c1701a3ba48c461f' ] || die 'Previous init file differs from known r2'
+        cp "$SCRIPT" "$WORK/previous-script"
+        cp "$RC" "$WORK/previous-rc"
+        UPGRADING=1
+    fi
     unzip -p "$ZIP" gpu-capture.sh > "$WORK/gpu-capture.sh" || die 'Cannot extract collector'
     unzip -p "$ZIP" gpu-capture.rc > "$WORK/gpu-capture.rc" || die 'Cannot extract init configuration'
     unzip -p "$ZIP" label-copy > "$WORK/label-copy" || die 'Cannot extract label helper'
@@ -80,7 +96,11 @@ if [ -z "$CACHE_ROOT" ]; then
     CACHE_ROOT="$WORK/cache"
 fi
 if [ '@ACTION@' = install ]; then
-    [ ! -e "$CACHE_ROOT/elharika-gpu-diagnostics" ] || die 'Archive existing diagnostic logs before installing another capture'
+    if [ -e "$CACHE_ROOT/elharika-gpu-diagnostics" ]; then
+        [ ! -e "$CACHE_ROOT/elharika-gpu-diagnostics.previous-r2" ] || die 'Existing archived diagnostic directory; no logs overwritten'
+        mv "$CACHE_ROOT/elharika-gpu-diagnostics" "$CACHE_ROOT/elharika-gpu-diagnostics.previous-r2"
+        MOVED_LOGS=1
+    fi
     # Prepare fully labeled files before publishing the init script.
     ADDED_SCRIPT=1
     cp "$WORK/gpu-capture.sh" "$SCRIPT"
