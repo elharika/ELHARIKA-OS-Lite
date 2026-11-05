@@ -9,20 +9,35 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 8bbf1b21918e734774870a624ce4aef56426fa47
+      - name: Install ARM compiler and user-mode emulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-arm-linux-gnueabi qemu-user
+      - name: Compile freestanding ARM label helper and verify ABI
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          flags='-Os -nostdlib -static -fno-pie -no-pie -fno-builtin -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -marm -march=armv7-a -mfloat-abi=soft -Wall -Wextra -Werror -Wl,--build-id=none -Wl,-e,_start'
+          arm-linux-gnueabi-gcc $flags diagnostics/label-copy.c -o out/label-copy-arm
+          arm-linux-gnueabi-gcc $flags -DLABEL_COPY_TEST diagnostics/label-copy.c -o out/label-copy-arm-test
+          readelf -h -l out/label-copy-arm | tee out/label-helper-readelf.txt
+          python3 scripts/test_label_copy_arm.py out/label-copy-arm-test
       - name: Test and package diagnostic instrumentation
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p test_gpu_diagnostics.py -v
-          python3 scripts/package_gpu_diagnostics.py gpu-diagnostic-kit
+          python3 scripts/package_gpu_diagnostics.py gpu-diagnostic-kit --label-helper out/label-copy-arm
+          cp out/label-helper-readelf.txt gpu-diagnostic-kit/
           (cd gpu-diagnostic-kit && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: SM-P900-GPU-DIAGNOSTIC-KIT-NOT-A-ROM-FIX
+          name: SM-P900-GPU-DIAGNOSTIC-KIT-r2-NOT-A-ROM-FIX
           path: gpu-diagnostic-kit/
           if-no-files-found: error
           retention-days: 7
