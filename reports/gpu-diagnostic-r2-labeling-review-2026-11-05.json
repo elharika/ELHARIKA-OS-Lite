@@ -1,0 +1,26 @@
+{
+  "input": "user-provided elharika-recovery.log",
+  "input_sha256": "c9d0e55eb8894a12e3a7d90624483b9db71d608cef0a17b7505071a4ec74d797",
+  "recovery_version": "TWRP 3.6.0_9-0",
+  "observed": "Diagnostic installer payload hashes passed; recovery chcon failed without detailed stderr before collector activation",
+  "underlying_chcon_error": "NOT_REPORTED_IN_SUPPLIED_LOG",
+  "revision": 2,
+  "change": "Replace recovery chcon with a freestanding static ARM32 helper: getxattr from the original Android init.rc, require exact system_file context, setxattr on each diagnostic file, read back and verify. Report numeric errno and roll back on failure.",
+  "label_reference_verified_offline": {
+    "path": "/system/etc/init/hw/init.rc",
+    "context": "u:object_r:system_file:s0",
+    "stored_bytes": 26
+  },
+  "build_run": 42108543956,
+  "artifact_id": 13451559426,
+  "checks": {
+    "host_unit_tests": "3 PASSED",
+    "arm_eabi_user_xattr_qemu_tests": "PASSED",
+    "static_arm_elf_validation": "PASSED",
+    "package_sha256_checks": "PASSED",
+    "tablet_selinux_label_copy": "NOT_YET_TESTED"
+  },
+  "selinux_disabled_by_change": false,
+  "boot_or_gpu_library_replaced": false,
+  "black_screen_fixed": false
+}
