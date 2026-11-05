@@ -1,13 +1,18 @@
-# ELHARIKA OS Lite — application CI
+# ELHARIKA OS Lite — SM-P900 / v1awifi
 
-Target OS project: Samsung SM-P900 / v1awifi. This repository seed builds only the two Java Android apps. It does NOT build or publish a ROM, boot image, kernel, or recovery. Full platform and vendor integration remain incomplete.
+Android 11 development project for the Samsung Galaxy Note Pro 12.2 Wi-Fi **SM-P900 only**. This is not an approved or hardware-validated release.
 
-On main push or manual dispatch, GitHub Actions records actual CPU, disk and RAM, installs API30 and build-tools30.0.3, builds both apps with JDK17, verifies APK signatures through the build script, and uploads artifacts and logs for seven days. No private signing key is uploaded. Each run generates a fresh development key, so APKs from separate runs cannot necessarily update one another. Export notes before uninstalling any previous version.
+## Verified software work
 
-No paid runner is selected. Private repository minutes can count toward the account allowance; check account billing controls. Source uses standard ubuntu-22.04. This CI file has not yet run on GitHub. Local builds previously succeeded with the same SDK and JDK major version; this is not hardware verification.
+- Full Android 11 system image built successfully in [run 41862679569](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/41862679569). Expanded ext4 filesystem passed read-only e2fsck, exit 0.
+- Matching boot image built successfully in [run 42067803567](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42067803567). Boot and system project revision maps are identical.
+- Custom launcher and Pen Tools source, vendor integration tools, pinned device/kernel sources, build workflows, and automated checks are included.
+- Experimental TWRP packaging verifies pinned image hashes, filesystem consistency, first-stage mount configuration and ZIP CRC. The installer checks device identity, capacities, mounts and image hashes before writing only SYSTEM and BOOT, then verifies block readback.
 
-The standard runner is not assumed sufficient for an entire Android source build. A large runner alone will not resolve the incomplete device port. No GApps or root components are included in these apps.
+## Release blockers
 
-## ROM development status
+**Physical-device boot and all hardware operation remain untested**, including S Pen pressure/hover/button, touchscreen, GPU, Wi-Fi, Bluetooth, audio, sleep/wake and storage. Compile-time Wacom G9PLL support does not prove functioning pen input. Camera and GPS are disabled because stock Android 5 binaries have incompatible APIs. The inherited kernel command line requests **SELinux permissive**; this and userdebug/testkeys are unsuitable for a production release or sensitive data. The inherited stock build fingerprint also needs correction.
 
-**NOT FLASHABLE.** This repository does not yet contain a validated SM-P900 Android ROM. APK build artifacts must never be flashed through TWRP. The hardware-specific device tree, vendor blobs, Android source integration, ROM packaging and on-device tests are pending. See `docs/ROM_BUILD_PLAN.md`.
+The old `system-development-NOT-FLASH-APPROVED` artifact is a container of images, **not a TWRP installer**. Never select it in Install Zip. A packaging artifact contains an inner `ELHARIKA-OS-Lite-11-SM-P900-EXPERIMENTAL-TWRP.zip` and its checksum; extract the outer download container once. Do not confuse an experimental installer with hardware validation.
+
+See [experimental installation and recovery notes](docs/EXPERIMENTAL_TWRP_INSTALLER.md), [actual matching boot review](reports/matching-boot-42067803567-review.json), [build documentation](docs/BUILD_AND_VALIDATION.md), and [source provenance](docs/SOURCE_PROVENANCE.md). Keep a compatible backup and exact SM-P900 stock restore route. No bootloader/PIT/repartition operations are part of this installer.
