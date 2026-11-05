@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          ref: 8bbf1b21918e734774870a624ce4aef56426fa47
+          ref: cf85c3878843eb2b1f89668b2f278f72c46fa65a
       - name: Install ARM compiler and user-mode emulator
         run: |
           sudo apt-get update -qq
@@ -37,7 +37,7 @@ jobs:
           (cd gpu-diagnostic-kit && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: SM-P900-GPU-DIAGNOSTIC-KIT-r2-NOT-A-ROM-FIX
+          name: SM-P900-GPU-DIAGNOSTIC-KIT-r3-NOT-A-ROM-FIX
           path: gpu-diagnostic-kit/
           if-no-files-found: error
           retention-days: 7
