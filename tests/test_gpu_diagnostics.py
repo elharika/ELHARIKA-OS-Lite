@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import struct
 import unittest
 import zipfile
 
@@ -13,14 +14,23 @@ mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
 class GpuDiagnosticsTests(unittest.TestCase):
     def test_builds_distinct_reversible_packages(self):
         with tempfile.TemporaryDirectory() as temp:
-            mod.build(Path(temp))
+            # Structural ELF fixture only; never used as an executable or deliverable.
+            helper = Path(temp)/'fixture-arm'
+            data = bytearray(128)
+            data[:16] = b'\x7fELF\x01\x01\x01'+bytes(9)
+            struct.pack_into('<HHIIIIIHHHHHH',data,16,2,40,1,0x10054,52,0,0x5000000,52,32,1,0,0,0)
+            struct.pack_into('<8I',data,52,1,0,0x10000,0x10000,128,128,5,4096)
+            data[88:105] = b'security.selinux\0'
+            helper.write_bytes(data)
+            mod.build(Path(temp),helper)
             for action in ('INSTALL','REMOVE'):
-                with zipfile.ZipFile(Path(temp)/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action+'.zip')) as z:
+                with zipfile.ZipFile(Path(temp)/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action+'-r2.zip')) as z:
                     s = z.read('META-INF/com/google/android/update-binary').decode()
                     self.assertIn(mod.SF_SHA, s)
                     self.assertNotIn('@ACTION@', s)
                     self.assertIn('GPU-CAPTURE-v1', s)
                     self.assertEqual('gpu-capture.sh' in z.namelist(), action == 'INSTALL')
+                    self.assertEqual('label-copy' in z.namelist(), action == 'INSTALL')
                     self.assertFalse(z.testzip())
 
     def test_foreign_device_cannot_mount_or_write(self):
@@ -35,5 +45,28 @@ class GpuDiagnosticsTests(unittest.TestCase):
             self.assertNotEqual(r.returncode,0)
             self.assertIn('Only SM-P900', (d/'ui').read_text())
             self.assertFalse((d/'marker').exists())
+
+    def test_native_helper_copies_exact_label_and_refuses_wrong_reference(self):
+        with tempfile.TemporaryDirectory() as temp:
+            d=Path(temp); helper=d/'label-copy-host'
+            subprocess.run(['gcc','-DLABEL_COPY_TEST','-Os','-nostdlib','-static','-fno-pie','-no-pie',
+                '-fno-builtin','-fno-stack-protector','-Wall','-Wextra','-Werror',
+                '-Wl,--build-id=none','-Wl,-e,_start',str(ROOT/'diagnostics/label-copy.c'),'-o',str(helper)],check=True)
+            ref=d/'reference';target=d/'target';ref.write_bytes(b'ref');target.write_bytes(b'unchanged-content')
+            attribute='user.elharika-label-test'; label=b'u:object_r:system_file:s0\0'
+            os.setxattr(ref,attribute,label)
+            r=subprocess.run([str(helper),str(ref),str(target)],capture_output=True)
+            self.assertEqual(r.returncode,0,r.stderr)
+            self.assertEqual(os.getxattr(target,attribute),label)
+            self.assertEqual(target.read_bytes(),b'unchanged-content')
+            os.setxattr(ref,attribute,b'u:object_r:wrong_type:s0\0')
+            r=subprocess.run([str(helper),str(ref),str(target)],capture_output=True)
+            self.assertNotEqual(r.returncode,0)
+            self.assertEqual(os.getxattr(target,attribute),label)
+            os.setxattr(ref,attribute,label)
+            r=subprocess.run([str(helper),str(ref),str(d/'missing')],capture_output=True)
+            self.assertNotEqual(r.returncode,0)
+            self.assertIn(b'errno/status=2',r.stderr)
+            with self.assertRaises(ValueError): mod.validate_helper(helper)
 
 if __name__ == '__main__': unittest.main()
