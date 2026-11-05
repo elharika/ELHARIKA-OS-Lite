@@ -4,13 +4,37 @@ import argparse
 import hashlib
 from pathlib import Path
 import subprocess
+import struct
 import zipfile
 
 SF_SHA = 'daf54072c758c5f52a70283dcc8ac22e6f157600a0b8c555639802c606e9110d'
 
-def build(output):
+def validate_helper(path):
+    data = Path(path).read_bytes()
+    if len(data) < 84 or len(data) > 131072 or data[:7] != b'\x7fELF\x01\x01\x01':
+        raise ValueError('Label helper must be a small ARM32 little-endian ELF')
+    header = struct.unpack_from('<HHIIIIIHHHHHH', data, 16)
+    kind, machine, version, entry, phoff = header[:5]
+    flags, ehsize, phsize, count = header[6:10]
+    if (kind, machine, version, ehsize, phsize) != (2, 40, 1, 52, 32) or flags >> 24 != 5:
+        raise ValueError('Label helper must be a static ARM EABI5 executable')
+    if not 0 < count < 16 or phoff + count * 32 > len(data):
+        raise ValueError('Invalid label helper program headers')
+    executable_entry = False
+    for i in range(count):
+        typ, offset, address, _, size, memory, permission, _ = struct.unpack_from('<8I',data,phoff+i*32)
+        if typ in (2, 3): raise ValueError('Dynamic helpers are not supported')
+        if typ == 1:
+            if offset + size > len(data) or size > memory: raise ValueError('Truncated load segment')
+            executable_entry |= bool(permission & 1 and address <= entry < address + size)
+    if not executable_entry or b'user.elharika-label-test' in data or b'security.selinux' not in data:
+        raise ValueError('Invalid or test-only label helper')
+    return data
+
+def build(output, helper):
     root = Path(__file__).resolve().parents[1]
     payload = {name: (root/'diagnostics'/name).read_bytes() for name in ('gpu-capture.sh','gpu-capture.rc')}
+    helper_bytes = validate_helper(helper)
     template = (root/'diagnostics/update-binary.in').read_text()
     for script in (template, payload['gpu-capture.sh'].decode()):
         subprocess.run(['sh','-n'], input=script, text=True, check=True)
@@ -22,12 +46,14 @@ It adds only /system/bin/elharika-gpu-capture.sh and
 It does not replace Boot, GPU libraries, permissions, SELinux policy, or partitions.
 Installation/removal has NOT been hardware-tested. Backups and recovery required.
 Uncheck System in TWRP Mount before installing either ZIP. Do not wipe anything.
-Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-INSTALL.zip from TWRP Install.
+Revision 2 copies and verifies the original system_file xattr using a tiny,
+static ARM32 Linux helper instead of recovery chcon. It does NOT disable SELinux.
+Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-INSTALL-r2.zip from TWRP Install.
 Reboot System ONCE, wait 90 seconds even if screen remains black, return to TWRP.
 In Mount, enable Cache, then use Terminal:
 tar -czf /external_sd/elharika-gpu-diagnostics.tgz -C /cache elharika-gpu-diagnostics
 Send that archive for analysis. It contains runtime logs, not just tombstone tails.
-Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-REMOVE.zip to remove instrumentation.
+Install ELHARIKA-SM-P900-GPU-DIAGNOSTICS-REMOVE-r2.zip to remove instrumentation.
 Removal preserves captured logs. Capture request is consumed once only.
 No paid runner or device connection is needed to build these ZIPs.
 '''
@@ -37,12 +63,13 @@ No paid runner or device connection is needed to build these ZIPs.
         script = template
         values = {'ACTION': action, 'SURFACEFLINGER_SHA': SF_SHA,
                   'SCRIPT_SHA': hashlib.sha256(payload['gpu-capture.sh']).hexdigest(),
+                  'HELPER_SHA': hashlib.sha256(helper_bytes).hexdigest(),
                   'RC_SHA': hashlib.sha256(payload['gpu-capture.rc']).hexdigest()}
         for key, value in values.items(): script = script.replace('@'+key+'@', value)
         if any('@'+key+'@' in script for key in values):
             raise ValueError('Unexpanded installer token')
         subprocess.run(['sh','-n'], input=script, text=True, check=True)
-        archive = output/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action.upper()+'.zip')
+        archive = output/('ELHARIKA-SM-P900-GPU-DIAGNOSTICS-'+action.upper()+'-r2.zip')
         with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
             def add(name, data, mode=0o644):
                 info = zipfile.ZipInfo(name, (2026,11,5,0,0,0))
@@ -52,8 +79,10 @@ No paid runner or device connection is needed to build these ZIPs.
             add('META-INF/com/google/android/update-binary', script, 0o755)
             add('META-INF/com/google/android/updater-script', '# Shell diagnostic installer\n')
             add('README.txt', readme)
+            add('LABEL-COPY-LICENSE.txt', (root/'diagnostics/LABEL-COPY-LICENSE.txt').read_bytes())
             if action == 'install':
                 for name, data in payload.items(): add(name, data)
+                add('label-copy', helper_bytes, 0o755)
         with zipfile.ZipFile(archive) as z:
             if z.testzip(): raise ValueError('ZIP CRC verification failed')
         lines.append(hashlib.sha256(archive.read_bytes()).hexdigest()+'  '+archive.name)
@@ -61,4 +90,5 @@ No paid runner or device connection is needed to build these ZIPs.
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__); p.add_argument('output', type=Path)
-    build(p.parse_args().output)
+    p.add_argument('--label-helper', type=Path, required=True)
+    a=p.parse_args(); build(a.output, a.label_helper)
