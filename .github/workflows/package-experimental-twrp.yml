@@ -1,0 +1,68 @@
+name: Package SM-P900 experimental TWRP installer
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/package-experimental-twrp.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: package-sm-p900-experimental
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify packaging safeguards
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_experimental_package.py -v
+          sh -n installer/update-binary.in
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-development-NOT-FLASH-APPROVED
+          run-id: 41862679569
+          github-token: ${{ github.token }}
+          path: inputs/system
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: inputs/boot
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-build-evidence
+          run-id: 41862679569
+          github-token: ${{ github.token }}
+          path: inputs/system-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: matching-boot-build-evidence
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: inputs/boot-evidence
+      - name: Build and validate experimental installer
+        run: |
+          set -euo pipefail
+          python3 scripts/package_experimental.py --system-dir inputs/system --boot-dir inputs/boot --system-evidence inputs/system-evidence --boot-evidence inputs/boot-evidence --output experimental-package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-EXPERIMENTAL-TWRP-INSTALLER
+          path: |
+            experimental-package/*.zip
+            experimental-package/*.sha256
+            experimental-package/README.txt
+            experimental-package/package-validation.json
+            experimental-package/filesystem-check.log
+            experimental-package/boot-fstab.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
