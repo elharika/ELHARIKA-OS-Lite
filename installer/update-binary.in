@@ -6,6 +6,15 @@ ZIP=$3
 WORK=
 ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
 die() { ui "ERROR: $*"; exit 1; }
+# Recovery sh/test may use signed 32-bit integers. AWK compares our bounded
+# decimal byte counts exactly without overflowing at 2 GiB or 4 GiB.
+system_capacity_ok() {
+    awk -v actual="$1" -v required="$2" 'BEGIN {
+        if (actual !~ /^[0-9]+$/ || required !~ /^[0-9]+$/ ||
+            length(actual) > 10 || length(required) > 10) exit 1
+        exit !(required + 0 > 0 && actual + 0 >= required + 0 && actual + 0 <= 4294967296)
+    }'
+}
 cleanup() { [ -z "$WORK" ] || rm -rf "$WORK"; }
 trap cleanup EXIT
 ui 'ELHARIKA OS Lite Android 11: EXPERIMENTAL / HARDWARE UNTESTED'
@@ -24,7 +33,8 @@ case "$BOOT" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected BOOT device';; 
 [ -b "$SYSTEM" ] && [ -b "$BOOT" ] || die 'Targets must be block devices'
 [ "$(blockdev --getsize64 "$BOOT")" = 8388608 ] || die 'BOOT partition size differs from SM-P900 configuration'
 SYS_BYTES=$(blockdev --getsize64 "$SYSTEM") || die 'Cannot read SYSTEM capacity'
-[ "$SYS_BYTES" -ge @SYSTEM_SIZE@ ] && [ "$SYS_BYTES" -le 4294967296 ] || die 'SYSTEM capacity incompatible'
+ui "SYSTEM bytes: $SYS_BYTES; image bytes: @SYSTEM_SIZE@; installer revision: 2"
+system_capacity_ok "$SYS_BYTES" '@SYSTEM_SIZE@' || die "SYSTEM capacity incompatible: actual=$SYS_BYTES required=@SYSTEM_SIZE@"
 # Abort if either target is mounted, including aliases. No automatic unmounts.
 while read -r source mountpoint rest; do
     canonical=$(readlink -f "$source" 2>/dev/null || true)
