@@ -1,0 +1,47 @@
+{
+  "target": "SM-P900/v1awifi",
+  "input": "user-provided elharika-last-kmsg.txt",
+  "input_sha256": "cd22244ad7299a9b267d55f1956b6377bac6b618b8fd0f9b58e6580e4055783d",
+  "input_bytes": 10380,
+  "observed": {
+    "last_timestamp_seconds": 187.453281,
+    "android_init_messages": true,
+    "data_mounted_as": "ext4",
+    "kernel_panic_present_in_supplied_excerpt": false,
+    "cpuset_mount_failure": "No such device",
+    "other_cgroup_mount_failures": [
+      "blkio",
+      "cgroup2",
+      "memory",
+      "schedtune"
+    ],
+    "early_e2fsck_exec_failed": true,
+    "stale_gpsd_service_reference": true,
+    "wacom_driver_message": "wacom_i2c_sync_lcd_freq: node file open fail, -2"
+  },
+  "source_config_cross_check": {
+    "kernel_revision": "de0cdcf10dcca77b400f15d83c1edf4f264a0f02",
+    "CONFIG_CPUSETS": false,
+    "CONFIG_CGROUP_MEM_RES_CTLR": false,
+    "CONFIG_BLK_CGROUP": false,
+    "CONFIG_PERF_EVENTS": false
+  },
+  "assessment": {
+    "kernel_and_android_init_start": "SUPPORTED_BY_LOG",
+    "successful_android_framework_or_display": "NOT_ESTABLISHED",
+    "black_screen_root_cause": "NOT_YET_ESTABLISHED",
+    "notes": [
+      "Missing cpuset kernel support is a concrete compatibility issue and must be reviewed alongside userspace failures.",
+      "Optional controller mount warnings alone do not establish the boot failure cause.",
+      "The missing gpsd is expected from the disabled-GPS profile but its stale init declaration needs cleanup; it is not established as the cause of the black screen.",
+      "The supplied file contains no logcat, SurfaceFlinger, zygote or system_server failure trace.",
+      "The Wacom warning does not establish either functioning or broken pen input."
+    ]
+  },
+  "next_evidence": [
+    "Existing /data/tombstones",
+    "Existing /data/system/dropbox",
+    "Existing /data/misc/logd"
+  ],
+  "release_acceptance": "BLOCKED_FAILED_DEVICE_BOOT"
+}
