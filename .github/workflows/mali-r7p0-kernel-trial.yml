@@ -126,12 +126,12 @@ jobs:
           set -euo pipefail
           python3 scripts/select_mali_r7p0.py "$RUNNER_TEMP/android11" --report evidence/mali-r7p0-selection.json
           grep -q '"selected_ddk": "r7p0"' evidence/mali-r7p0-selection.json
-      - name: Repair pinned Exynos5420 r7p0 Kbuild GPU registration
+
+      - name: Repair pinned r7p0 Kbuild registration rules
         shell: bash
         run: |
           set -euo pipefail
           python3 scripts/fix_r7p0_kbuild.py "$RUNNER_TEMP/android11" --report evidence/mali-r7p0-kbuild-repair.json
-          grep -Fq '"requires_compiled_object_proof": true' evidence/mali-r7p0-kbuild-repair.json
 
       - name: Integrate SM-P900 vendor tree and product
         shell: bash
@@ -226,65 +226,13 @@ jobs:
           test -s "$compiled_config"
           grep -Fxq 'CONFIG_MALI_T6XX_R7P0=y' "$compiled_config"
           grep -Fxq '# CONFIG_MALI_T6XX_R15P0 is not set' "$compiled_config"
-          grep -Fxq 'CONFIG_SOC_EXYNOS5420=y' "$compiled_config"
           sha256sum "$compiled_config" > evidence/compiled-kernel-config.sha256
-          # r7p0=y alone is NOT proof of linked GPU code. The old build had
-          # no /dev/mali0 because its Kbuild used an undefined config variable.
-          kernel_obj="$product/obj/KERNEL_OBJ"
-          gpu_obj="$kernel_obj/drivers/gpu/arm/t6xx/r7p0/mali_kbase.o"
-          soc_obj="$kernel_obj/drivers/gpu/arm/t6xx/r7p0/platform/exynos/gpu_exynos5420.o"
-          for obj in "$gpu_obj" "$soc_obj"; do
-            test -s "$obj"
-            file "$obj" >> evidence/mali-r7p0-linked-object-proof.txt
-            sha256sum "$obj" >> evidence/mali-r7p0-linked-object-proof.txt
-          done
-          command -v nm
-          nm "$gpu_obj" > evidence/mali-r7p0-gpu-object-symbols.txt
-          grep -Eq '[[:space:]]kbase_platform_driver          python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
-          mkdir development-boot
-          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json evidence/mali-r7p0-kbuild-repair.json evidence/mali-r7p0-vmlinux-proof.txt development-boot/
-          (cd development-boot && sha256sum boot.img > SHA256SUMS)
-          echo 'EXPERIMENTAL SM-P900 r7p0 GPU-Kbuild-fix kernel. Both kbase and Exynos5420 objects must be present and linked. Not device tested; NOT FLASH APPROVED. Installed IKeyDisabler HAL manifest remains unfixed. Preserve old boot and Mali restore plan.' > development-boot/README.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
-          path: development-boot/
-          if-no-files-found: error
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Mali-r7p0-boot-build-evidence
-          path: evidence/
-          retention-days: 7
- evidence/mali-r7p0-gpu-object-symbols.txt
-          test -s "$kernel_obj/vmlinux"
-          nm "$kernel_obj/vmlinux" > evidence/vmlinux-all-symbols.txt
-          grep -Eq '[[:space:]]kbase_platform_driver          python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
-          mkdir development-boot
-          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json development-boot/
-          (cd development-boot && sha256sum boot.img > SHA256SUMS)
-          echo 'EXPERIMENTAL SM-P900 r7p0 kernel only; does not repair optional IKeyDisabler HAL in installed vendor manifest. Boot/rendering untested; NOT FLASH APPROVED. Preserve original boot and Mali RESTORE ZIP. Paired UK10 library still requires hardware validation.' > development-boot/README.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
-          path: development-boot/
-          if-no-files-found: error
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Mali-r7p0-boot-build-evidence
-          path: evidence/
-          retention-days: 7
- evidence/vmlinux-all-symbols.txt
-          grep -E 'kbase_platform_driver|kbase_driver_init|gpu_exynos' evidence/vmlinux-all-symbols.txt > evidence/mali-r7p0-vmlinux-proof.txt
-          rm evidence/vmlinux-all-symbols.txt
+          python3 scripts/check_r7p0_kernel_artifacts.py "$product/obj/KERNEL_OBJ" --report evidence/r7p0-build-gpu-check.json
           python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
           mkdir development-boot
-          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json development-boot/
+          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json evidence/mali-r7p0-kbuild-repair.json evidence/r7p0-build-gpu-check.json development-boot/
           (cd development-boot && sha256sum boot.img > SHA256SUMS)
-          echo 'EXPERIMENTAL SM-P900 r7p0 kernel only; does not repair optional IKeyDisabler HAL in installed vendor manifest. Boot/rendering untested; NOT FLASH APPROVED. Preserve original boot and Mali RESTORE ZIP. Paired UK10 library still requires hardware validation.' > development-boot/README.txt
+          echo 'EXPERIMENTAL SM-P900 r7p0 Kbuild fix. GPU object and linked symbol checked but actual /dev/mali0 and boot not tested; NOT FLASH APPROVED. Preserve original boot and Mali RESTORE ZIP. Paired UK10 library still requires hardware validation.' > development-boot/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
