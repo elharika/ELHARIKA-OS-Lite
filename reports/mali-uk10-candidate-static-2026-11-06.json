@@ -1,0 +1,77 @@
+{
+  "status": "STATIC_VALIDATED_HARDWARE_UNTESTED",
+  "device": "SM-P900/v1awifi",
+  "source": "Valera1978/android_vendor_samsung_v1awifi",
+  "source_commit": "4079dd66fc6955adb208a0633220f4b72faaf82d",
+  "source_path": "proprietary/vendor/lib/egl/libGLES_mali.so",
+  "source_sha256": "a66179ef65c26a797b814e3d9cf0ab2b7f07e0d32c641f463820c0a0c49f1ee9",
+  "original_sha256": "3bc453470f2f6711d463f3fff9b115011cbcefcbb1355be9af147857d892e433",
+  "candidate_sha256": "34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde",
+  "installed_shim_sha256": "740ba30081b184a7878d05c4014e541d8090c28d37e88f832fa5234c39452519",
+  "requested_uk_version": [
+    10,
+    0
+  ],
+  "pinned_r15p0_kernel_response": [
+    10,
+    0
+  ],
+  "required_imports": 280,
+  "unresolved_strong_imports": [],
+  "dependencies_audited": [
+    "android.hardware.common-V1-ndk_platform.so",
+    "android.hardware.graphics.allocator@2.0.so",
+    "android.hardware.graphics.allocator@3.0.so",
+    "android.hardware.graphics.allocator@4.0.so",
+    "android.hardware.graphics.common-V1-ndk_platform.so",
+    "android.hardware.graphics.common@1.0.so",
+    "android.hardware.graphics.common@1.1.so",
+    "android.hardware.graphics.common@1.2.so",
+    "android.hardware.graphics.mapper@2.0.so",
+    "android.hardware.graphics.mapper@2.1.so",
+    "android.hardware.graphics.mapper@3.0.so",
+    "android.hardware.graphics.mapper@4.0.so",
+    "ld-android.so",
+    "libandroid_runtime_lazy.so",
+    "libbase.so",
+    "libbinder.so",
+    "libbinder_ndk.so",
+    "libc++.so",
+    "libc.so",
+    "libcgrouprc.so",
+    "libcutils.so",
+    "libdl.so",
+    "libdl_android.so",
+    "libelharika_mali_compat.so",
+    "libgralloctypes.so",
+    "libhardware.so",
+    "libhidlbase.so",
+    "libion.so",
+    "liblog.so",
+    "libm.so",
+    "libprocessgroup.so",
+    "libsync.so",
+    "libui.so",
+    "libutils.so",
+    "libvndksupport.so",
+    "libz.so"
+  ],
+  "text_unchanged": true,
+  "text_relocations": false,
+  "limits": [
+    "Symbol-name closure is not runtime linker namespace validation",
+    "Successful EGL initialization and UI boot require device testing",
+    "Proprietary blob ownership and redistribution terms remain unchanged"
+  ],
+  "local_validation": {
+    "zip_crc": "both packages pass",
+    "shell_syntax": "both packages pass",
+    "wrong_model": "both installers refuse before mounting",
+    "corrupt_payload": "packaging refuses",
+    "existing_suite": {
+      "passed": 9,
+      "skipped": 1,
+      "reason": "local host /proc child exe access restriction"
+    }
+  }
+}
