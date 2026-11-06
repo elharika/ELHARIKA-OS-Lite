@@ -1,0 +1,64 @@
+name: SM-P900 Mali UK10 trial kit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mali-uk10-trial.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare bounded audit environment
+        run: |
+          set -euo pipefail
+          df -h "$RUNNER_TEMP"
+          free -h
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs
+          python3 -m pip install capstone==5.0.9 pyelftools==0.33 patchelf==0.19.3.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Download exact successful system artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-development-NOT-FLASH-APPROVED
+          run-id: 41862679569
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/system-source
+      - name: Audit candidate and build trial plus restoration ZIPs
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --max-time 180 \
+            'https://raw.githubusercontent.com/Valera1978/android_vendor_samsung_v1awifi/4079dd66fc6955adb208a0633220f4b72faaf82d/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output "$RUNNER_TEMP/candidate.so"
+          python3 - <<'PY'
+          import os,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from package_experimental import sha,expand,SYSTEM_SHA
+          root=Path(os.environ['RUNNER_TEMP'])
+          source=root/'system-source/system.img'
+          assert sha(source)==SYSTEM_SHA, 'Wrong system artifact'
+          expand(source,root/'system.ext4')
+          PY
+          python3 scripts/prepare_mali_candidate.py "$RUNNER_TEMP/candidate.so" "$RUNNER_TEMP/system.ext4" "$RUNNER_TEMP/prepared"
+          python3 scripts/package_mali_candidate.py "$RUNNER_TEMP/prepared" kit
+          cp "$RUNNER_TEMP/prepared/candidate-review.json" kit/
+          cp docs/MALI_UK10_TRIAL.md kit/README.md
+          (cd kit && sha256sum -c SHA256SUMS)
+      - name: Upload experimental trial kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: SM-P900-MALI-UK10-TRIAL-r1-HARDWARE-UNTESTED
+          path: kit/
+          if-no-files-found: error
+          retention-days: 14
