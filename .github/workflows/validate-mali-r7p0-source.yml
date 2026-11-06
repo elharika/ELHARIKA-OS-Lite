@@ -61,7 +61,7 @@ jobs:
           from scripts.fix_r7p0_kbuild import patch_main, patch_platform
           # These are fetched from exactly locked source below.
           kbuild, changed = patch_main(Path('mali-r7p0-kbuild').read_text())
-          assert changed and kbuild.count('CONFIG_MALI_T6XX_R7P0') == 3
+          assert changed and kbuild.count('CONFIG_MALI_T6XX_R7P0') == 4
           platform, changed = patch_platform(Path('mali-exynos-kbuild').read_text())
           assert changed and 'gpu_exynos5420.o' in platform
           print('Pinned upstream source patch preflights passed')
