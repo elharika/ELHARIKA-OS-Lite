@@ -1,0 +1,15 @@
+{
+  "workflow_run": 42246505509,
+  "artifact_id": 13517981648,
+  "workflow_conclusion": "success",
+  "downloaded_artifact_crc": "passed",
+  "inner_zip_crc": "both passed",
+  "published_checksums_verified": {
+    "ELHARIKA-SM-P900-MALI-UK10-TRIAL-INSTALL-r1.zip": "d99aaf02aa9a4a84a22ab5f274ebaf27b29893d8934a1e4693191678097696b7",
+    "ELHARIKA-SM-P900-MALI-UK10-TRIAL-RESTORE-r1.zip": "52e4204120b3ff7cc8f969319632a9ee7bac7ba480415da58476738043237503"
+  },
+  "exact_inverse_payloads": true,
+  "candidate_payload_sha256": "34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde",
+  "hardware_boot_tested": false,
+  "next_step": "User SM-P900 TWRP trial without wiping; preserve restoration ZIP"
+}
