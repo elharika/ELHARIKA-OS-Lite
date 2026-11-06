@@ -1,0 +1,52 @@
+{
+  "device": "SM-P900/v1awifi",
+  "capture": "2026-11-06 15:22:14 GMT",
+  "collector_revision": 3,
+  "archive_sha256": "13e48755e04924a66326003dd5c01cffe6d07ff290d0891820560f6ffea0322d",
+  "traces": [
+    {
+      "file": "surfaceflinger-strace-1.txt",
+      "sha256": "44684ee2009f6f98118783be4dad23cbc7b982eec14ee1fff1fe927a3247d836",
+      "mali_sequence": [
+        "open /dev/mali0 succeeds",
+        "one ioctl request 0xc0108000 returns syscall status 0",
+        "close /dev/mali0 succeeds"
+      ],
+      "ion_operations": 0
+    },
+    {
+      "file": "surfaceflinger-strace-2.txt",
+      "sha256": "e263d09483d757abf1f043a337814238bc0396e5fb66b0f1c701b57386ea52c9",
+      "mali_sequence": [
+        "open /dev/mali0 succeeds",
+        "one ioctl request 0xc0108000 returns syscall status 0",
+        "close /dev/mali0 succeeds"
+      ],
+      "ion_operations": 0
+    },
+    {
+      "file": "surfaceflinger-strace-3.txt",
+      "sha256": "d6719e47ae1162b68ee4438b27a87b7fe72f30c362ecaa7bdad4f3b9092d827d",
+      "mali_sequence": [
+        "open /dev/mali0 succeeds",
+        "one ioctl request 0xc0108000 returns syscall status 0",
+        "close /dev/mali0 succeeds"
+      ],
+      "ion_operations": 0
+    }
+  ],
+  "findings": [
+    "r3 tracer successfully attached to three verified SurfaceFlinger processes",
+    "Mali device open is successful in all three attempts",
+    "Initialization stops after the first observed Mali ioctl, before any observed ION operation",
+    "SurfaceFlinger continues aborting on EGL_NOT_INITIALIZED"
+  ],
+  "limits": [
+    "strace logs only ioctl pointer, not input/output payload",
+    "syscall return 0 does not establish success of Mali UK header.ret or API version negotiation",
+    "request payload and returned UK version are not established; do not assert ABI mismatch yet",
+    "No GPU/kernel fix or successful UI boot has been validated"
+  ],
+  "next_step": "Inspect exact Mali library negotiation code and obtain request/response payload before changing kernel or GPU binaries",
+  "privacy": "Sanitized summary only; raw logs remain private"
+}
