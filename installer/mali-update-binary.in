@@ -1,0 +1,68 @@
+#!/sbin/sh
+set -eu
+OUTFD=$2
+ZIP=$3
+WORK=
+MOUNTED=0
+WRITING=0
+COMMITTED=0
+ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
+die() { ui "ERROR: $*"; exit 1; }
+sha() { sha256sum "$1" | awk '{print $1}'; }
+cleanup() {
+    if [ "$WRITING" = 1 ] && [ "$COMMITTED" = 0 ]; then
+        if cat "$WORK/rollback.so" > "$TARGET" && sync && [ "$(sha "$TARGET")" = '@EXPECTED_SHA@' ]; then
+            ui 'Previous Mali library restored after failure.'
+        else
+            ui 'ERROR: rollback failed. Remain in recovery and restore diagnosed ROM.'
+        fi
+    fi
+    [ "$MOUNTED" = 0 ] || umount "$WORK/system" || true
+    [ -z "$WORK" ] || rm -rf "$WORK"
+}
+trap cleanup EXIT
+for tool in getprop readlink mount umount unzip sha256sum awk grep mkdir rm cat sync mktemp head df; do
+    command -v "$tool" >/dev/null 2>&1 || die "Recovery missing $tool"
+done
+[ "$(getprop ro.product.device)" = v1awifi ] || die 'Only SM-P900/v1awifi supported'
+case "$(getprop ro.bootloader)" in P900*) ;; *) die 'SM-P900 bootloader not verified';; esac
+SYSTEM=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/SYSTEM)
+BOOT=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/BOOT)
+for block in "$SYSTEM" "$BOOT"; do
+    case "$block" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected partition mapping';; esac
+    [ -b "$block" ] || die 'Missing partition'
+done
+[ "$SYSTEM" != "$BOOT" ] || die 'Overlapping partitions'
+BOOT_SHA=$(head -c 5462032 "$BOOT" | sha256sum | awk '{print $1}')
+[ "$BOOT_SHA" = 7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14 ] || die 'Boot is not the diagnosed matching image'
+while read -r source point rest; do
+    resolved=$(readlink -f "$source" 2>/dev/null || true)
+    [ "$resolved" != "$SYSTEM" ] || die 'Uncheck System in TWRP Mount first'
+done < /proc/mounts
+WORK=$(mktemp -d /tmp/elharika-mali.XXXXXX)
+mkdir "$WORK/system"
+mount -t ext4 -o rw "$SYSTEM" "$WORK/system" || die 'Cannot mount System'
+MOUNTED=1
+ROOT="$WORK/system/system"
+grep -qx 'ro.product.system.device=v1awifi' "$ROOT/build.prop" || die 'Wrong installed model'
+grep -qx 'ro.build.version.sdk=30' "$ROOT/build.prop" || die 'Wrong Android API'
+[ "$(sha "$ROOT/bin/surfaceflinger")" = daf54072c758c5f52a70283dcc8ac22e6f157600a0b8c555639802c606e9110d ] || die 'Wrong installed SurfaceFlinger'
+[ "$(sha "$ROOT/vendor/lib/libelharika_mali_compat.so")" = 740ba30081b184a7878d05c4014e541d8090c28d37e88f832fa5234c39452519 ] || die 'Wrong installed compatibility bridge'
+TARGET="$ROOT/vendor/lib/egl/libGLES_mali.so"
+[ -f "$TARGET" ] && [ ! -L "$TARGET" ] || die 'Unexpected Mali library path'
+[ "$(sha "$TARGET")" = '@EXPECTED_SHA@' ] || die 'Mali library differs from expected input; no write'
+df -Pk "$WORK/system" | awk 'NR==2 {ok=($4>=32768)} END {exit !ok}' || die 'Need 32 MiB free on System'
+unzip -p "$ZIP" replacement.so > "$WORK/replacement.so" || die 'Cannot extract replacement'
+unzip -p "$ZIP" rollback.so > "$WORK/rollback.so" || die 'Cannot extract rollback'
+[ "$(sha "$WORK/replacement.so")" = '@REPLACEMENT_SHA@' ] || die 'Replacement checksum mismatch'
+[ "$(sha "$WORK/rollback.so")" = '@EXPECTED_SHA@' ] || die 'Rollback checksum mismatch'
+ui 'ELHARIKA SM-P900 experimental Mali @ACTION@; hardware unverified'
+# Truncate/write the existing inode, preserving its SELinux xattr, owner and mode.
+# Do not unlink or rename over the installed library.
+WRITING=1
+cat "$WORK/replacement.so" > "$TARGET" || die 'Library write failed'
+sync
+[ "$(sha "$TARGET")" = '@REPLACEMENT_SHA@' ] || die 'Written library checksum mismatch'
+COMMITTED=1
+ui 'Mali library @ACTION@ completed and read back. No boot or data partitions written.'
+ui 'No wipe required. Successful installation does not prove successful UI boot.'
