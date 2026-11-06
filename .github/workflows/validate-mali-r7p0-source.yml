@@ -1,0 +1,50 @@
+name: SM-P900 Mali r7p0 guard tests
+
+on:
+  pull_request:
+    paths:
+      - scripts/select_mali_r7p0.py
+      - scripts/fix_missing_keydisabler_hal.py
+      - tests/test_select_mali_r7p0.py
+      - tests/test_fix_missing_keydisabler_hal.py
+      - .github/workflows/validate-mali-r7p0-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-guards:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run focused tests, no ROM flashing
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py
+          python3 -m unittest discover -s tests -p 'test_select_mali_r7p0.py' -v
+          python3 -m unittest discover -s tests -p 'test_fix_missing_keydisabler_hal.py' -v
+      - name: Validate pinned upstream defconfig and manifest format
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/arch/arm/configs/lineageos_v1awifi_defconfig \
+            --output kernel-defconfig
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_device_samsung_v1a-common/4ae15a9b02c6efb1ffe956ab386fce9b3606ea94/manifest.xml \
+            --output touch-manifest.xml
+          python3 - <<'PY'
+          from pathlib import Path
+          from scripts.select_mali_r7p0 import patch_defconfig
+          from scripts.fix_missing_keydisabler_hal import patch_manifest
+          config, changed = patch_defconfig(Path('kernel-defconfig').read_text())
+          assert changed and 'CONFIG_MALI_T6XX_R7P0=y' in config
+          xml, changed = patch_manifest(Path('touch-manifest.xml').read_text())
+          assert changed and '<name>IKeyDisabler</name>' not in xml
+          assert '<name>ITouchscreenGesture</name>' in xml
+          print('Pinned upstream source patch preflights passed')
+          PY
