@@ -144,10 +144,8 @@ jobs:
           python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
-          # Log-confirmed optional HIDL interface is absent. Keep touchscreen gestures active.
-          python3 scripts/fix_missing_keydisabler_hal.py "$android_root" --report "$GITHUB_WORKSPACE/evidence/touch-hal-correction.json"
-          ! grep -q '<name>IKeyDisabler</name>' "$android_root/device/samsung/v1a-common/manifest.xml"
-          grep -q '<name>ITouchscreenGesture</name>' "$android_root/device/samsung/v1a-common/manifest.xml"
+          # The optional IKeyDisabler manifest repair is intentionally NOT applied here:
+          # this workflow builds only boot.img, which cannot replace the installed vendor manifest.
 
       - name: Select development bring-up profile without incompatible GPS and camera
         shell: bash
@@ -219,9 +217,9 @@ jobs:
           sha256sum "$compiled_config" > evidence/compiled-kernel-config.sha256
           python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
           mkdir development-boot
-          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json evidence/touch-hal-correction.json development-boot/
+          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json development-boot/
           (cd development-boot && sha256sum boot.img > SHA256SUMS)
-          echo 'EXPERIMENTAL Mali r7p0 kernel for exact SM-P900 system 41862679569 and paired UK10 trial library. Boot/rendering untested; NOT FLASH APPROVED. Preserve previous boot image and Mali RESTORE ZIP.' > development-boot/README.txt
+          echo 'EXPERIMENTAL SM-P900 r7p0 kernel only; does not repair optional IKeyDisabler HAL in installed vendor manifest. Boot/rendering untested; NOT FLASH APPROVED. Preserve original boot and Mali RESTORE ZIP. Paired UK10 library still requires hardware validation.' > development-boot/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
