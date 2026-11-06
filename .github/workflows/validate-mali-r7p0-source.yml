@@ -55,8 +55,19 @@ jobs:
           curl --fail --location --retry 2 --max-time 30 \
             https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/gpu/arm/t6xx/r7p0/platform/exynos/Kbuild \
             --output mali-exynos-kbuild
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/LineageOS/android_lineage-sdk/5f1b14d27249f8b7f035060005e07ac9388e5470/sdk/src/java/lineageos/hardware/LineageHardwareManager.java \
+            --output pinned-lineage-hardware-manager.java
           python3 - <<'PY'
           from pathlib import Path
+          from scripts.fix_blocking_optional_touch_hal import patch_java
+          pinned_sdk=Path('pinned-lineage-hardware-manager.java').read_text()
+          assert pinned_sdk.count('case FEATURE_KEY_DISABLE:') == 3
+          patched_sdk, changed = patch_java(pinned_sdk)
+          assert changed
+          assert patched_sdk.count('IKeyDisabler.getService(true)') == 0
+          assert patched_sdk.count('ITouchscreenGesture.getService(true)') == 1
+          assert patch_java(patched_sdk) == (patched_sdk, False)
           from scripts.select_mali_r7p0 import patch_defconfig
           from scripts.fix_missing_keydisabler_hal import patch_manifest
           config, changed = patch_defconfig(Path('kernel-defconfig').read_text())
