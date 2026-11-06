@@ -23,8 +23,11 @@ SHIM_SHA = '740ba30081b184a7878d05c4014e541d8090c28d37e88f832fa5234c39452519'
 
 
 def sha(path):
+    digest = hashlib.sha256()
     with Path(path).open('rb') as f:
-        return hashlib.file_digest(f, 'sha256').hexdigest()
+        for chunk in iter(lambda: f.read(1048576), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def info(path):
