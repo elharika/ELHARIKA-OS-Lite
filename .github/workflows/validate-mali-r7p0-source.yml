@@ -6,9 +6,11 @@ on:
       - scripts/select_mali_r7p0.py
       - scripts/fix_missing_keydisabler_hal.py
       - scripts/audit_mali_boot_pair.py
+      - scripts/fix_r7p0_kbuild.py
       - tests/test_select_mali_r7p0.py
       - tests/test_fix_missing_keydisabler_hal.py
       - tests/test_audit_mali_boot_pair.py
+      - tests/test_fix_r7p0_kbuild.py
       - .github/workflows/validate-mali-r7p0-source.yml
   workflow_dispatch:
 
@@ -26,10 +28,11 @@ jobs:
       - name: Run focused tests, no ROM flashing
         run: |
           set -euo pipefail
-          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py
+          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/fix_r7p0_kbuild.py
           python3 -m unittest discover -s tests -p 'test_select_mali_r7p0.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_missing_keydisabler_hal.py' -v
           python3 -m unittest discover -s tests -p 'test_audit_mali_boot_pair.py' -v
+          python3 -m unittest discover -s tests -p 'test_fix_r7p0_kbuild.py' -v
       - name: Validate pinned upstream defconfig and manifest format
         shell: bash
         run: |
@@ -40,6 +43,12 @@ jobs:
           curl --fail --location --retry 2 --max-time 30 \
             https://raw.githubusercontent.com/exynos5420/android_device_samsung_v1a-common/4ae15a9b02c6efb1ffe956ab386fce9b3606ea94/manifest.xml \
             --output touch-manifest.xml
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/gpu/arm/t6xx/r7p0/Kbuild \
+            --output mali-r7p0-kbuild
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/gpu/arm/t6xx/r7p0/platform/exynos/Kbuild \
+            --output mali-exynos-kbuild
           python3 - <<'PY'
           from pathlib import Path
           from scripts.select_mali_r7p0 import patch_defconfig
@@ -49,5 +58,11 @@ jobs:
           xml, changed = patch_manifest(Path('touch-manifest.xml').read_text())
           assert changed and '<name>IKeyDisabler</name>' not in xml
           assert '<name>ITouchscreenGesture</name>' in xml
+          from scripts.fix_r7p0_kbuild import patch_main, patch_platform
+          # These are fetched from exactly locked source below.
+          kbuild, changed = patch_main(Path('mali-r7p0-kbuild').read_text())
+          assert changed and kbuild.count('CONFIG_MALI_T6XX_R7P0') == 3
+          platform, changed = patch_platform(Path('mali-exynos-kbuild').read_text())
+          assert changed and 'gpu_exynos5420.o' in platform
           print('Pinned upstream source patch preflights passed')
           PY
