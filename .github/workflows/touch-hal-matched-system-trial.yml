@@ -1,4 +1,7 @@
 name: SM-P900 Android 11 optional touch HAL system-image experiment
+# Retry after fixing exact pinned Lineage SDK HIDL getter matching.
+# Guard run: https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42289712386
+# A successful build is NOT proof of fixed Mali EGL frame presentation.
 
 on:
   push:
