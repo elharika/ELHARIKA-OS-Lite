@@ -44,3 +44,13 @@ Source references:
 - `exynos5420/android_kernel_samsung_exynos5420` commit `de0cdcf10dcca77b400f15d83c1edf4f264a0f02` (both r7p0 and r15p0 source trees)
 - `exynos5420/android_device_samsung_v1a-common` commit `4ae15a9b02c6efb1ffe956ab386fce9b3606ea94`
 - Existing Mali trial: `docs/MALI_UK10_TRIAL.md`.
+
+## 2026-11-06 actual r7p0 device trial — observed failure and source fix
+
+Captured file: `elharika-after-r7p0-boot-3.tgz` (18:18 UTC). Device runtime kernel `/proc/config.gz` **does** select `CONFIG_MALI_T6XX_R7P0=y` and disables r15p0, proving the new boot was loaded. However, `/dev/mali0` is **absent**, as verified in three real SurfaceFlinger strace sessions. EGL logs: `The DDK is not compatible with any of the Mali GPUs on the system`, then `EGL_NOT_INITIALIZED`; SurfaceFlinger repeatedly terminates on SIGABRT at `eglQueryStringImplementationANDROID(EGL_VERSION) failed`.
+
+**Confirmed source-build omission:** Pinned `drivers/gpu/arm/t6xx/r7p0/Kbuild` contains four uses of undefined `CONFIG_MALI_R7P0` instead of `CONFIG_MALI_T6XX_R7P0`. Because `obj-$(CONFIG_*)` is blank for an undefined symbol, the main `mali_kbase.o` and platform registrations were omitted despite `.config` reporting r7p0=y. Separately, pinned `platform/exynos/Kbuild` uses `gpu_exynos$(platform_name).o`, but the platform name is `exynos`, which cannot select the included `gpu_exynos5420.c` object. This explains why the old r7p0 image created no Mali device, without claiming that any further driver ABI or hardware support is proven.
+
+**Proposed fix (branch only):** `scripts/fix_r7p0_kbuild.py` patches all four Kbuild references and the Exynos5420 SoC selection. `scripts/check_r7p0_kernel_artifacts.py` requires actual compiled GPU objects **and** `kbase_platform_driver` in `vmlinux`; `CONFIG_MALI_T6XX_R7P0=y` alone is no longer accepted as a release gate. Pinned source preflights and unit tests passed; rebuilt kernel is tracked in [Actions #42272497938](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42272497938), status to be checked. **Do not flash the earlier failed r7p0 boot image again.**
+
+Boot-only images will not fix the separately observed, missing optional `IKeyDisabler` vendor HAL manifest declaration. Recovery backup and real-device boot testing remain mandatory.
