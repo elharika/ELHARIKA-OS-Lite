@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - .github/workflows/mali-uk10-trial.yml
+      - scripts/prepare_mali_candidate.py
+      - scripts/package_mali_candidate.py
+      - installer/mali-update-binary.in
 
 permissions:
   contents: read
