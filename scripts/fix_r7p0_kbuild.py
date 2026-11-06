@@ -18,13 +18,14 @@ DEFCONFIG = 'arch/arm/configs/lineageos_v1awifi_defconfig'
 def patch_main(content):
     old = 'CONFIG_MALI_R7P0'
     new = 'CONFIG_MALI_T6XX_R7P0'
-    if content.count(old) == 0 and content.count(new) == 3:
+    if content.count(old) == 0 and content.count(new) == 4:
         return content, False
-    if content.count(old) != 3 or content.count(new) != 0:
+    if content.count(old) != 4 or content.count(new) != 0:
         raise ValueError('Unexpected r7p0 Kbuild variables / already partially patched')
     targets = (
         'ifeq ($(CONFIG_MALI_R7P0),m)',
         'else ifeq ($(CONFIG_MALI_R7P0),y)',
+        'obj-$(CONFIG_MALI_R7P0) += platform/',
         'obj-$(CONFIG_MALI_R7P0) += mali_kbase.o',
     )
     if any(content.count(x) != 1 for x in targets):
