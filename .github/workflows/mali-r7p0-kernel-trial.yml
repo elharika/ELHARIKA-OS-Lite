@@ -1,6 +1,12 @@
 name: SM-P900 Mali r7p0 matched-kernel boot experiment
 on:
   workflow_dispatch:
+  # This single branch-scoped push trigger launches the kernel build without modifying main.
+  # Editing unrelated files does not retrigger the expensive job.
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/mali-r7p0-kernel-trial.yml
 permissions:
   contents: read
   actions: read
