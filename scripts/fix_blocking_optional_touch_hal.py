@@ -16,6 +16,7 @@ JAVA = "sdk/src/java/lineageos/hardware/LineageHardwareManager.java"
 DEVICE_MANIFEST = "device/samsung/v1a-common/manifest.xml"
 OLD_CALL = "return IKeyDisabler.getService(true);"
 NEW_CALL = "return null; // SM-P900: IKeyDisabler HAL absent; never wait for optional service."
+DISPATCH_PREFIX = "                case FEATURE_KEY_DISABLE:\n                    "
 OLD_INTERFACE = """        <interface>
             <name>IKeyDisabler</name>
             <instance>default</instance>
@@ -29,13 +30,19 @@ GESTURE_INTERFACE = """        <interface>
 
 
 def patch_java(content):
-    if content.count("case FEATURE_KEY_DISABLE:") != 1:
-        raise ValueError("Unknown optional hardware feature dispatcher")
-    if content.count(NEW_CALL) == 1 and OLD_CALL not in content:
+    # The real pinned SDK contains THREE cases for FEATURE_KEY_DISABLE:
+    # isSupported, get, and set. Only the HIDL getter may be changed here.
+    if content.count("private IBase getHIDLService(int feature)") != 1:
+        raise ValueError("Unknown SDK HIDL dispatcher")
+    before = DISPATCH_PREFIX + OLD_CALL
+    after = DISPATCH_PREFIX + NEW_CALL
+    if content.count(after) == 1 and before not in content and OLD_CALL not in content:
         return content, False
-    if content.count(OLD_CALL) != 1 or NEW_CALL in content:
+    if content.count(before) != 1 or content.count(OLD_CALL) != 1 or NEW_CALL in content:
         raise ValueError("Unexpected or partially patched SDK service call")
-    return content.replace(OLD_CALL, NEW_CALL, 1), True
+    if content.count("ITouchscreenGesture.getService(true)") != 1:
+        raise ValueError("Gesture HAL dispatcher missing; refusing SDK patch")
+    return content.replace(before, after, 1), True
 
 
 def patch_manifest(content):
