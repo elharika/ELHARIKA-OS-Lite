@@ -9,10 +9,28 @@ spec = importlib.util.spec_from_file_location("touch_mitigation", path)
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 
-JAVA = """case FEATURE_KEY_DISABLE:
+JAVA = """public class LineageHardwareManager {
+    private IBase getHIDLService(int feature) {
+        switch (feature) {
+                case FEATURE_KEY_DISABLE:
                     return IKeyDisabler.getService(true);
                 case FEATURE_TOUCHSCREEN_GESTURES:
                     return ITouchscreenGesture.getService(true);
+        }
+    }
+    private void get(int feature) {
+        switch (feature) {
+                case FEATURE_KEY_DISABLE:
+                    return;
+        }
+    }
+    private void set(int feature) {
+        switch (feature) {
+                case FEATURE_KEY_DISABLE:
+                    return;
+        }
+    }
+}
 """
 MANIFEST = """<manifest>
   <hal><name>vendor.lineage.touch</name>
@@ -36,7 +54,25 @@ class TouchMitigationTest(unittest.TestCase):
         self.assertIn(m.NEW_CALL, after)
         self.assertIn("ITouchscreenGesture.getService(true)", after)
         self.assertNotIn(m.OLD_CALL, after)
+        self.assertEqual(after.count("case FEATURE_KEY_DISABLE:"), 3)
+        self.assertEqual(after.count(m.NEW_CALL), 1)
         self.assertEqual(m.patch_java(after), (after, False))
+
+    def test_alternate_getter_layout_is_rejected(self):
+        with self.assertRaises(ValueError):
+            m.patch_java(JAVA.replace(
+                "                case FEATURE_KEY_DISABLE:\n"
+                "                    return IKeyDisabler.getService(true);",
+                "                case FEATURE_KEY_DISABLE:\n"
+                "                    return IKeyDisabler.getService(false);"
+            ))
+
+    def test_missing_getter_does_not_patch_other_feature_cases(self):
+        with self.assertRaises(ValueError):
+            m.patch_java(JAVA.replace(
+                "private IBase getHIDLService(int feature)",
+                "private void unexpected(int feature)"
+            ))
 
     def test_manifest_removes_only_unregistered_interface(self):
         after, changed = m.patch_manifest(MANIFEST)
