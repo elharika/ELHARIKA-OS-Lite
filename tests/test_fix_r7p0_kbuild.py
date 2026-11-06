@@ -12,7 +12,8 @@ class KbuildRepairTests(unittest.TestCase):
     def test_missing_symbols_would_exclude_core_and_platform(self):
         old = ('ifeq ($(CONFIG_MALI_R7P0),m)\n'
                'else ifeq ($(CONFIG_MALI_R7P0),y)\n'
-               'obj-$(CONFIG_MALI_R7P0) += platform/\n'\n               'obj-$(CONFIG_MALI_R7P0) += mali_kbase.o\n')
+               'obj-$(CONFIG_MALI_R7P0) += platform/\n'
+               'obj-$(CONFIG_MALI_R7P0) += mali_kbase.o\n')
         new, changed = fixer.patch_main(old)
         self.assertTrue(changed)
         self.assertEqual(new.count('CONFIG_MALI_T6XX_R7P0'), 4)
