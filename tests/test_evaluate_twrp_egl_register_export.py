@@ -33,6 +33,28 @@ class FocusedReportTests(unittest.TestCase):
         self.assertFalse(result["zero_count_root_cause_proven"])
         self.assertFalse(result["flash_approved"])
 
+    def test_five_independent_synthetic_pointer_faults(self):
+        blocks = [m.TITLE, "Source selection requires both BootAnimation and eglp_swap_buffers."]
+        for i in range(5):
+            r2 = 0x20001000 + i * 0x1000
+            r1, r3 = r2 + 0x20, r2 + 0x50
+            r8 = r3 - 1
+            fault = (r1 + (r8 << 4)) & 0xffffffff
+            blocks.append(f"""--- MATCH {i+1} : /data/tombstones/tombstone_{i:02d} ---
+>>> /system/bin/bootanimation <<<
+signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x{fault:08x}
+    r0 00000000  r1 {r1:08x}  r2 {r2:08x}  r3 {r3:08x}
+    r8 {r8:08x}  r9 00000000
+    #00 pc 00263458 /vendor/lib/egl/libGLES_mali.so (eglp_swap_buffers+1460)
+""")
+        report = m.evaluate("\n".join(blocks))
+        self.assertEqual(report["with_all_required_registers"], 5)
+        self.assertEqual(report["fault_address_matches_indexed_load"], 5)
+        self.assertEqual(report["repeating_nearby_pointer_pattern"], 5)
+        self.assertEqual(report["zero_count_underflow_observed"], 0)
+        self.assertTrue(report["pointer_count_semantics_unverified"])
+        self.assertFalse(report["flash_approved"])
+
     def test_absent_tombstone_does_not_claim_success(self):
         v = m.evaluate(m.TITLE + "\nNO_MATCHING_TOMBSTONE_FOUND\n")
         self.assertEqual(v["status"], "PRIOR_TOMBSTONE_ABSENT_NOT_A_GPU_FIX")
