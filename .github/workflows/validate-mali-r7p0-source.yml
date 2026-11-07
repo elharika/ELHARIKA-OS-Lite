@@ -18,6 +18,9 @@ on:
       - scripts/build_egl_tombstone_readonly_zip.py
       - scripts/package_r15p0_pair_readonly_preflight.py
       - scripts/evaluate_r15p0_pair_readonly_preflight.py
+      - scripts/package_sm_p900_pretrial_backup.py
+      - scripts/validate_sm_p900_backup_report.py
+      - diagnostics/twrp-backup-current-r7-uk10-before-r15-trial.sh
       - diagnostics/twrp-r15p0-pair-readonly-preflight.sh
       - diagnostics/twrp-export-existing-egl-tombstones.sh
       - scripts/fix_r7p0_kbuild.py
@@ -36,6 +39,8 @@ on:
       - tests/test_build_egl_tombstone_readonly_zip.py
       - tests/test_package_r15p0_pair_readonly_preflight.py
       - tests/test_evaluate_r15p0_pair_readonly_preflight.py
+      - tests/test_package_sm_p900_pretrial_backup.py
+      - tests/test_validate_sm_p900_backup_report.py
       - tests/test_fix_r7p0_kbuild.py
       - .github/workflows/validate-mali-r7p0-source.yml
   workflow_dispatch:
@@ -54,7 +59,7 @@ jobs:
       - name: Run focused tests, no ROM flashing
         run: |
           set -euo pipefail
-          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/analyze_mali_runtime.py scripts/fix_blocking_optional_touch_hal.py scripts/inventory_sm_p900_graphics.py scripts/audit_uk10_swap_crash.py scripts/inspect_egl_fault_registers.py scripts/audit_uk10_device_buildid_and_egl_context.py scripts/audit_pinned_exynos5_gralloc_contract.py scripts/audit_sm_p900_known_android11_reference.py scripts/evaluate_twrp_egl_register_export.py scripts/build_egl_tombstone_readonly_zip.py scripts/package_r15p0_pair_readonly_preflight.py scripts/evaluate_r15p0_pair_readonly_preflight.py scripts/fix_r7p0_kbuild.py
+          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/analyze_mali_runtime.py scripts/fix_blocking_optional_touch_hal.py scripts/inventory_sm_p900_graphics.py scripts/audit_uk10_swap_crash.py scripts/inspect_egl_fault_registers.py scripts/audit_uk10_device_buildid_and_egl_context.py scripts/audit_pinned_exynos5_gralloc_contract.py scripts/audit_sm_p900_known_android11_reference.py scripts/evaluate_twrp_egl_register_export.py scripts/build_egl_tombstone_readonly_zip.py scripts/package_r15p0_pair_readonly_preflight.py scripts/evaluate_r15p0_pair_readonly_preflight.py scripts/package_sm_p900_pretrial_backup.py scripts/validate_sm_p900_backup_report.py scripts/fix_r7p0_kbuild.py
           python3 -m unittest discover -s tests -p 'test_select_mali_r7p0.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_missing_keydisabler_hal.py' -v
           python3 -m unittest discover -s tests -p 'test_audit_mali_boot_pair.py' -v
@@ -70,6 +75,8 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_build_egl_tombstone_readonly_zip.py' -v
           python3 -m unittest discover -s tests -p 'test_package_r15p0_pair_readonly_preflight.py' -v
           python3 -m unittest discover -s tests -p 'test_evaluate_r15p0_pair_readonly_preflight.py' -v
+          python3 -m unittest discover -s tests -p 'test_package_sm_p900_pretrial_backup.py' -v
+          python3 -m unittest discover -s tests -p 'test_validate_sm_p900_backup_report.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_r7p0_kbuild.py' -v
       - name: Validate pinned upstream defconfig and manifest format
         shell: bash
