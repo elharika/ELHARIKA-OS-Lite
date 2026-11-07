@@ -18,6 +18,8 @@ BAD_UK5_SYSTEM_SHA256 = "3bc453470f2f6711d463f3fff9b115011cbcefcbb1355be9af14785
 TESTED_R7P0_UK10_SHA256 = "34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde"
 STOCK_P900_SHA256 = "6bdde99d255444cf59374558736c85de5413125f63f4035237d6556c0f91047d"
 MAX_SIZE = 45_000_000
+# Mali DDK banner is useful model/version provenance, *not* a kernel ABI proof.
+DDK_BANNER_REGEX = re.compile(rb"U:r[0-9]{1,2}p[0-9]{1,2}(?:-[0-9A-Za-z._-]{1,48})?")
 # The exact ARM Thumb handshake call-site from the previously proven UK5.1
 # ELHARIKA binary, not an inferred universal Mali signature.
 UK5_PROVEN_HANDSHAKE_BYTES = bytes.fromhex(
@@ -69,6 +71,7 @@ def audit(path):
     # Matching this specific compiled call site is strong evidence of a copied
     # 5.1 request pattern. Missing it does NOT establish any other UK version.
     uk5_signature_present = bool(uk5_marker_offsets)
+    ddk_banners = sorted(set(m.group(0).decode("ascii") for m in DDK_BANNER_REGEX.finditer(data)))[:20]
     return {
         "status": "PINNED_SM_P900_DONOR_MALI_ELF_IDENTIFIED_NO_FLASH_APPROVAL",
         "donor_vendor_source_commit": DONOR_SOURCE_COMMIT,
@@ -76,6 +79,8 @@ def audit(path):
         "donor_mali_sha256": sha,
         "donor_mali_size": len(data),
         "build_id": buildid[0].lower() if buildid else None,
+        "mali_ddk_version_banners": ddk_banners,
+        "ddk_banner_is_uk_api_version_proof": False,
         "elf_needed": re.findall(r"\(NEEDED\).*Shared library: \[([^\]]+)\]", dynamic),
         "elf_soname": (re.findall(r"\(SONAME\).*Library soname: \[([^\]]+)\]", dynamic) or [None])[0],
         "is_identical_to_uk5_abi_blocked_ELHARIKA_system": matches_bad_system,
@@ -113,6 +118,7 @@ def main():
         "same_as_uk5_blocked": result["is_identical_to_uk5_abi_blocked_ELHARIKA_system"],
         "same_as_r7p0_uk10": result["is_identical_to_r7p0_uk10_tested_device"],
         "uk5_1_signature_detected": result["exact_proven_uk5_1_handshake_pattern_detected"],
+        "ddk_banners": result["mali_ddk_version_banners"],
         "flash_approved": False,
     }, indent=2))
 
