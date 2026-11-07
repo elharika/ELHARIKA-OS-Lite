@@ -19,6 +19,7 @@ class ReadOnlyTombstonePackageTests(unittest.TestCase):
         self.assertIn("elharika-egl-crash-registers.txt", source)
         self.assertIn('case "$path" in *.pb) continue ;; esac', source)
         self.assertNotIn("mount -t ", source)
+        self.assertNotIn("printf --", source)
         self.assertNotIn("dd if=", source)
 
     def test_reject_unsafe_injection_and_missing_model(self):
