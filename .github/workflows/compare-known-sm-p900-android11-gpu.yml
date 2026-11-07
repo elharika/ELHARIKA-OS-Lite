@@ -1,0 +1,72 @@
+name: SM-P900 known Android11 R15P0 display baseline (no ROM build)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/compare-known-sm-p900-android11-gpu.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  compare-reference-without-flashing:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Test read-only GPU pairing comparator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/audit_sm_p900_known_android11_reference.py
+          python3 -m unittest discover -s tests -p test_audit_sm_p900_known_android11_reference.py -v
+          mkdir -p pinned-reference evidence
+      - name: Fetch published SM-P900 Android 11 pinned source revisions and Mali EGL blob
+        shell: bash
+        run: |
+          set -euo pipefail
+          kernel='https://raw.githubusercontent.com/salih4187/android_kernel_samsung_exynos5420/35d960ed3c2de3d5558b782257053599cded659e'
+          common='https://raw.githubusercontent.com/salih4187/android_device_samsung_universal5420-common/22e5a28343d78578c4d604f3f26fcc709c9435f2'
+          vendor='https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad'
+          curl -fsSL --retry 3 --max-time 60 "$kernel/arch/arm/configs/lineageos_v1awifi_defconfig" -o pinned-reference/kernel.config
+          curl -fsSL --retry 3 --max-time 60 "$kernel/drivers/gpu/arm/t6xx/r15p0/Kbuild" -o pinned-reference/r15p0.Kbuild
+          curl -fsSL --retry 3 --max-time 60 "$common/BoardConfigCommon.mk" -o pinned-reference/BoardConfigCommon.mk
+          curl -fsSL --retry 3 --max-time 60 "$common/system_prop.mk" -o pinned-reference/system_prop.mk
+          curl -fsSL --retry 3 --max-time 120 "$vendor/proprietary/vendor/lib/egl/libGLES_mali.so" -o pinned-reference/libGLES_mali.so
+      - name: Extract reference kernel, EGL and board metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_sm_p900_known_android11_reference.py \
+            --kernel-config pinned-reference/kernel.config \
+            --r15-kbuild pinned-reference/r15p0.Kbuild \
+            --board pinned-reference/BoardConfigCommon.mk \
+            --properties pinned-reference/system_prop.mk \
+            --egl pinned-reference/libGLES_mali.so \
+            --report evidence/reference-gpu-comparison.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('evidence/reference-gpu-comparison.json').read_text())
+          assert report['reference_kernel']=='MALI_R15P0'
+          assert report['reference_r7p0_disabled'] is True
+          assert report['safe_to_flash'] is False
+          print('USING_MATCHED_REFERENCE_KERNEL_AND_GLES:', report['reference_egl_build_id'])
+          print('DIFFERS_FROM_FAILED_UK10:', not report['same_build_id_as_crashing_uk10'])
+          PY
+      - name: Remove external binary; preserve metadata only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- pinned-reference
+          test ! -d pinned-reference
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-KNOWN-ANDROID11-R15P0-REFERENCE-METADATA-ONLY
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
