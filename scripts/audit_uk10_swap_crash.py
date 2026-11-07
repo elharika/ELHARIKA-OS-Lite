@@ -16,12 +16,12 @@ FAULT_OFFSET = 1460
 
 
 def audit(path):
-    from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM
-    from elftools.elf.elffile import ELFFile
     path = Path(path)
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if digest != SOURCE_SHA256:
         raise ValueError("Unknown candidate Mali blob. No fixed-offset disassembly.")
+    from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM
+    from elftools.elf.elffile import ELFFile
     with path.open("rb") as f:
         elf = ELFFile(f)
         if elf.elfclass != 32 or not elf.little_endian or elf["e_machine"] != "EM_ARM":
