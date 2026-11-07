@@ -1,0 +1,66 @@
+name: SM-P900 pinned Exynos5 Gralloc contract audit (no ROM build)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/audit-exynos5-gralloc-contract.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  inspect-pinned-gralloc-source:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Run fail-closed source regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_audit_pinned_exynos5_gralloc_contract.py -v
+          python3 -m compileall -q scripts/audit_pinned_exynos5_gralloc_contract.py
+          mkdir -p vendor-source evidence
+      - name: Fetch exact pinned Exynos5 Gralloc sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='https://raw.githubusercontent.com/LineageOS/android_hardware_samsung_slsi_exynos/68b6c0f455aa865795bb3b111fb5839aa05d4bbb'
+          curl -fsSL --retry 2 --max-time 30 "$source/gralloc/Android.mk" -o vendor-source/gralloc.mk
+          curl -fsSL --retry 2 --max-time 30 "$source/include/gralloc_priv.h" -o vendor-source/gralloc_priv.h
+          curl -fsSL --retry 2 --max-time 30 "$source/gralloc/format_chooser.cpp" -o vendor-source/format_chooser.cpp
+      - name: Review AFBC activation and native_handle ION/UMP layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_pinned_exynos5_gralloc_contract.py \
+            vendor-source/gralloc.mk vendor-source/gralloc_priv.h vendor-source/format_chooser.cpp \
+            --out evidence/gralloc-source-contract.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/gralloc-source-contract.json').read_text())
+          assert r['compiled_with_afbc_support'] is True
+          assert r['afbc_enabled_by_default_in_source'] is False
+          assert r['runtime_afbc_property_verified'] is False
+          assert r['native_handle_binary_layout_proven_compatible_with_mali'] is False
+          assert r['safe_to_flash'] is False
+          print("AFBC is default OFF, notwithstanding compilation of its support")
+          print("Mali/Gralloc native handle compatibility remains unproven")
+          PY
+      - name: Remove vendored sources and publish metadata only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- vendor-source
+          test ! -d vendor-source
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-GRALLOC-SOURCE-ABI-REPORT-ONLY
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
