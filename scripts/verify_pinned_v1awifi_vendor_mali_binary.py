@@ -33,6 +33,18 @@ def run(args):
     return proc.stdout
 
 
+def find_uk5_signature_offsets(data):
+    offsets = []
+    start = 0
+    while len(offsets) < 5:
+        at = data.find(UK5_PROVEN_HANDSHAKE_BYTES, start)
+        if at < 0:
+            break
+        offsets.append(at)
+        start = at + 1
+    return offsets
+
+
 def audit(path):
     path = Path(path)
     data = path.read_bytes()
@@ -53,14 +65,7 @@ def audit(path):
     matches_bad_system = sha == BAD_UK5_SYSTEM_SHA256
     matches_r7p0_trial = sha == TESTED_R7P0_UK10_SHA256
     matches_stock = sha == STOCK_P900_SHA256
-    uk5_marker_offsets = []
-    start = 0
-    while len(uk5_marker_offsets) < 5:
-        at = data.find(UK5_PROVEN_HANDSHAKE_BYTES, start)
-        if at < 0:
-            break
-        uk5_marker_offsets.append(at)
-        start = at + 1
+    uk5_marker_offsets = find_uk5_signature_offsets(data)
     # Matching this specific compiled call site is strong evidence of a copied
     # 5.1 request pattern. Missing it does NOT establish any other UK version.
     uk5_signature_present = bool(uk5_marker_offsets)
