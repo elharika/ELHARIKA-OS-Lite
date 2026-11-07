@@ -61,7 +61,15 @@ def examine(config, kbuild, board, properties, blob_path):
     needed = run("readelf", "-W", "-d", str(blob))
     versions = run("readelf", "-W", "-V", str(blob))
     bid = build_id_of(notes)
-    sha = hashlib.file_digest(blob.open("rb"), "sha256").hexdigest()
+    # Ubuntu 22.04 CI uses Python 3.10; hashlib.file_digest requires 3.11.
+    hasher = hashlib.sha256()
+    with blob.open("rb") as binary:
+        while True:
+            chunk = binary.read(1024 * 1024)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    sha = hasher.hexdigest()
     dependencies = re.findall(r"\(NEEDED\).*Shared library: \[([^\]]+)\]", needed)
     return {
         "status": "SM_P900_ANDROID11_REFERENCE_GPU_ELF_INSPECTED_NO_DEVICE_QA",
