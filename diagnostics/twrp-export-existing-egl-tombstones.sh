@@ -24,6 +24,9 @@ for dest in /external_sd /external_sd1; do
     fi
 done
 [ -n "$SD" ] || fail "Mount microSD in TWRP first. No partitions changed."
+# Avoid an ambiguous empty scan if Data was not mounted or decrypted.
+DATA_MOUNTED=$(awk '$2=="/data" {found=1} END {if(found) print 1; else print 0}' /proc/mounts)
+[ "$DATA_MOUNTED" = 1 ] || fail "Data is not mounted. In TWRP > Mount, enable Data and retry; do NOT format."
 
 TARGET="$SD/elharika-egl-crash-registers.txt"
 [ ! -e "$TARGET" ] || fail "Existing output on microSD. Rename it first; no overwrite."
@@ -45,8 +48,9 @@ for dir in /data/tombstones /data/vendor/tombstones; do
         case "$path" in *.pb) continue ;; esac
         grep -iq 'eglp_swap_buffers' "$path" || continue
         grep -iq 'bootanimation' "$path" || continue
+        # Count only files actually exported, even if more tombstones exist.
+        [ "$COUNT" -lt 5 ] || continue
         COUNT=$((COUNT+1))
-        [ "$COUNT" -le 5 ] || break
         {
             printf '%s\n' "--- MATCH $COUNT : $path ---"
             # Limit output to process, signal, PC, registers, fault addr and ABI IDs.
@@ -64,7 +68,8 @@ done
 if [ "$COUNT" -eq 0 ]; then
     {
         printf 'NO_MATCHING_TOMBSTONE_FOUND\n'
-        printf 'Possible reasons: /data is not mounted or decrypted; prior tombstones were rotated or lost.\n'
+        printf 'Data mount was verified by recovery; no matching readable BootAnimation text tombstone remains.\n'
+        printf 'Older crash reports may have been rotated or removed. No Android reboot was requested.\n'
         printf 'No new Android boot was requested. Existing evidence is unchanged.\n'
     } >> "$TMP"
 fi
