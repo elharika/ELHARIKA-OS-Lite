@@ -1,0 +1,73 @@
+name: SM-P900 pinned UK10 Mali BuildId and EGL context audit
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/audit-uk10-buildid-egl-context.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  inspect-mali-elf-no-build-no-flash:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Check synthetic safety and parsing tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_audit_uk10_device_buildid_and_egl_context.py -v
+          python3 -m compileall -q scripts/audit_uk10_device_buildid_and_egl_context.py
+          mkdir -p evidence
+      - name: Install offline ARM ELF tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-capstone python3-pyelftools
+          python3 -c 'from capstone import Cs; from elftools.elf.elffile import ELFFile'
+      - name: Download exact pinned public candidate locally only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p input-confidential
+          curl --fail --location --retry 2 --max-time 60 \
+            https://raw.githubusercontent.com/Valera1978/android_vendor_samsung_v1awifi/4079dd66fc6955adb208a0633220f4b72faaf82d/proprietary/vendor/lib/egl/libGLES_mali.so \
+            --output input-confidential/libGLES_mali.so
+          echo 'a66179ef65c26a797b814e3d9cf0ab2b7f07e0d32c641f463820c0a0c49f1ee9  input-confidential/libGLES_mali.so' | sha256sum -c -
+      - name: Check original ELF BuildId and near fault/caller ARM instructions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_uk10_device_buildid_and_egl_context.py \
+            input-confidential/libGLES_mali.so --out evidence/egl-buildid-context.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/egl-buildid-context.json').read_text())
+          assert r['status']=='PINNED_SOURCE_BINARY_METADATA_CHECKED'
+          assert r['root_cause_proven'] is False
+          assert r['flash_approved'] is False
+          assert r['faulting_instruction']['mnemonic']=='ldr'
+          print('CANDIDATE_MATCHES_DEPLOYED_BUILD_ID:', r['candidate_build_id_matches_device'])
+          print('FAULT_SOURCE_CONTEXT:', r['pre_fault_context'])
+          print('CALLER_FRAME_CONTEXT:', r['caller_context'])
+          PY
+      - name: Remove proprietary input (metadata-only output)
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- input-confidential
+          test ! -f input-confidential/libGLES_mali.so
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-UK10-DEVICE-BUILDID-EGL-CONTEXT-REPORT-ONLY
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7
