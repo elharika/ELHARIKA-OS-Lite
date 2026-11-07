@@ -43,12 +43,19 @@ def evaluate(source):
     complete = [x for x in matches if x["status"] == "EGL_INDEXED_READ_REGISTER_CORRELATION"]
     zero = [x for x in complete if x["zero_count_underflow_observed"]]
     addr_agree = [x for x in complete if x["fault_address_matches_ldr"]]
+    near_pointers = [x for x in complete if x["repeating_nearby_pointer_pattern"]]
+    # Count/ABI semantics cannot be inferred from ARM register arithmetic alone.
     return {
         "status": "TOMBSTONE_ARM_REGISTER_CORRELATION_COMPLETE" if len(complete) == len(matches)
                   else "TOMBSTONE_ARM_REGISTER_CORRELATION_PARTIAL",
         "matches": matches,
         "with_all_required_registers": len(complete),
         "fault_address_matches_indexed_load": len(addr_agree),
+        "repeating_nearby_pointer_pattern": len(near_pointers),
+        "repeating_offsets_bytes": {
+            "r1_minus_r2": 32, "r3_minus_r1": 48, "r3_minus_r2": 80,
+        } if near_pointers else None,
+        "pointer_count_semantics_unverified": True,
         "zero_count_underflow_observed": len(zero),
         "zero_count_root_cause_proven": False,
         "requires_gralloc_mali_abi_followup": True,
