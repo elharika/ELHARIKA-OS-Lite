@@ -1,4 +1,5 @@
 name: SM-P900 pinned donor Mali ELF comparison without ROM download
+# Re-audit exact donor ELF against proven UK5.1 handshake call-site bytes.
 on:
   push:
     branches: [diagnostics/mali-r7p0-matched-boot-trial]
