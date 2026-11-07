@@ -76,6 +76,31 @@ jobs:
           "$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-nm" "$out/vmlinux" \
             | grep -E '\b(kbase_|mali_kbase_|gpu_exynos)' | head -n 30 > evidence/gpu-symbol-sample.txt || true
           test -s evidence/gpu-symbol-sample.txt
+      - name: Preserve reference zImage for a later matched BOOT build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p kernel-only
+          original="$RUNNER_TEMP/sm-p900-kernel-out/arch/arm/boot/zImage"
+          test -s "$original"
+          cp "$original" kernel-only/zImage
+          (cd kernel-only && sha256sum zImage > SHA256SUMS)
+          (cd kernel-only && sha256sum -c SHA256SUMS)
+          cat > kernel-only/NOT-FLASHABLE-README.txt <<'EOF'
+          SM-P900 donor R15P0 zImage ONLY. NOT a Samsung boot.img; do not flash.
+          Kernel source: salih4187/android_kernel_samsung_exynos5420@35d960ed3c2de3d5558b782257053599cded659e
+          Compiler: LineageOS android ARM GCC4.9@da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          Source VINTF, Android ramdisk, DTB and EGL R15P0 userspace must match.
+          No physical boot or S Pen test completed. Keep original BOOT backup.
+          EOF
+          cmp "$original" kernel-only/zImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-REFERENCE-R15P0-zImage-ONLY-NOT-FLASHABLE
+          path: kernel-only/
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Publish source and compiler success evidence, not a flashable boot
         if: always()
         shell: bash
