@@ -8,12 +8,18 @@ on:
       - scripts/audit_mali_boot_pair.py
       - scripts/analyze_mali_runtime.py
       - scripts/fix_blocking_optional_touch_hal.py
+      - scripts/inventory_sm_p900_graphics.py
+      - scripts/audit_uk10_swap_crash.py
+      - scripts/inspect_egl_fault_registers.py
       - scripts/fix_r7p0_kbuild.py
       - tests/test_select_mali_r7p0.py
       - tests/test_fix_missing_keydisabler_hal.py
       - tests/test_audit_mali_boot_pair.py
       - tests/test_analyze_mali_runtime.py
       - tests/test_fix_blocking_optional_touch_hal.py
+      - tests/test_inventory_sm_p900_graphics.py
+      - tests/test_audit_uk10_swap_crash.py
+      - tests/test_inspect_egl_fault_registers.py
       - tests/test_fix_r7p0_kbuild.py
       - .github/workflows/validate-mali-r7p0-source.yml
   workflow_dispatch:
@@ -32,12 +38,15 @@ jobs:
       - name: Run focused tests, no ROM flashing
         run: |
           set -euo pipefail
-          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/analyze_mali_runtime.py scripts/fix_blocking_optional_touch_hal.py scripts/fix_r7p0_kbuild.py
+          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/analyze_mali_runtime.py scripts/fix_blocking_optional_touch_hal.py scripts/inventory_sm_p900_graphics.py scripts/audit_uk10_swap_crash.py scripts/inspect_egl_fault_registers.py scripts/fix_r7p0_kbuild.py
           python3 -m unittest discover -s tests -p 'test_select_mali_r7p0.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_missing_keydisabler_hal.py' -v
           python3 -m unittest discover -s tests -p 'test_audit_mali_boot_pair.py' -v
           python3 -m unittest discover -s tests -p 'test_analyze_mali_runtime.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_blocking_optional_touch_hal.py' -v
+          python3 -m unittest discover -s tests -p 'test_inventory_sm_p900_graphics.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_uk10_swap_crash.py' -v
+          python3 -m unittest discover -s tests -p 'test_inspect_egl_fault_registers.py' -v
           python3 -m unittest discover -s tests -p 'test_fix_r7p0_kbuild.py' -v
       - name: Validate pinned upstream defconfig and manifest format
         shell: bash
