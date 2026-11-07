@@ -1,0 +1,106 @@
+name: SM-P900 donor r15p0 ELF closure against existing Android11 system
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/audit-donor-r15p0-system-elf-closure.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sm-p900-donor-r15p0-link-closure
+  cancel-in-progress: false
+
+jobs:
+  compare-with-verified-image-no-rom-rebuild:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Fail-closed script regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_audit_donor_r15p0_system_link_closure.py -v
+          python3 -m compileall -q scripts/audit_donor_r15p0_system_link_closure.py
+          mkdir -p evidence
+
+      - name: Install read-only sparse/ext4 and ELF audit dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs python3-capstone python3-pyelftools
+          command -v simg2img
+          command -v debugfs
+          python3 -c 'from capstone import Cs; from elftools.elf.elffile import ELFFile'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-touch-hal-system-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42289790703
+          github-token: ${{ github.token }}
+          path: existing-image
+
+      - name: Check prior image SHA and expand existing sparse ext4 (NO build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s existing-image/system.img
+          echo 'a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead  existing-image/system.img' | sha256sum -c -
+          mkdir -p scratch
+          simg2img existing-image/system.img scratch/system.ext4
+          test "$(stat -c %s scratch/system.ext4)" = 2299998208
+          rm -f existing-image/system.img
+
+      - name: Fetch exact pinned donor Mali ELF only (not an OTA download)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 180 \
+            --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output scratch/donor-mali.so
+          echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  scratch/donor-mali.so' | sha256sum -c -
+
+      - name: Resolve donor r15p0 Mali + Gralloc + HWC against existing system libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_donor_r15p0_system_link_closure.py \
+            scratch/donor-mali.so scratch/system.ext4 \
+            --system-sha256 a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead \
+            --out evidence/donor-r15p0-android11-system-closure.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          v=json.loads(Path("evidence/donor-r15p0-android11-system-closure.json").read_text())
+          assert v['flash_approved'] is False
+          assert v['system_unmodified'] is True
+          assert v['egl_swap_or_launcher_verified'] is False
+          print('ELF closure result:',v['status'])
+          print('Missing libraries:',v['missing_dependencies'])
+          print('Unresolved strong symbols:',v['unresolved_strong_count'])
+          PY
+
+      - name: Remove nonredistributable source and prior image, publish only audit report
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- scratch existing-image
+          test ! -e scratch/donor-mali.so
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-R15P0-DONOR-STATIC-LINK-REPORT-ONLY
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7
