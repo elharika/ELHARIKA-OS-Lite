@@ -1,0 +1,110 @@
+name: SM-P900 Android 11 same-device Mali donor pairing audit (read-only)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/audit-sm-p900-reference-graphics-pair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-existing-verified-refs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run fail-closed safety tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/audit_sm_p900_donor_graphics_pair.py
+          python3 -m unittest discover -s tests -p 'test_audit_sm_p900_donor_graphics_pair.py' -v
+          mkdir -p refs evidence
+
+      - name: Fetch pinned, exact-device Android 11 source configs
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://raw.githubusercontent.com/salih4187/android_kernel_samsung_exynos5420/35d960ed3c2de3d5558b782257053599cded659e/arch/arm/configs/lineageos_v1awifi_defconfig' \
+            -o refs/donor-config
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/lineage-18.1/arch/arm/configs/lineageos_v1awifi_defconfig' \
+            -o refs/old-config
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://raw.githubusercontent.com/salih4187/android_device_samsung_universal5420-common/22e5a28343d78578c4d604f3f26fcc709c9435f2/system_prop.mk' \
+            -o refs/donor-props
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://raw.githubusercontent.com/exynos5420/android_device_samsung_universal5420-common/b018612a7939d3a4ab8900e3d03ac1ca608546a0/system_prop.mk' \
+            -o refs/old-props
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://raw.githubusercontent.com/salih4187/android_device_samsung_v1a-common/ff8fb2eed9ff6a2a6b723c44681cf0f3344c07a9/manifest.xml' \
+            -o refs/donor-touch.xml
+          test -s refs/donor-config
+          test -s refs/old-config
+          test -s refs/donor-props
+          test -s refs/old-props
+          test -s refs/donor-touch.xml
+
+      - name: Read Git blob identity of reference proprietary Mali (no binary transfer)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --max-time 40 \
+            'https://api.github.com/repos/salih4187/android_vendor_samsung_universal5420-common/git/trees/8f5241f7637477d3ecae65c67b9315d343257fad?recursive=1' \
+            -o refs/donor-vendor-tree.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('refs/donor-vendor-tree.json').read_text())
+          assert not obj.get('truncated'), 'Vendor blob tree incomplete'
+          matches=[item for item in obj['tree']
+                   if item['path']=='proprietary/vendor/lib/egl/libGLES_mali.so']
+          assert len(matches)==1 and matches[0]['type']=='blob'
+          Path('refs/donor-mali-git-sha').write_text(matches[0]['sha']+'\n')
+          print('PINNED DONOR MALi GIT BLOB',matches[0]['sha'])
+          PY
+
+      - name: Check donor and currently tested ELHARIKA graphics pairing
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha=$(cat refs/donor-mali-git-sha)
+          python3 scripts/audit_sm_p900_donor_graphics_pair.py \
+            refs/donor-config refs/old-config refs/donor-props refs/old-props \
+            refs/donor-touch.xml \
+            --mali-git-sha "$sha" \
+            --out evidence/sm-p900-reference-graphics-pairing.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('evidence/sm-p900-reference-graphics-pairing.json').read_text())
+          assert x['status']=='SAME_DEVICE_DONOR_SOURCE_REVIEWED_NOT_A_FLASH_IMAGE'
+          assert x['donor_defconfig_gpu']=='CONFIG_MALI_T6XX_R15P0=y'
+          assert x['donor_and_previous_graphics_properties_identical']
+          assert x['donor_declares_missing_IKeyDisabler']
+          assert not x['flash_approved']
+          assert not x['Mali_eglSwapBuffers_working_on_user_device']
+          print('Reference is source evidence only. No flash approval.')
+          PY
+
+      - name: Remove source inputs, keep metadata evidence only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- refs
+          test ! -d refs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-REFERENCE-GPU-PAIRING-REPORT-ONLY
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7
