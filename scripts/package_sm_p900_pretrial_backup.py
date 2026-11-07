@@ -43,7 +43,7 @@ REQUIRED = (
     "BOOT_LINK=/dev/block/platform/dw_mmc.0/by-name/BOOT",
     "MALI=/system/vendor/lib/egl/libGLES_mali.so",
     "CURRENT_BOOT_SHA=f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0",
-    "CURRENT_MALI_SHA=34af399a1090295a7138297b9354c73d569212a4bd11be4b3254dafe26cde",
+    "CURRENT_MALI_SHA=34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde",
     "FULL_BOOT_BYTES=8388608",
     'head -c "$FULL_BOOT_BYTES" "$BOOT" > "$STAGE/BOOT.full-8MiB.backup"',
     'cat "$MALI_REAL" > "$STAGE/libGLES_mali.UK10.original.backup"',
