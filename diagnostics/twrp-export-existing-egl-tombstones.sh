@@ -8,7 +8,7 @@ case "$OUTFD" in ''|*[!0-9]*) exit 1 ;; esac
 ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$OUTFD"; }
 fail() { ui "STOP: $*"; exit 1; }
 
-for tool in getprop grep awk sha256sum mktemp rm cat; do
+for tool in getprop grep awk sha256sum mktemp rm cat mv sync; do
     command -v "$tool" >/dev/null 2>&1 || fail "TWRP missing required command: $tool"
 done
 [ "$(getprop ro.product.device)" = "v1awifi" ] || fail "Expected SM-P900/v1awifi recovery"
@@ -29,9 +29,18 @@ DATA_MOUNTED=$(awk '$2=="/data" {found=1} END {if(found) print 1; else print 0}'
 [ "$DATA_MOUNTED" = 1 ] || fail "Data is not mounted. In TWRP > Mount, enable Data and retry; do NOT format."
 
 TARGET="$SD/elharika-egl-crash-registers.txt"
-[ ! -e "$TARGET" ] || fail "Existing output on microSD. Rename it first; no overwrite."
+# Preserve all previous files, including empty files from interrupted runs.
+if [ -e "$TARGET" ]; then
+    TARGET=""
+    for n in 01 02 03 04 05 06 07 08 09 10; do
+        candidate="$SD/elharika-egl-crash-registers-$n.txt"
+        if [ ! -e "$candidate" ]; then TARGET="$candidate"; break; fi
+    done
+    [ -n "$TARGET" ] || fail "All output names occupied on microSD; keep old reports and rename one."
+fi
 TMP=$(mktemp /tmp/elharika-egl-crash.XXXXXX) || fail "Cannot create temporary report"
-cleanup() { rm -f "$TMP"; }
+OUT_TMP=""
+cleanup() { rm -f "$TMP"; [ -z "$OUT_TMP" ] || rm -f "$OUT_TMP"; }
 trap cleanup EXIT
 
 umask 077
@@ -74,8 +83,20 @@ if [ "$COUNT" -eq 0 ]; then
     } >> "$TMP"
 fi
 
-cat "$TMP" > "$TARGET" || fail "microSD write failed (no system partition modified)"
+# Do not expose the final report filename until the write and checks succeed.
+[ -s "$TMP" ] || fail "Internal report was empty; no output installed."
+OUT_TMP=$(mktemp "$SD/.elharika-egl-stage.XXXXXX") || fail "Cannot reserve microSD staging file"
+cat "$TMP" > "$OUT_TMP" || fail "microSD write failed; original reports preserved."
+[ -s "$OUT_TMP" ] || fail "microSD staging result is empty; original reports preserved."
+HASH_TMP=$(sha256sum "$TMP" | awk '{print $1}')
+HASH_SD=$(sha256sum "$OUT_TMP" | awk '{print $1}')
+[ "$HASH_TMP" = "$HASH_SD" ] || fail "microSD checksum mismatch; no final file created."
+[ ! -e "$TARGET" ] || fail "Output name became occupied; not overwriting."
+mv "$OUT_TMP" "$TARGET" || fail "Could not publish checked output on microSD."
+OUT_TMP=""
+sync || fail "Could not sync microSD report."
+[ -s "$TARGET" ] || fail "Final output is unexpectedly empty."
 ui "Read-only EGL scan completed. Matching tombstones: $COUNT"
-ui "microSD file: elharika-egl-crash-registers.txt"
-ui "SHA256: $(sha256sum "$TARGET" | awk '{print $1}')"
+ui "microSD file: $TARGET"
+ui "Verified SHA256: $HASH_SD"
 ui "No BOOT/system/data changes. Send this TXT for crash-register analysis."
