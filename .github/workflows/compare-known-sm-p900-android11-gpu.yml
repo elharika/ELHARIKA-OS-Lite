@@ -1,4 +1,5 @@
 name: SM-P900 known Android11 R15P0 display baseline (no ROM build)
+# Retry after Python 3.10 hashlib compatibility fix; no Android compilation.
 on:
   push:
     branches: [diagnostics/mali-r7p0-matched-boot-trial]
