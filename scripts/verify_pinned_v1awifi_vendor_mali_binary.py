@@ -18,6 +18,11 @@ BAD_UK5_SYSTEM_SHA256 = "3bc453470f2f6711d463f3fff9b115011cbcefcbb1355be9af14785
 TESTED_R7P0_UK10_SHA256 = "34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde"
 STOCK_P900_SHA256 = "6bdde99d255444cf59374558736c85de5413125f63f4035237d6556c0f91047d"
 MAX_SIZE = 45_000_000
+# The exact ARM Thumb handshake call-site from the previously proven UK5.1
+# ELHARIKA binary, not an inferred universal Mali signature.
+UK5_PROVEN_HANDSHAKE_BYTES = bytes.fromhex(
+    "052701262b46014601aaadf80470adf80660fff732f9"
+)
 
 
 def run(args):
@@ -48,6 +53,17 @@ def audit(path):
     matches_bad_system = sha == BAD_UK5_SYSTEM_SHA256
     matches_r7p0_trial = sha == TESTED_R7P0_UK10_SHA256
     matches_stock = sha == STOCK_P900_SHA256
+    uk5_marker_offsets = []
+    start = 0
+    while len(uk5_marker_offsets) < 5:
+        at = data.find(UK5_PROVEN_HANDSHAKE_BYTES, start)
+        if at < 0:
+            break
+        uk5_marker_offsets.append(at)
+        start = at + 1
+    # Matching this specific compiled call site is strong evidence of a copied
+    # 5.1 request pattern. Missing it does NOT establish any other UK version.
+    uk5_signature_present = bool(uk5_marker_offsets)
     return {
         "status": "PINNED_SM_P900_DONOR_MALI_ELF_IDENTIFIED_NO_FLASH_APPROVAL",
         "donor_vendor_source_commit": DONOR_SOURCE_COMMIT,
@@ -61,9 +77,13 @@ def audit(path):
         "is_identical_to_r7p0_uk10_tested_device": matches_r7p0_trial,
         "is_identical_to_stock_android5_0_2": matches_stock,
         "known_uk5_mismatch": matches_bad_system,
+        "exact_proven_uk5_1_handshake_pattern_detected": uk5_signature_present,
+        "proven_uk5_1_pattern_file_offsets": uk5_marker_offsets,
+        "signature_match_is_proof_of_actual_runtime_request": False,
         "uk_api_version_proven_for_arbitrary_donor_binary": False,
         "donor_kernel_source_selects_r15p0": True,
         "donor_kernel_elf_abi_compatibility_proven": False,
+        "donor_requires_targeted_handshake_disassembly": True,
         "any_new_flash_approved": False,
         "device_boot_tested": False,
         "conclusion": (
@@ -87,6 +107,7 @@ def main():
         "sha256": result["donor_mali_sha256"],
         "same_as_uk5_blocked": result["is_identical_to_uk5_abi_blocked_ELHARIKA_system"],
         "same_as_r7p0_uk10": result["is_identical_to_r7p0_uk10_tested_device"],
+        "uk5_1_signature_detected": result["exact_proven_uk5_1_handshake_pattern_detected"],
         "flash_approved": False,
     }, indent=2))
 
