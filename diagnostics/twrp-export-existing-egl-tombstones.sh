@@ -42,6 +42,7 @@ for dir in /data/tombstones /data/vendor/tombstones; do
     [ -d "$dir" ] || continue
     for path in "$dir"/tombstone_*; do
         [ -f "$path" ] && [ -r "$path" ] || continue
+        case "$path" in *.pb) continue ;; esac
         grep -iq 'eglp_swap_buffers' "$path" || continue
         grep -iq 'bootanimation' "$path" || continue
         COUNT=$((COUNT+1))
