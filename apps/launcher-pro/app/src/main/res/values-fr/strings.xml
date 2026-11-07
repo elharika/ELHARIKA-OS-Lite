@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">ELHARIKA Launcher Pro</string>
+    <string name="welcome">VOTRE ESPACE</string>
+    <string name="hero">Bienvenue sur ELHARIKA OS</string>
+    <string name="subtitle">Applications, favoris et outils dans une interface adaptée aux tablettes.</string>
+    <string name="installed">Applications</string>
+    <string name="favorites">Favoris</string>
+    <string name="quick_access">Accès rapide</string>
+    <string name="all_apps">Toutes les applications</string>
+    <string name="manage">Gérer</string>
+    <string name="settings">Paramètres</string>
+    <string name="search">Rechercher une application</string>
+    <string name="light_theme">Clair</string>
+    <string name="dark_theme">Sombre</string>
+    <string name="no_favorites">Appui long sur une application pour l'ajouter ici.</string>
+    <string name="add_favorite">Ajouter aux favoris</string>
+    <string name="remove_favorite">Retirer des favoris</string>
+    <string name="app_info">Informations sur l'application</string>
+    <string name="cancel">Annuler</string>
+    <string name="hint">Appui long pour gérer les favoris.</string>
+    <string name="launch_error">Impossible d'ouvrir cette application</string>
+</resources>
