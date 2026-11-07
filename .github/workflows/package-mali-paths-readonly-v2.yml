@@ -1,0 +1,57 @@
+name: SM-P900 read-only Mali path and System mount v2
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/package-mali-paths-readonly-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-sm-p900-readonly-system-paths:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify tool safety, path coverage and report non-overwrite
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n diagnostics/twrp-mali-system-paths-readonly-v2.sh
+          python3 -m compileall -q scripts/package_mali_paths_readonly_v2.py
+          python3 -m unittest discover -s tests -p test_package_mali_paths_readonly_v2.py -v
+
+      - name: Package diagnostic ZIP and verify checksum and payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_mali_paths_readonly_v2.py . out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          path=Path("out/ELHARIKA-SM-P900-MALI-SYSTEM-PATHS-READONLY-V2-TWRP.zip")
+          assert 300 < path.stat().st_size < 16000
+          with zipfile.ZipFile(path) as z:
+              assert z.testzip() is None
+              assert 'META-INF/com/google/android/update-binary' in z.namelist()
+              assert len(z.namelist())==3
+              script=z.read('META-INF/com/google/android/update-binary').decode()
+              assert 'NO_RECOGNIZED_SYSTEM_MOUNT' in script
+              assert 'mali_sha256' in script
+              assert 'head -c' not in script
+              assert 'mount -o rw' not in script
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-MALI-PATHS-READONLY-V2
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
