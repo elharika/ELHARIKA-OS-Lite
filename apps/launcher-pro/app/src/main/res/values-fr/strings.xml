@@ -12,11 +12,11 @@
     <string name="search">Rechercher une application</string>
     <string name="light_theme">Clair</string>
     <string name="dark_theme">Sombre</string>
-    <string name="no_favorites">Appui long sur une application pour l'ajouter ici.</string>
+    <string name="no_favorites">Appui long sur une application pour l\'ajouter ici.</string>
     <string name="add_favorite">Ajouter aux favoris</string>
     <string name="remove_favorite">Retirer des favoris</string>
-    <string name="app_info">Informations sur l'application</string>
+    <string name="app_info">Informations sur l\'application</string>
     <string name="cancel">Annuler</string>
     <string name="hint">Appui long pour gérer les favoris.</string>
-    <string name="launch_error">Impossible d'ouvrir cette application</string>
+    <string name="launch_error">Impossible d\'ouvrir cette application</string>
 </resources>
