@@ -21,6 +21,12 @@ class DonorMaliELFSafetyTests(unittest.TestCase):
         self.assertEqual(m.find_uk5_signature_offsets(raw[:-1].replace(b"0527", b"ffff")), [6])
         self.assertEqual(m.find_uk5_signature_offsets(b"header" + bytes.fromhex("05270126") + b"footer"), [])
 
+    def test_bounded_ddk_banner_fingerprint(self):
+        sample = b"xU:r4p0-00dev0-14wk04\x00U:r15p0-02rel0\x00"
+        values = {x.group(0).decode() for x in m.DDK_BANNER_REGEX.finditer(sample)}
+        self.assertEqual(values, {"U:r4p0-00dev0-14wk04", "U:r15p0-02rel0"})
+        self.assertNotIn("U:r7p0", values)
+
     def test_invalid_binary_cannot_claim_compatibility(self):
         with tempfile.TemporaryDirectory() as tmp:
             f = Path(tmp) / "libGLES_mali.so"
