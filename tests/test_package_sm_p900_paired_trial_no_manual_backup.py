@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from hashlib import sha256
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -45,8 +46,11 @@ class PairedTrialSafetyTests(unittest.TestCase):
             for key in m.COMPONENTS:
                 src[key] = p / key
                 src[key].write_bytes((key * 10).encode())
-            with patch.object(m, "verify_source_files", return_value=True):
-                results = m.build(src, p / "out")
+            synthetic = {key: (src[key].stat().st_size, sha256(src[key].read_bytes()).hexdigest())
+                         for key in m.COMPONENTS}
+            with patch.dict(m.COMPONENTS, synthetic):
+                with patch.object(m, "verify_source_files", return_value=True):
+                    results = m.build(src, p / "out")
             self.assertEqual(len(results), 2)
             self.assertEqual({v["operation"] for v in results}, {"INSTALL", "RESTORE"})
             self.assertTrue(all(v["hardware_tested"] is False for v in results))
