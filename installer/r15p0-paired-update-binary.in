@@ -1,0 +1,119 @@
+#!/sbin/sh
+# SM-P900 R7 UK10 -> R15 R15, or exact reverse. No mandatory manual backup.
+# TWRP experimental hardware test; not proven to solve black screen.
+set -eu
+FD="$2"; ZIP="$3"; MODE='@MODE@'
+OLD_BOOT_SHA='f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0'
+R15_BOOT_SHA='7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
+OLD_MALI_SHA='34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde'
+R15_MALI_SHA='a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839'
+TARGET_BOOT_SHA='@TARGET_BOOT_SHA@'; TARGET_BOOT_BYTES='@TARGET_BOOT_BYTES@'
+TARGET_MALI_SHA='@TARGET_MALI_SHA@'; FULL_BOOT_BYTES=8388608
+WORK=''; SYSTEM_MOUNTED=0; WRITING=0; COMMITTED=0
+case "$FD" in ''|*[!0-9]*) exit 1 ;; esac
+ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$FD"; }
+die() { ui "STOP: $*"; exit 1; }
+sha() { sha256sum "$1" | awk '{print $1}'; }
+bootsig() { head -c "$1" "$BOOT" | sha256sum | awk '{print $1}'; }
+cleanup() {
+  if [ "$WRITING" = 1 ] && [ "$COMMITTED" = 0 ]; then
+    ui 'Write error: attempting automatic same-session undo.'
+    if [ -n "$WORK" ] && [ -f "$WORK/orig-mali.so" ] && [ -f "$WORK/orig-full-boot.img" ] &&
+       cat "$WORK/orig-mali.so" > "$ELF" && cat "$WORK/orig-full-boot.img" > "$BOOT" &&
+       sync && [ "$(sha "$ELF")" = "$PREV_MALI_SHA" ] &&
+       [ "$(bootsig "$PREV_BOOT_LEN")" = "$PREV_BOOT_SHA" ]; then
+      ui 'Previous BOOT and Mali restored on error.'
+      WRITING=0
+    else
+      ui 'WARNING: undo not verified. Stay in TWRP, do not reboot.'
+    fi
+  fi
+  if [ "$SYSTEM_MOUNTED" = 1 ]; then umount "$WORK/sys" || ui 'WARNING: System unmount failed'; fi
+  if [ "$WRITING" = 0 ] && [ -n "$WORK" ]; then rm -rf -- "$WORK"; fi
+}
+trap cleanup EXIT
+for cmd in getprop readlink blockdev head sha256sum awk cat mount umount unzip wc df mkdir mktemp rm sync dd grep tr dirname; do
+  command -v "$cmd" >/dev/null 2>&1 || die "Recovery missing $cmd"
+done
+[ "$(getprop ro.product.device)" = v1awifi ] || die 'Not v1awifi/SM-P900'
+case "$(getprop ro.bootloader)" in P900*) ;; *) die 'Cannot confirm P900 bootloader' ;; esac
+case "$ZIP" in /external_sd/*|/external_sd1/*) ;; *) die 'Put ZIP on external microSD' ;; esac
+[ -r "$ZIP" ] || die 'ZIP unreadable'
+BOOT=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/BOOT) || die 'No BOOT mapping'
+SYSTEM=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/SYSTEM) || die 'No SYSTEM mapping'
+for p in "$BOOT" "$SYSTEM"; do
+  case "$p" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected partition path' ;; esac
+  [ -b "$p" ] || die 'Not a block device'
+done
+[ "$BOOT" != "$SYSTEM" ] || die 'BOOT and SYSTEM overlap'
+[ "$(blockdev --getsize64 "$BOOT")" = "$FULL_BOOT_BYTES" ] || die 'Unexpected BOOT partition size'
+while read -r source target rest; do
+  part=$(readlink -f "$source" 2>/dev/null || true)
+  [ "$part" != "$SYSTEM" ] || die 'Uncheck System in TWRP > Mount, then retry'
+  [ "$part" != "$BOOT" ] || die 'BOOT unexpectedly mounted'
+done < /proc/mounts
+if [ -r /sys/class/power_supply/battery/capacity ]; then
+  PWR=$(cat /sys/class/power_supply/battery/capacity)
+  case "$PWR" in ''|*[!0-9]*) die 'Battery reading invalid' ;; esac
+  [ "$PWR" -ge 50 ] || die 'Charge to 50% or more before experimental test'
+fi
+S7=$(bootsig 5437456); S15=$(bootsig 5462032)
+if [ "$S7" = "$OLD_BOOT_SHA" ]; then
+  PREV_BOOT_SHA="$OLD_BOOT_SHA"; PREV_BOOT_LEN=5437456
+elif [ "$S15" = "$R15_BOOT_SHA" ]; then
+  PREV_BOOT_SHA="$R15_BOOT_SHA"; PREV_BOOT_LEN=5462032
+else
+  die 'Unknown BOOT SHA; refusing write'
+fi
+if [ "$MODE" = INSTALL ] && [ "$PREV_BOOT_SHA" != "$OLD_BOOT_SHA" ]; then
+  die 'INSTALL requires exact current R7P0 BOOT'
+fi
+DIR=$(dirname "$ZIP")
+FREE=$(df -Pk "$DIR" | awk 'END {print $4}')
+case "$FREE" in ''|*[!0-9]*) die 'microSD free space unknown' ;; esac
+[ "$FREE" -ge 131072 ] || die 'Need 128 MiB free on microSD'
+WORK=$(mktemp -d "$DIR/.elharika-pair.XXXXXX") || die 'Cannot create staging folder'
+unzip -p "$ZIP" payload/boot.img > "$WORK/new-boot.img" || die 'BOOT extraction failed'
+unzip -p "$ZIP" payload/libGLES_mali.so > "$WORK/new-mali.so" || die 'Mali extraction failed'
+[ "$(wc -c < "$WORK/new-boot.img" | tr -d '[:space:]')" = "$TARGET_BOOT_BYTES" ] || die 'Wrong target BOOT size'
+[ "$(sha "$WORK/new-boot.img")" = "$TARGET_BOOT_SHA" ] || die 'Wrong target BOOT SHA'
+[ "$(sha "$WORK/new-mali.so")" = "$TARGET_MALI_SHA" ] || die 'Wrong target Mali SHA'
+mkdir "$WORK/sys" || die 'Cannot prepare System mount'
+mount -t ext4 -o rw "$SYSTEM" "$WORK/sys" || die 'Cannot mount System for paired update'
+SYSTEM_MOUNTED=1
+ROOT="$WORK/sys/system"
+[ -d "$ROOT" ] || die 'Wrong installed System filesystem layout'
+grep -qx 'ro.product.system.device=v1awifi' "$ROOT/build.prop" || die 'Wrong installed System device'
+grep -qx 'ro.build.version.sdk=30' "$ROOT/build.prop" || die 'Only Android 11 API 30 allowed'
+[ "$(sha "$ROOT/bin/surfaceflinger")" = 'daf54072c758c5f52a70283dcc8ac22e6f157600a0b8c555639802c606e9110d' ] || die 'Unknown SurfaceFlinger'
+ELF="$ROOT/vendor/lib/egl/libGLES_mali.so"
+[ -f "$ELF" ] && [ ! -L "$ELF" ] || die 'Unexpected Mali target'
+PREV_MALI_SHA=$(sha "$ELF")
+if [ "$MODE" = INSTALL ]; then
+  [ "$PREV_MALI_SHA" = "$OLD_MALI_SHA" ] || die 'INSTALL requires exact UK10 library'
+elif [ "$MODE" = RESTORE ]; then
+  case "$PREV_MALI_SHA" in "$OLD_MALI_SHA"|"$R15_MALI_SHA") ;; *) die 'Unknown Mali library, refusing RESTORE' ;; esac
+else
+  die 'Invalid operation'
+fi
+df -Pk "$WORK/sys" | awk 'NR==2 {ok=($4>=32768)} END {exit !ok}' || die 'Need at least 32 MiB free on System'
+# The hidden temporary bytes are ONLY for automatic error recovery during this TWRP operation.
+# No manual backup, partition image, or user backup folder is required.
+head -c "$FULL_BOOT_BYTES" "$BOOT" > "$WORK/orig-full-boot.img" || die 'Cannot stage automatic BOOT undo'
+[ "$(wc -c < "$WORK/orig-full-boot.img" | tr -d '[:space:]')" = "$FULL_BOOT_BYTES" ] || die 'Incomplete automatic BOOT undo'
+cat "$ELF" > "$WORK/orig-mali.so" || die 'Cannot stage automatic Mali undo'
+[ "$(sha "$WORK/orig-mali.so")" = "$PREV_MALI_SHA" ] || die 'Automatic Mali undo checksum mismatch'
+ui "SM-P900 experimental paired $MODE. Model, source and payload verified."
+ui 'Writing ONLY Mali ELF and BOOT. Do not disconnect power.'
+WRITING=1
+cat "$WORK/new-mali.so" > "$ELF" || die 'Mali write failed'
+sync || die 'Mali sync failed'
+[ "$(sha "$ELF")" = "$TARGET_MALI_SHA" ] || die 'Mali readback failed'
+dd if="$WORK/new-boot.img" of="$BOOT" bs=1048576 || die 'BOOT write failed'
+sync || die 'BOOT sync failed'
+[ "$(bootsig "$TARGET_BOOT_BYTES")" = "$TARGET_BOOT_SHA" ] || die 'BOOT readback failed'
+COMMITTED=1
+WRITING=0
+ui "Paired $MODE completed; BOOT and Mali checksums OK."
+ui 'No DATA, EFS, RECOVERY or bootloader writes.'
+ui 'Android GPU/display still unverified. Use RESTORE if black persists.'
