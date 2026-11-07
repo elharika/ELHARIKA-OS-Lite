@@ -58,6 +58,13 @@ class CrashRegisterTests(unittest.TestCase):
         v = m.parse_tombstone(make().replace("r8 ffffffff", "r8 --"))
         self.assertEqual(v["status"], "INCOMPLETE_TOMBSTONE_REGISTERS")
 
+    def test_fails_if_only_caller_frame_matches_known_address(self):
+        sample = make().replace(
+            "#00 pc 00263458", "#00 pc 00112233")
+        sample += "    #02 pc 00263458 /vendor/lib/egl/libGLES_mali.so (eglp_swap_buffers+1460)\n"
+        with self.assertRaisesRegex(ValueError, "Top ARM fault frame"):
+            m.parse_tombstone(sample)
+
     def test_refuse_other_crash_site(self):
         with self.assertRaises(ValueError):
             m.parse_tombstone(make().replace("00263458", "00112233"))
