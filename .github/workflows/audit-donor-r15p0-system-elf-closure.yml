@@ -1,4 +1,5 @@
 name: SM-P900 donor r15p0 ELF closure against existing Android11 system
+# Re-run after Android HIDL DT_NEEDED @-versioned basename handling fix.
 on:
   push:
     branches: [diagnostics/mali-r7p0-matched-boot-trial]
