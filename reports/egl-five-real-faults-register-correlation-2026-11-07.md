@@ -14,6 +14,10 @@ The device owner supplied a **nonempty** text export `elharika-egl-crash-registe
 - `r3` was **nonzero** and pointer-like in all five samples. Thus the earlier **zero-count underflow hypothesis is not observed**. The observed value is not interpretable as a sane small array count.
 - The crash is an invalid indexed-memory read (fault addr differs between restarts). This narrows the problem to incorrect pointer/index/descriptor use *inside or presented to proprietary Mali EGL*, but **does not establish the upstream cause**: Gralloc native-buffer handle ABI, corrupt data, EGL state, allocator/ION lifetime, and proprietary driver internals all remain candidates.
 
+## Narrow, falsifiable buffer descriptor hypothesis (not a patch)
+
+The repeated `r3 - r1 = 48 = 3 × 16` is compatible with **(but does not prove)** a pointer-to-end descriptor for *three 16-byte slots*, while the pinned Mali helper treats `r3` as an **integer element count** and subtracts one. If that hypothesis is correct, a last-slot index would be `(r3-r1)/16 - 1 = 2`, and its read would be at `r1+32`, not the observed unmapped address. Distinguish this from pointer lifetime corruption or an unrelated internal EGL structure before changing any code. The exact identity of `r1/r2/r3` in the proprietary function is **unknown**. Do not apply a guessed binary instruction patch.
+
 ## Code/test changes
 - `scripts/inspect_egl_fault_registers.py` now captures `r2` and computes the three register deltas while preserving the exact fault-address match checks.
 - `scripts/evaluate_twrp_egl_register_export.py` aggregates matches of this pointer-like pattern across multiple crashes without asserting that `r3` is a count.
