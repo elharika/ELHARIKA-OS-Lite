@@ -24,7 +24,7 @@ SEARCH_DIRS = (
     "/system/vendor/lib/hw/",
 )
 ROOT_BOARD_HAL_MODULES = ("gralloc.exynos5.so", "hwcomposer.exynos5.so")
-NAME_PATTERN = re.compile(r"^[A-Za-z0-9_.+-]+\.so$")
+NAME_PATTERN = re.compile(r"^[A-Za-z0-9_.+@-]+\.so$")
 MAX_DEPS = 150
 
 
