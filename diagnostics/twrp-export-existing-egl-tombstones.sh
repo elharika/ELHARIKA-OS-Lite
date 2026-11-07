@@ -48,7 +48,7 @@ for dir in /data/tombstones /data/vendor/tombstones; do
         COUNT=$((COUNT+1))
         [ "$COUNT" -le 5 ] || break
         {
-            printf -- '--- MATCH %s : %s ---\n' "$COUNT" "$path"
+            printf '%s\n' "--- MATCH $COUNT : $path ---"
             # Limit output to process, signal, PC, registers, fault addr and ABI IDs.
             # Never export maps, stacks, unrelated processes, apps or user data.
             awk 'NR<=180 {
