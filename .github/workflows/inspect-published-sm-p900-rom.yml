@@ -1,9 +1,7 @@
 name: SM-P900 published Android 11 ROM read-only inventory
+# Large public SourceForge OTA download disabled for automatic pushes after
+# canceled 805 MB attempt at <70 KB/s; manually re-enable only with a fast mirror.
 on:
-  push:
-    branches: [diagnostics/mali-r7p0-matched-boot-trial]
-    paths:
-      - .github/workflows/inspect-published-sm-p900-rom.yml
   workflow_dispatch:
 
 permissions:
@@ -16,7 +14,7 @@ concurrency:
 jobs:
   inspect-without-system-rebuild:
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +36,7 @@ jobs:
           cd scratch
           echo 'Download is for forensic comparison only; no update script is executed.'
           curl --fail --location --retry 2 --retry-delay 5 --connect-timeout 20 \
-            --max-time 720 --max-filesize 1500000000 \
+            --max-time 540 --speed-limit 300000 --speed-time 30 --max-filesize 1500000000 \
             'https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip/download' \
             --output e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip
           test -s e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip
