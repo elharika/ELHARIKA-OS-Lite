@@ -31,6 +31,25 @@ class CrashRegisterTests(unittest.TestCase):
         self.assertTrue(v["fault_address_matches_ldr"])
         self.assertFalse(v["zero_count_underflow_observed"])
 
+    def test_nearby_pointer_pattern_at_fault(self):
+        # Synthetic addresses with the same +0x20, +0x30 relationships
+        # seen in five different SM-P900 reports; no user crash addresses.
+        r2 = 0x20001000
+        r1 = r2 + 0x20
+        r3 = r1 + 0x30
+        r8 = (r3 - 1) & 0xffffffff
+        ea = (r1 + (r8 << 4)) & 0xffffffff
+        sample = make(f"0x{ea:08x}", f"{r1:08x}", f"{r3:08x}", f"{r8:08x}")
+        sample = sample.replace("r2 00002000", f"r2 {r2:08x}")
+        report = m.parse_tombstone(sample)
+        self.assertTrue(report["fault_address_matches_ldr"])
+        self.assertTrue(report["repeating_nearby_pointer_pattern"])
+        self.assertEqual(report["register_deltas_bytes"], {
+            "r1_minus_r2": 32, "r3_minus_r1": 48, "r3_minus_r2": 80})
+        self.assertFalse(report["zero_count_underflow_observed"])
+        self.assertFalse(report["r3_as_count_proven"])
+        self.assertFalse(report["root_cause_proven"])
+
     def test_invalid_address_reports_disagreement(self):
         v = m.parse_tombstone(make("0x00004000"))
         self.assertFalse(v["fault_address_matches_ldr"])
