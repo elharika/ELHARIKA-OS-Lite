@@ -15,6 +15,12 @@ class DonorMaliELFSafetyTests(unittest.TestCase):
         self.assertNotEqual(m.STOCK_P900_SHA256, m.BAD_UK5_SYSTEM_SHA256)
         self.assertEqual(len(m.DONOR_GIT_BLOB_SHA1), 40)
 
+    def test_uk5_marker_exact_positive_and_negative(self):
+        raw = b"header" + m.UK5_PROVEN_HANDSHAKE_BYTES + b"footer"
+        self.assertEqual(m.find_uk5_signature_offsets(raw), [6])
+        self.assertEqual(m.find_uk5_signature_offsets(raw[:-1].replace(b"0527", b"ffff")), [6])
+        self.assertEqual(m.find_uk5_signature_offsets(b"header" + bytes.fromhex("05270126") + b"footer"), [])
+
     def test_invalid_binary_cannot_claim_compatibility(self):
         with tempfile.TemporaryDirectory() as tmp:
             f = Path(tmp) / "libGLES_mali.so"
