@@ -1,0 +1,61 @@
+name: SM-P900 exact R7 UK10 dual recovery backup (NO FLASH)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/package-pretrial-r7uk10-backup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  make-twrp-read-only-backup-helper:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify exact previously observed BOOT + Mali guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n diagnostics/twrp-backup-current-r7-uk10-before-r15-trial.sh
+          python3 -m compileall -q scripts/package_sm_p900_pretrial_backup.py
+          python3 -m unittest discover -s tests -p test_package_sm_p900_pretrial_backup.py -v
+          grep -Fxq 'CURRENT_BOOT_SHA=f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0' \
+            diagnostics/twrp-backup-current-r7-uk10-before-r15-trial.sh
+          grep -Fxq 'CURRENT_MALI_SHA=34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde' \
+            diagnostics/twrp-backup-current-r7-uk10-before-r15-trial.sh
+
+      - name: Package non-flash TWRP backup ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_sm_p900_pretrial_backup.py . out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          p=Path("out/ELHARIKA-SM-P900-R7P0-UK10-VERIFIED-BACKUP-ONLY-TWRP.zip")
+          assert 500 < p.stat().st_size < 20000
+          with ZipFile(p) as z:
+              assert z.testzip() is None
+              assert len(z.namelist()) == 3
+              assert all("boot.img" not in x and not x.endswith(".so") for x in z.namelist())
+              script=z.read("META-INF/com/google/android/update-binary").decode()
+              assert "head -c \"$FULL_BOOT_BYTES\" \"$BOOT\" > \"$STAGE/BOOT.full-8MiB.backup\"" in script
+              assert "rollback_tested_on_device=NO" in script
+              assert "backup_verified=YES" in script
+          print("TWRP ZIP contains only microSD backup script; no flashable image.")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-R7P0-UK10-DUAL-BACKUP-ONLY-NO-FLASH
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
