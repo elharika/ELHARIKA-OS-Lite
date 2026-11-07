@@ -17,9 +17,11 @@ def parse_tombstone(text):
         raise ValueError("Expected BootAnimation Mali crash signature")
     if len(re.findall(r"\bsignal 11\b", text)) != 1:
         raise ValueError("Supply exactly one native SIGSEGV tombstone")
-    pcs = [int(s, 16) for s in re.findall(r"\bpc\s+(?:0x)?([0-9a-fA-F]{6,8})\b", text)]
-    if FAULT_PC not in pcs:
-        raise ValueError("Tombstone not from the confirmed SM-P900 crash PC")
+    # Require the *faulting* #00 frame, not a similarly numbered #02
+    # caller such as eglp_swap_buffers+1460. They are distinct functions.
+    frame0 = re.search(r"(?m)^\s*#00\s+pc\s+(?:0x)?([0-9a-fA-F]{6,8})\b", text)
+    if frame0 is None or int(frame0.group(1), 16) != FAULT_PC:
+        raise ValueError("Top ARM fault frame must be Mali PC 0x00263458")
     fault_match = re.search(r"\bfault addr\s+(?:0x)?([0-9a-fA-F]{1,8})\b", text)
     values = {}
     for name in REGISTERS:
