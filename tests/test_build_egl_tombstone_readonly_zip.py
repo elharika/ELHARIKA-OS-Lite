@@ -17,6 +17,7 @@ class ReadOnlyTombstonePackageTests(unittest.TestCase):
         self.assertIn("egl p".replace(" ", "") + "_swap_buffers", source)
         self.assertIn("/data/tombstones", source)
         self.assertIn("elharika-egl-crash-registers.txt", source)
+        self.assertIn('case "$path" in *.pb) continue ;; esac', source)
         self.assertNotIn("mount -t ", source)
         self.assertNotIn("dd if=", source)
 
