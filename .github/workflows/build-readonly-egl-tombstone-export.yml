@@ -1,4 +1,5 @@
 name: SM-P900 read-only existing EGL tombstone exporter
+# Repackage after explicitly excluding binary/protobuf tombstones.
 on:
   push:
     branches: [diagnostics/mali-r7p0-matched-boot-trial]
