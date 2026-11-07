@@ -1,0 +1,86 @@
+name: SM-P900 stage exact r15p0 BOOT plus Mali (NOT INSTALLABLE)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/stage-r15p0-paired-candidate-no-flash.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  stage-hash-verified-r15-pair:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run no-flash archive regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/stage_r15p0_pair_nonflash.py
+          python3 -m unittest discover -s tests -p test_stage_r15p0_pair_nonflash.py -v
+          mkdir -p source-input evidence
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: source-input/original-r15-boot
+
+      - name: Acquire exact pinned SM-P900 donor Mali without a system image
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 220 \
+            --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output source-input/donor-r15.so
+          echo '7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14  source-input/original-r15-boot/boot.img' | sha256sum -c -
+          echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  source-input/donor-r15.so' | sha256sum -c -
+
+      - name: Produce read-only staged pair with explicit no-installer guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/stage_r15p0_pair_nonflash.py \
+            source-input/original-r15-boot/boot.img \
+            source-input/donor-r15.so stage
+          (cd stage && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,json,hashlib
+          path=Path('stage/ELHARIKA-SM-P900-R15P0-MATCHED-CANDIDATE-NOT-INSTALLABLE.zip')
+          with zipfile.ZipFile(path) as z:
+              assert z.testzip() is None
+              assert len(z.namelist())==4
+              assert not any(s.startswith('META-INF/') for s in z.namelist())
+              assert not any(s.endswith('system.img') or s.endswith('system.ext4') for s in z.namelist())
+              result=json.loads(z.read('manifest.json'))
+              assert not result['flash_approved']
+              assert not result['real_device_boot_verified']
+              assert result['donor_mali_build_id']=='541f48d27481c7fc59e3b9ebd6929c33'
+              assert result['donor_mali_ddk']=='U:r15p0-00rel0'
+          print('Exact R15P0 pair staged without any updater or flash permission.')
+          PY
+
+      - name: Remove raw source inputs after archiving
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- source-input
+          test ! -e source-input/donor-r15.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-R15P0-PAIRED-STAGED-NOT-INSTALLABLE
+          path: stage/
+          retention-days: 7
+          if-no-files-found: warn

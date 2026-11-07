@@ -1,0 +1,48 @@
+name: SM-P900 graphics HAL dependency report
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/review-sm-p900-hal-dependencies.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  review-preexisting-graphics-elf-only:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-GRAPHICS-HAL-INVENTORY-REPORT-ONLY
+          run-id: 42345070923
+          github-token: ${{ github.token }}
+          path: prior-evidence
+      - name: Print exact graphics module paths, dependencies and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("prior-evidence/graphics-hal-inventory.json").read_text())
+          assert x["status"]=="GRAPHICS_MODULE_INVENTORY_COMPLETE"
+          assert x["flash_approved"] is False
+          print("Module identities and dependencies:")
+          for row in x["libraries"]:
+              print("FILE",row["path"])
+              print(" SHA256",row["sha256"])
+              print(" NEEDED",",".join(row["needed"]))
+              print(" SONAME",row["soname"])
+          print("EXPECTED_BOARD_GRALLOC",x["derived"]["gralloc_exynos5"])
+          print("EXPECTED_BOARD_HWC",x["derived"]["hwcomposer_exynos5"])
+          print("ERRORS",x["errors"])
+          print("Note: ELF NEEDED cannot establish native buffer handle ABI; EGL swap remains unproven.")
+          PY

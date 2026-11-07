@@ -1,0 +1,247 @@
+name: SM-P900 Mali r7p0 matched-kernel boot experiment
+on:
+  workflow_dispatch:
+  # This single branch-scoped push trigger launches the kernel build without modifying main.
+  # Editing unrelated files does not retrigger the expensive job.
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/mali-r7p0-kernel-trial.yml
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: android11-mali-r7p0-trial
+  cancel-in-progress: false
+
+jobs:
+  build-matching-boot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Validate project tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest discover -s tests -v 2>&1 | tee evidence/project-tests.log
+          python3 -m compileall -q scripts tests
+          for script in scripts/*.sh; do bash -n "$script"; done
+
+      - name: Reclaim hosted runner disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This cleanup is only for the disposable GitHub-hosted build VM.
+          test "${GITHUB_ACTIONS:-}" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          df -B1 > evidence/disk-before-cleanup.txt
+          sudo du -x -B1 --max-depth=2 /opt /usr/local /usr/share > evidence/host-tools-before.txt
+          if command -v docker >/dev/null 2>&1; then
+            docker system df > evidence/docker-before.txt
+            # No containers are used by this workflow; remove unused image layers.
+            docker image prune --all --force > evidence/docker-cleanup.txt
+            docker builder prune --all --force >> evidence/docker-cleanup.txt
+          fi
+          sudo apt-get clean
+          for tool_path in /usr/share/dotnet /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/Go /opt/hostedtoolcache/Ruby /opt/hostedtoolcache/Java_Temurin /opt/hostedtoolcache/Java_Adopt_jdk /opt/hostedtoolcache/Java_Zulu_jdk /opt/hostedtoolcache/Java_Microsoft_jdk /opt/hostedtoolcache/node /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /usr/local/julia /usr/local/share/powershell /usr/share/miniconda /opt/az /opt/microsoft /opt/google /usr/local/share/chromium /usr/share/gradle /usr/share/sbt /usr/local/share/vcpkg; do
+            if [ -L "$tool_path" ]; then
+              echo "Skipping symlink: $tool_path" >> evidence/removed-tools-sizes.txt
+              continue
+            fi
+            if [ -d "$tool_path" ]; then
+              sudo du -sx -B1 "$tool_path" >> evidence/removed-tools-sizes.txt
+              sudo rm -rf --one-file-system -- "$tool_path"
+            fi
+          done
+          /usr/bin/python3 --version
+          git --version
+          df -B1 | tee evidence/disk-after-cleanup.txt
+
+      - name: Prepare verified SM-P900 vendor inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs binutils bc lzop libncurses5 patchelf git-lfs
+          stock_work="$RUNNER_TEMP/elharika-stock-input"
+          mkdir -p "$stock_work"
+          python3 scripts/download_stock_input.py 1DbRfFvu2W2RNuclR_zKXhAfKxNEX5Jg6 "$stock_work/stock.zip"
+          python3 scripts/unpack_stock_system.py "$stock_work/stock.zip" "$stock_work/expanded"
+          python3 scripts/minimal_vendor_baseline.py reports/stock-P900XXS0BPL4-vendor-comparison.json "$stock_work/minimal.json"
+          python3 scripts/stock_candidate_baseline.py "$stock_work/minimal.json" "$stock_work/candidates.json"
+          python3 scripts/stage_stock_vendor.py --system-image "$stock_work/expanded/system.ext4" --baseline "$stock_work/candidates.json" --output "$stock_work/stage"
+          python3 scripts/assemble_vendor_tree.py "$stock_work/candidates.json" "$stock_work/stage" "$RUNNER_TEMP/elharika-vendor"
+          (cd "$RUNNER_TEMP/elharika-vendor" && sha256sum --check --quiet SHA256SUMS)
+          cp "$RUNNER_TEMP/elharika-vendor/assembly-report.json" evidence/vendor-assembly.json
+          cp "$RUNNER_TEMP/elharika-vendor/SHA256SUMS" evidence/vendor-source-sha256.txt
+          rm -rf -- "$stock_work"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-build-evidence
+          run-id: 41862679569
+          github-token: ${{ github.token }}
+          path: locked-system-evidence
+
+      - name: Initialize and sync Android 11 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/android11"
+          git clone --depth=1 https://gerrit.googlesource.com/git-repo "$RUNNER_TEMP/repo-tool"
+          cd "$RUNNER_TEMP/android11"
+          python3 "$RUNNER_TEMP/repo-tool/repo" init \
+            -u https://github.com/LineageOS/android \
+            -b 88e370827501474db8f1905128fdea2e8128ead4 \
+            --depth=1 --no-clone-bundle \
+            --repo-url=https://gerrit.googlesource.com/git-repo --repo-rev=stable
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -o "$GITHUB_WORKSPACE/evidence/base-manifest.xml"
+          mkdir -p .repo/local_manifests
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_sync_manifest.py" \
+            "$GITHUB_WORKSPACE/evidence/base-manifest.xml" \
+            "$GITHUB_WORKSPACE/rom/roomservice.xml" .repo/local_manifests/elharika.xml
+          cp .repo/local_manifests/elharika.xml "$GITHUB_WORKSPACE/evidence/hardware-overlay.xml"
+          cp "$GITHUB_WORKSPACE/locked-system-evidence/platform-lock.xml" .repo/manifests/elharika-locked.xml
+          rm .repo/local_manifests/elharika.xml
+          python3 "$RUNNER_TEMP/repo-tool/repo" init -m elharika-locked.xml --depth=1 --no-clone-bundle
+          python3 "$RUNNER_TEMP/repo-tool/repo" sync -c -j4 \
+            --no-clone-bundle --no-tags --optimized-fetch --fail-fast \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/sync.log"
+          python3 "$RUNNER_TEMP/repo-tool/repo" manifest -r -o "$GITHUB_WORKSPACE/evidence/platform-lock.xml"
+          test "$(git -C vendor/apn rev-parse HEAD)" = cfcbd9d61d6c22e5b60b2f10274d6cd1ff460f5e
+          du -sh . > "$GITHUB_WORKSPACE/evidence/source-size.txt"
+          du -x -B1 --max-depth=2 . > "$GITHUB_WORKSPACE/evidence/source-footprint.txt"
+          df -B1 > "$GITHUB_WORKSPACE/evidence/disk-after-sync.txt"
+
+      - name: Select pinned Mali r7p0 DDK for experimental build
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/select_mali_r7p0.py "$RUNNER_TEMP/android11" --report evidence/mali-r7p0-selection.json
+          grep -q '"selected_ddk": "r7p0"' evidence/mali-r7p0-selection.json
+
+      - name: Repair pinned r7p0 Kbuild registration rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/fix_r7p0_kbuild.py "$RUNNER_TEMP/android11" --report evidence/mali-r7p0-kbuild-repair.json
+
+      - name: Integrate SM-P900 vendor tree and product
+        shell: bash
+        run: |
+          set -euo pipefail
+          android_root="$RUNNER_TEMP/android11"
+          mkdir -p "$android_root/vendor/samsung"
+          for device in universal5420-common v1a-common v1awifi; do
+            test ! -e "$android_root/vendor/samsung/$device"
+            test -f "$RUNNER_TEMP/elharika-vendor/samsung/$device/$device-vendor.mk"
+            mv "$RUNNER_TEMP/elharika-vendor/samsung/$device" "$android_root/vendor/samsung/"
+          done
+          python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/prepare_product.py "$android_root"
+          python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_wifi_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_touch_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_graphics_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_init_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_camera_hosting.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
+          # The optional IKeyDisabler manifest repair is intentionally NOT applied here:
+          # this workflow builds only boot.img, which cannot replace the installed vendor manifest.
+
+      - name: Select development bring-up profile without incompatible GPS and camera
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/android11" <<'PY'
+          import pathlib,re,sys,json,xml.etree.ElementTree as ET
+          root=pathlib.Path(sys.argv[1])
+          blocked={'gpsd','gps.universal5420','libexynoscamera','camera.universal5420',
+                   'android.hardware.camera.provider@2.4-impl.exynos5420',
+                   'android.hardware.camera.provider@2.4-service',
+                   'camera.device@1.0-impl.exynos5420',
+                   'android.hardware.gnss@1.0-impl.universal5420',
+                   'android.hardware.gnss@1.0-service.universal5420','libshim_dmitry_gps'}
+          changes=[]
+          for base in ('device/samsung','vendor/samsung'):
+              for p in (root/base).rglob('*.mk'):
+                  lines=p.read_text().splitlines(True);out=[]
+                  for line in lines:
+                      token=line.strip().removesuffix('\\').strip()
+                      if token in blocked or any(line.strip()=='PRODUCT_PACKAGES += '+n for n in blocked):
+                          changes.append(str(p.relative_to(root))+': '+line.strip())
+                          continue
+                      if 'PRODUCT_COPY_FILES' not in line and any(x in line for x in
+                          ('android.hardware.camera.flash-autofocus.xml:', 'android.hardware.camera.front.xml:', 'android.hardware.location.gps.xml:')):
+                          changes.append(str(p.relative_to(root))+': '+line.strip())
+                          continue
+                      out.append(line)
+                  p.write_text(''.join(out))
+          for p in (root/'device/samsung').rglob('*manifest*.xml'):
+              try: tree=ET.parse(p)
+              except ET.ParseError: continue
+              changed=False
+              for hal in list(tree.getroot()):
+                  if hal.tag=='hal' and hal.findtext('name') in ('android.hardware.camera.provider','android.hardware.gnss'):
+                      tree.getroot().remove(hal);changed=True
+              if changed: tree.write(p,encoding='unicode');changes.append(str(p.relative_to(root))+': remove unavailable HAL declaration')
+          pathlib.Path('evidence/bringup-limitations.json').write_text(json.dumps({
+              'profile':'BOOT_BRINGUP_ONLY','camera':'DISABLED_INCOMPATIBLE_STOCK_ABI',
+              'gps':'DISABLED_INCOMPATIBLE_STOCK_ABI','hardware_tested':False,'changes':changes},indent=2))
+          PY
+
+      - name: Validate build target
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP/android11"
+          set +u
+          source build/envsetup.sh
+          lunch elharika_v1awifi-userdebug 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lunch.log"
+          env | grep -E '^(TARGET_PRODUCT|TARGET_BUILD_VARIANT|TARGET_DEVICE)=' | sort > "$GITHUB_WORKSPACE/evidence/target-env.txt" || true
+
+      - name: Build matching boot image
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android11"
+          python3 "$GITHUB_WORKSPACE/scripts/bounded_build.py" --root "$RUNNER_TEMP/android11" --evidence "$GITHUB_WORKSPACE/evidence/boot-build" --minutes 285 --reserve-gib 5 -- bash -lc 'set +u; source build/envsetup.sh && lunch elharika_v1awifi-userdebug >/dev/null && m -j3 bootimage'
+      - name: Verify experimental Mali r7p0 boot structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$RUNNER_TEMP/android11/out/target/product/v1awifi"
+          # Fail closed if Kconfig regenerated an r15p0 driver despite the defconfig change.
+          compiled_config="$product/obj/KERNEL_OBJ/.config"
+          test -s "$compiled_config"
+          grep -Fxq 'CONFIG_MALI_T6XX_R7P0=y' "$compiled_config"
+          grep -Fxq '# CONFIG_MALI_T6XX_R15P0 is not set' "$compiled_config"
+          sha256sum "$compiled_config" > evidence/compiled-kernel-config.sha256
+          python3 scripts/check_r7p0_kernel_artifacts.py "$product/obj/KERNEL_OBJ" --report evidence/r7p0-build-gpu-check.json
+          python3 scripts/verify_boot_image.py "$product" evidence/boot-image-validation.json
+          mkdir development-boot
+          cp "$product/boot.img" evidence/boot-image-validation.json evidence/bringup-limitations.json evidence/mali-r7p0-selection.json evidence/mali-r7p0-kbuild-repair.json evidence/r7p0-build-gpu-check.json development-boot/
+          (cd development-boot && sha256sum boot.img > SHA256SUMS)
+          echo 'EXPERIMENTAL SM-P900 r7p0 Kbuild fix. GPU object and linked symbol checked but actual /dev/mali0 and boot not tested; NOT FLASH APPROVED. Preserve original boot and Mali RESTORE ZIP. Paired UK10 library still requires hardware validation.' > development-boot/README.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
+          path: development-boot/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Mali-r7p0-boot-build-evidence
+          path: evidence/
+          retention-days: 7

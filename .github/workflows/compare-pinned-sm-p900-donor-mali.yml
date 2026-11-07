@@ -1,0 +1,72 @@
+name: SM-P900 pinned donor Mali ELF comparison without ROM download
+# Re-audit pinned donor ELF for DDK release banner and known UK5.1 callsite.
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/compare-pinned-sm-p900-donor-mali.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-verified-donor-elf:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Fail-closed ABI guard tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_verify_pinned_v1awifi_vendor_mali_binary.py -v
+          python3 -m compileall -q scripts/verify_pinned_v1awifi_vendor_mali_binary.py
+          mkdir -p confidential-input evidence
+
+      - name: Fetch exact 26.8 MB donor Mali binary only; never fetch 805 MB ROM
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --retry-delay 2 \
+            --connect-timeout 15 --max-time 240 --speed-limit 10000 --speed-time 30 \
+            --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output confidential-input/libGLES_mali.so
+          test -s confidential-input/libGLES_mali.so
+
+      - name: Audit exact Git object identity, ELF dependencies, BuildId and UK mismatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_pinned_v1awifi_vendor_mali_binary.py \
+            confidential-input/libGLES_mali.so \
+            --out evidence/pinned-donor-mali-elf-comparison.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          e=json.loads(Path('evidence/pinned-donor-mali-elf-comparison.json').read_text())
+          assert e['any_new_flash_approved'] is False
+          assert e['donor_kernel_elf_abi_compatibility_proven'] is False
+          assert e['donor_mali_git_sha1']=='860898a5a59142f9917dcad28f5e05a9796d03b2'
+          print('Donor EFI binary evidence only. No ROM approval.')
+          PY
+
+      - name: Remove downloaded proprietary library, keep metadata and checksums only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- confidential-input
+          test ! -e confidential-input/libGLES_mali.so
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-PINNED-DONOR-MALI-ELF-COMPARISON-METADATA
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7

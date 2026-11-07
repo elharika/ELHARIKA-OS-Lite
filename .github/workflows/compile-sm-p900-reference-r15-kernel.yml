@@ -1,0 +1,123 @@
+name: SM-P900 known Android11 R15P0 kernel-only compile experiment
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/compile-sm-p900-reference-r15-kernel.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sm-p900-reference-kernel-r15-only
+  cancel-in-progress: false
+
+jobs:
+  compile-reference-kernel-only:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Install minimal legacy Linux 3.4 host build requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y make bc bison flex libncurses-dev libssl-dev zlib1g-dev git unzip binutils file
+          mkdir -p evidence
+          df -h | tee evidence/disk-before.txt
+      - name: Fetch pinned SM-P900 kernel and Android ARM GCC4.9 only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init "$RUNNER_TEMP/sm-p900-kernel"
+          git -C "$RUNNER_TEMP/sm-p900-kernel" remote add origin https://github.com/salih4187/android_kernel_samsung_exynos5420
+          git -C "$RUNNER_TEMP/sm-p900-kernel" fetch -q --depth=1 origin 35d960ed3c2de3d5558b782257053599cded659e
+          git -C "$RUNNER_TEMP/sm-p900-kernel" -c advice.detachedHead=false checkout -q FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/sm-p900-kernel" rev-parse HEAD)" = 35d960ed3c2de3d5558b782257053599cded659e
+          git init "$RUNNER_TEMP/arm-gcc-4.9"
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" remote add origin https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" fetch -q --depth=1 origin da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" -c advice.detachedHead=false checkout -q FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/arm-gcc-4.9" rev-parse HEAD)" = da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          test -x "$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-gcc"
+          "$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-gcc" --version | head -n 1 | tee evidence/compiler.txt
+      - name: Verify pinned Mali r15p0 source selected (no patch)
+        shell: bash
+        run: |
+          set -euo pipefail
+          k="$RUNNER_TEMP/sm-p900-kernel"
+          grep -Fxq 'CONFIG_MALI_T6XX_R15P0=y' "$k/arch/arm/configs/lineageos_v1awifi_defconfig"
+          grep -Fxq '# CONFIG_MALI_T6XX_R7P0 is not set' "$k/arch/arm/configs/lineageos_v1awifi_defconfig"
+          grep -Fq 'MALI_RELEASE_NAME ?= "r15p0-00rel0"' "$k/drivers/gpu/arm/t6xx/r15p0/Kbuild"
+          echo 'REFERENCE SM-P900 KERNEL AND GPU SOURCE: R15P0' | tee evidence/source-gate.txt
+      - name: Build *only* reference kernel vmlinux and zImage, not Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          k="$RUNNER_TEMP/sm-p900-kernel"
+          out="$RUNNER_TEMP/sm-p900-kernel-out"
+          mkdir -p "$out"
+          export ARCH=arm
+          export CROSS_COMPILE="$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-"
+          make -C "$k" O="$out" lineageos_v1awifi_defconfig 2>&1 | tee evidence/defconfig.log
+          grep -Fxq 'CONFIG_MALI_T6XX_R15P0=y' "$out/.config"
+          grep -Fxq '# CONFIG_MALI_T6XX_R7P0 is not set' "$out/.config"
+          # Keep CI log bounded; fail explicitly on compile errors.
+          make -C "$k" O="$out" -j3 zImage 2>&1 | tee evidence/build.log
+          test -s "$out/arch/arm/boot/zImage"
+          test -s "$out/vmlinux"
+          sha256sum "$out/arch/arm/boot/zImage" | tee evidence/zImage.sha256
+          du -h "$out/arch/arm/boot/zImage" "$out/vmlinux" | tee evidence/build-size.txt
+          "$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-nm" "$out/vmlinux" \
+            | grep -E '\b(kbase_|mali_kbase_|gpu_exynos)' | head -n 30 > evidence/gpu-symbol-sample.txt || true
+          test -s evidence/gpu-symbol-sample.txt
+      - name: Preserve reference zImage for a later matched BOOT build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p kernel-only
+          original="$RUNNER_TEMP/sm-p900-kernel-out/arch/arm/boot/zImage"
+          test -s "$original"
+          cp "$original" kernel-only/zImage
+          (cd kernel-only && sha256sum zImage > SHA256SUMS)
+          (cd kernel-only && sha256sum -c SHA256SUMS)
+          cat > kernel-only/NOT-FLASHABLE-README.txt <<'EOF'
+          SM-P900 donor R15P0 zImage ONLY. NOT a Samsung boot.img; do not flash.
+          Kernel source: salih4187/android_kernel_samsung_exynos5420@35d960ed3c2de3d5558b782257053599cded659e
+          Compiler: LineageOS android ARM GCC4.9@da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          Source VINTF, Android ramdisk, DTB and EGL R15P0 userspace must match.
+          No physical boot or S Pen test completed. Keep original BOOT backup.
+          EOF
+          cmp "$original" kernel-only/zImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-REFERENCE-R15P0-zImage-ONLY-NOT-FLASHABLE
+          path: kernel-only/
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Publish source and compiler success evidence, not a flashable boot
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > evidence/SAFETY-NOT-FLASH-APPROVED.txt <<'EOF'
+          Reference Android 11 SM-P900 kernel source only.
+          This is NOT boot.img, NOT a ROM, and NOT an installer.
+          Uses R15P0 GPU driver; current ELHARIKA trial system uses a different driver.
+          Do NOT flash. Exact vendor userspace and original ramdisk/DTB need pairing and validation.
+          Physical boot and GPU presentation NOT tested.
+          EOF
+          df -h > evidence/disk-after.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-KNOWN-R15P0-KERNEL-COMPILE-LOGS-NOT-FLASHABLE
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn

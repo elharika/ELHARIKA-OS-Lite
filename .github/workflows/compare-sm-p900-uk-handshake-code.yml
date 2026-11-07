@@ -1,0 +1,81 @@
+name: SM-P900 donor vs UK10 exact ARM handshake code comparison
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/compare-sm-p900-uk-handshake-code.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  audit-two-hash-pinned-proprietary-elfs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run fingerprint tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_compare_sm_p900_uk_handshake_code.py -v
+          python3 -m compileall -q scripts/compare_sm_p900_uk_handshake_code.py
+          mkdir -p confidential evidence
+
+      - name: Install read-only ARM32 ELF and disassembly tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-capstone python3-pyelftools
+          python3 -c 'from capstone import Cs; from elftools.elf.elffile import ELFFile'
+
+      - name: Fetch exact published donor and exact known UK10 binaries, 50 MB total
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 2 --connect-timeout 15 --max-time 200 --speed-limit 10000 --speed-time 30 --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            -o confidential/donor.so
+          curl -fL --retry 2 --connect-timeout 15 --max-time 200 --speed-limit 10000 --speed-time 30 --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/Valera1978/android_vendor_samsung_v1awifi/4079dd66fc6955adb208a0633220f4b72faaf82d/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            -o confidential/uk10.so
+          echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  confidential/donor.so' | sha256sum -c -
+          echo 'a66179ef65c26a797b814e3d9cf0ab2b7f07e0d32c641f463820c0a0c49f1ee9  confidential/uk10.so' | sha256sum -c -
+
+      - name: Compare verified 10.0 handshake code signatures read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/compare_sm_p900_uk_handshake_code.py \
+            confidential/donor.so confidential/uk10.so \
+            --out evidence/donor-vs-uk10-handshake-code.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/donor-vs-uk10-handshake-code.json').read_text())
+          assert r["flash_approved"] is False
+          assert r["kernel_userspace_abi_compatible"] is False
+          assert r["donor_definitely_requests_uk10_at_runtime"] is False
+          assert r["negative_result_proves_uk5"] is False
+          print("Exact code correspondence is evidence, not a live ioctl version test")
+          PY
+
+      - name: Destroy donor binaries; preserve fingerprint results only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- confidential
+          test ! -e confidential/donor.so
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-DONOR-VS-UK10-ARM-HANDSHAKE-METADATA-ONLY
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7
