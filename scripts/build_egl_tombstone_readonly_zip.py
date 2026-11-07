@@ -25,10 +25,16 @@ It only scans existing Android native crash reports in Data.
 2. TWRP > Install: choose this diagnostic ZIP from the Micro SDCard.
 3. After it says "Read-only EGL scan completed", look in Micro SDCard:
    elharika-egl-crash-registers.txt
-4. Send ONLY this small .txt report for Mali/eglSwapBuffers diagnosis.
+   If an older report (even an empty one) exists, the new output uses
+   elharika-egl-crash-registers-01.txt, -02.txt etc. up to -10.txt.
+   The screen prints the exact new report path and verified SHA256.
+4. Send ONLY the NEW nonempty .txt report for Mali/eglSwapBuffers diagnosis.
 
-If no matching tombstone was found, nothing has been modified. It may mean
-Data is not mounted/decrypted, or old tombstones were removed/rotated.
+If no matching tombstone was found, a nonempty text report will say so.
+If Data is not mounted, the script stops before writing a report.
+Old tombstones may have been removed or rotated.
+The report is staged on microSD, checked for nonempty content and matching
+SHA256, and then renamed. Old output files are never overwritten.
 Do NOT format, wipe, reflash BOOT, or reinstall system.img.
 This read-only tool is NOT a fix for the black screen.
 """
