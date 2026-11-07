@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 FAULT_PC = 0x263458
-REGISTERS = ("r1", "r3", "r8")
+REGISTERS = ("r1", "r2", "r3", "r8")
 
 
 def parse_tombstone(text):
@@ -40,6 +40,12 @@ def parse_tombstone(text):
     effective = (values["r1"] + (values["r8"] << 4)) & 0xffffffff
     reported = int(fault_match.group(1), 16)
     predicted_r8 = (values["r3"] - 1) & 0xffffffff
+    r1_r2_delta = (values["r1"] - values["r2"]) & 0xffffffff
+    r3_r1_delta = (values["r3"] - values["r1"]) & 0xffffffff
+    r3_r2_delta = (values["r3"] - values["r2"]) & 0xffffffff
+    # These offsets are *observed* register relationships, not proven
+    # structure member offsets. ARM r3 here looks pointer-like, not a count.
+    pointer_window = (r1_r2_delta, r3_r1_delta, r3_r2_delta) == (32, 48, 80)
     return {
         "status": "EGL_INDEXED_READ_REGISTER_CORRELATION",
         "crash_pc": f"0x{FAULT_PC:08x}",
@@ -49,6 +55,13 @@ def parse_tombstone(text):
         "fault_address_matches_ldr": effective == reported,
         "r8_matches_r3_minus_one": values["r8"] == predicted_r8,
         "zero_count_underflow_observed": values["r3"] == 0 and values["r8"] == 0xffffffff,
+        "register_deltas_bytes": {
+            "r1_minus_r2": r1_r2_delta,
+            "r3_minus_r1": r3_r1_delta,
+            "r3_minus_r2": r3_r2_delta,
+        },
+        "repeating_nearby_pointer_pattern": pointer_window,
+        "r3_as_count_proven": False,
         "possible_table_pointer_or_count_corruption": True,
         "root_cause_proven": False,
         "flash_approved": False,
