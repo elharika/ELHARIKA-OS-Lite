@@ -1,5 +1,5 @@
 name: ELHARIKA Launcher Pro standalone APK (Android 11 tablet)
-# Android Gradle plugin resolved using google() pluginManagement repositories.
+# AAPT French apostrophe escaping corrected for android resource compiler.
 on:
   push:
     branches: [diagnostics/mali-r7p0-matched-boot-trial]
