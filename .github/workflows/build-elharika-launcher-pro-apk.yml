@@ -24,14 +24,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # GitHub hosted runner already includes SDK command-line tools. The
-      # setup-android action currently tries to install removed 'tools' package.
-      - name: Verify preinstalled Android SDK tools
-        run: |
-          set -euo pipefail
-          command -v sdkmanager
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager --version
+      # v4 no longer installs Google's removed "tools" SDK package.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
       - uses: gradle/actions/setup-gradle@v4
         with:
