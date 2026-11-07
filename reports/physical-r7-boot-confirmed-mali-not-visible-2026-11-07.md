@@ -28,3 +28,16 @@ Added `diagnostics/twrp-mali-system-paths-readonly-v2.sh` as a **System mount + 
 Mount **Micro SDCard** and **System read-only** in TWRP, use the above diagnostic ZIP, then inspect `elharika-mali-paths-report.txt` (or numbered variant). **Do not Wipe, RESTORE, reflash BOOT or install any full system.img** until exact on-device Mali path/SHA and complete rollback requirements are reviewed. The existing r15p0 donor static linker audit passing is insufficient for release approval.
 
 PR #7 stays draft; main unchanged.
+
+## Later physical confirmation — installed Mali ELF found and verified
+
+The user navigated physical TWRP File Manager to `/system/vendor/lib/egl/`, showed the existing `libGLES_mali.so`, then ran `sha256sum /system/vendor/lib/egl/libGLES_mali.so` in recovery Terminal. The displayed SHA256 is **`34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde`**, an exact match for the pinned, previously tested **UK10 EGL library**.
+
+Together with the prior independent BOOT SHA, this conclusively identifies the **physically installed test pair**:
+- **Kernel BOOT:** r7p0 Kbuild-fixed experimental BOOT, SHA256 `f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0`.
+- **Userspace EGL:** UK10 Mali `libGLES_mali.so`, SHA256 `34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde`.
+- **Hardware:** GPU detection and `/dev/mali0` were seen in prior logs, but five native BootAnimation SIGSEGVs still show the EGL frame swap path is broken. The current screen remains black.
+
+The earlier `NOT_VISIBLE` reports were limitations of the diagnostics' System mount/path detection, **not proof that the library was absent**. Stop repeating this TWRP hash collection: the installed pair is now known.
+
+**Engineering gate:** A candidate pairing of an actual r15p0 BOOT with source-verified `U:r15p0-00rel0` donor Mali EGL has passed static ELF dependency closure, but has **not** proven a successful UK ioctl handshake or actual surface presentation. Before offering any installer, obtain exact original BOOT and existing installed EGL backups, a recovery-restorable path for both, and a narrowly scoped reversible matched-pair update; never flash only the Mali ELF on the current r7p0 BOOT. Do not treat this identity confirmation as a working ROM or approve any flash. PR draft remains unmerged.
