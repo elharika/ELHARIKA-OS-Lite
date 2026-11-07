@@ -10,7 +10,7 @@ The device owner supplied a **nonempty** text export `elharika-egl-crash-registe
 - In the same crash stack, frame **#02** is **PC `0x00476210`** symbolized `eglp_swap_buffers+1460`. The earlier shorthand treating `0x00263458` itself as `eglp_swap_buffers+1460` was imprecise. It is a helper function reached in the swap-buffers path.
 - Exact-hash UK10 candidate disassembly at the top frame shows `ldr r1, [r1, r8, lsl #4]` (read) preceded by `sub r8, r3, #1`.
 - For every crash: `(r1 + ((r8 << 4) mod 2^32)) mod 2^32 == reported fault addr`. 5/5 exact matches, not an approximate pattern.
-- The registers exhibit a **repeated, precisely identical spacing** across all five boots: `r1 = r2 + 32`, `r3 = r1 + 48`, `r3 = r2 + 80`, `r8 = r3 - 1` modulo 2^32. These are **observed register arithmetic**, not proven structure offsets.
+- The registers exhibit a **repeated, precisely identical spacing** across all five captured crash reports (not necessarily independent boots): `r1 = r2 + 32`, `r3 = r1 + 48`, `r3 = r2 + 80`, `r8 = r3 - 1` modulo 2^32. These are **observed register arithmetic**, not proven structure offsets.
 - `r3` was **nonzero** and pointer-like in all five samples. Thus the earlier **zero-count underflow hypothesis is not observed**. The observed value is not interpretable as a sane small array count.
 - The crash is an invalid indexed-memory read (fault addr differs between restarts). This narrows the problem to incorrect pointer/index/descriptor use *inside or presented to proprietary Mali EGL*, but **does not establish the upstream cause**: Gralloc native-buffer handle ABI, corrupt data, EGL state, allocator/ION lifetime, and proprietary driver internals all remain candidates.
 
