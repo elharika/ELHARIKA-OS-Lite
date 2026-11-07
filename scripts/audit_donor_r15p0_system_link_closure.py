@@ -12,7 +12,6 @@ from pathlib import Path
 import re
 import tempfile
 
-from prepare_mali_candidate import info, extract
 
 DONOR_SHA = "a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839"
 EXPERIMENTAL_BUILT_SYSTEM_SHA = "a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead"
@@ -38,6 +37,7 @@ def inspect(donor, ext4, source_digest):
         raise ValueError("Unrecognized system image SHA provenance")
     if not ext4.is_file() or ext4.stat().st_size != EXPECTED_EXPANDED_BYTES:
         raise ValueError("Wrong expanded Android11 filesystem")
+    from prepare_mali_candidate import info, extract
     with tempfile.TemporaryDirectory(prefix="elharika-r15p0-closure-") as work:
         root = Path(work)
         donor_meta = info(donor)
