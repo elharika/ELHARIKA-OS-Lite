@@ -33,6 +33,16 @@ The reference Mali binary is ARM32 little endian, and its dynamic dependencies i
 
 The original ELHARIKA system image built earlier is **not** automatically compatible with this reference EGL+kernel. Its embedded EGL binary is a *third*, different, old UK5 blob. Do not pair kernel from one generation with another proprietary EGL binary.
 
+## First real reference kernel compilation (verified)
+
+[Kernel-only build #42375965160](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42375965160) **SUCCESS** at 2026-11-07 13:17 UTC using pinned GCC 4.9:
+- `CONFIG_MALI_T6XX_R15P0=y`, `# CONFIG_MALI_T6XX_R7P0 is not set`.
+- r15p0 objects compiled, `drivers/gpu/arm/t6xx/r15p0/mali_kbase.o` linked.
+- ARM `vmlinux` and `arch/arm/boot/zImage` generated successfully.
+- `zImage` SHA-256 **`74125714d031967d9f0c02ea474c27266bb334f265732fd863ed8c526b55dbf5`**; 4.7 MiB displayed by `du -h`.
+- Source-only build emitted the log artifact `13575494049`; first run intentionally did not upload the bare kernel image, so **a checksum-pinned source-only rerun** was launched to preserve it for later boot packaging: [#42376341631](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42376341631). That run is independent of Android source or `system.img`.
+- This validates **compilation only**; no BOOT partition or real display evidence.
+
 ## Build work in this phase
 
 - Read-only source+binary comparator `scripts/audit_sm_p900_known_android11_reference.py` and regression tests; [comparison run #42375734805](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42375734805) **SUCCESS**.
