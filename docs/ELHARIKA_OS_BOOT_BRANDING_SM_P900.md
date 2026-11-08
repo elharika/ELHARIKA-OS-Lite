@@ -40,3 +40,32 @@ The ZIPs were syntax-checked, their members and CRCs audited, and SHA256SUMS ver
 If the install reports any STOP error, do not bypass model/path checks or attempt to force a write. Collect a clear TWRP screenshot and inspect the exact installed image layout.
 
 **Branch:** diagnostics/mali-r7p0-matched-boot-trial; PR #7 is still draft and the successful graphics pairing must not be overwritten.
+
+## Actual SM-P900 TWRP failure and corrected INSTALL V2 (Nov 8, 2026)
+
+A physical TWRP photograph showed:
+
+```
+Installing zip file '/external_sd/ELHARIKA-OS-BOOT-LOGO-INSTALL-TWRP.zip'
+Unmounting System...
+STOP: Boot animation extraction failed
+Updater process ended with ERROR: 1
+```
+
+The failure happens while running `unzip -p "$INPUT_ZIP" payload/bootanimation.zip` **before** the script mounts System or overwrites any boot animation. Therefore the failed attempt did not change BOOT, Mali or System animation and does not require RESTORE. User's screenshot also showed CPU ~64°C; let device cool before another install.
+
+Review of the exact originally distributed ZIP confirmed:
+- ZIP CRC valid, four members, stored `payload/bootanimation.zip` present, 4,329,318 bytes;
+- extracted nested animation SHA256 `c67585794cd65dd2352608fa80d735c548f37fac41d54794d565f48292d10a5c` matches its published expected SHA.
+- A physical TWRP extractor incompatibility or microSD copy error is possible, **but the exact root cause is not demonstrated by the screenshot alone**.
+
+Produced standalone replacement `ELHARIKA-OS-BOOT-LOGO-INSTALL-TWRP-v2-FIXED.zip`, **4,339,649 bytes**, SHA256 `3b0083f6a246e11932428d60e6d6083e516ad9d10cb0a47f4b344d54975284d8`.
+
+V2 keeps all original P900/API30/System partition/old-animation checks and automatic microSD original-animation backup. The corrected updater attempts:
+1. existing `unzip -p`, validates expected SHA;
+2. `unzip -o` normal extraction to stage, validates SHA;
+3. fixed-position raw copy of **ZIP_STORED** nested payload (known 1-based start byte **10008**, length **4329318**) using `tail -c +10008 | head -c 4329318`, validates exact SHA.
+
+Any attempt failing size or SHA checks **aborts before System RW mount**; the installer reports that the microSD ZIP could be damaged. ZIP entry layout is fixed (all members `ZIP_STORED`) to keep the pinned offset stable. The installed animation is SHA-verified after write. SHA256, ZIP CRC, POSIX `sh -n`, BusyBox `unzip -p`, and raw stored-member fallback were checked offline. Forced `unzip`-error simulation also passed. **Not yet tested on the actual physical TWRP**.
+
+IMPORTANT: V2 file is a generated conversation artifact, not automatically included in GitHub repository checkout. The user should copy the exact new V2 ZIP to external microSD and install **it** (not the older V1). No wiping or restoring is needed after previous failed extraction. If V2 stops at a new message, collect a screenshot, not repeated blind flashing.
