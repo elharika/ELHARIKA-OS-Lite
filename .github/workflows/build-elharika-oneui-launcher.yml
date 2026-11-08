@@ -1,0 +1,82 @@
+name: ELHARIKA One UI Edition Android11 tablet launcher APK
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/build-elharika-oneui-launcher.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-new-home-app-without-touching-rom:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Prepare Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          test -s "$ANDROID_HOME/platforms/android-35/android.jar"
+
+      - name: Compile native full-page launcher, folders, dock and widgets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apps/launcher-oneui
+          gradle :app:assembleDebug --no-daemon --stacktrace --warning-mode all
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify standalone signed APK and Android 11 compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=apps/launcher-oneui/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" > /tmp/oneui-badging.txt
+          grep -q "package: name='org.elharika.oneui'" /tmp/oneui-badging.txt
+          grep -q "targetSdkVersion:'30'" /tmp/oneui-badging.txt
+          grep -q "sdkVersion:'29'" /tmp/oneui-badging.txt
+          mkdir -p dist
+          cp "$apk" dist/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk
+          (cd dist && sha256sum ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk > SHA256SUMS.txt)
+          cat > dist/README.txt <<'NOTE'
+          ELHARIKA One UI Edition – tablet HOME launcher preview for Android 11.
+          This is a One UI-inspired implementation, not Samsung's proprietary launcher.
+          Installs under a NEW package: org.elharika.oneui.
+          Keeps ELHARIKA Launcher Lite and Launcher Pro unchanged.
+          To use: install APK, press Home and select ELHARIKA One UI Edition.
+          To return: Settings > Apps > Default apps > Home app > previous launcher.
+          Settings/Widget add depend on available Android framework components.
+          Tested by compile/signature/API check, NOT field-tested on SM-P900 yet.
+          Does NOT change BOOT, Mali, System, TWRP, kernel, or vendor.
+          APK debug-signed in GitHub; later versions need stable release signing.
+          NOTE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-ONE-UI-EDITION-ANDROID11-TABLET-APK
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
