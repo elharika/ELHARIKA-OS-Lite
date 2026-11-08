@@ -1,7 +1,7 @@
-name: SM-P900 experimental clean Android 11 r15p0 FULL ROM (Mali matched)
+name: SM-P900 Android 11 R15P0 matched + S Pen touch HAL trial
 on:
   push:
-    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    branches: [fix/sm-p900-r15p0-spen-touch-20261108]
     paths:
       - .github/workflows/package-sm-p900-clean-r15-reinstall.yml
   workflow_dispatch:
@@ -40,8 +40,8 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ELHARIKA-SM-P900-system-development-NOT-FLASH-APPROVED
-          run-id: 41862679569
+          name: ELHARIKA-SM-P900-touch-hal-system-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42289790703
           github-token: ${{ github.token }}
           path: inputs/system
 
@@ -89,7 +89,7 @@ jobs:
             --max-filesize 45000000 \
             'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
             --output inputs/r15/libGLES_mali.so
-          echo 'fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61  inputs/system/system.img' | sha256sum -c -
+          echo 'a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead  inputs/system/system.img' | sha256sum -c -
           echo '7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14  inputs/boot/boot.img' | sha256sum -c -
           echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  inputs/r15/libGLES_mali.so' | sha256sum -c -
           python3 scripts/verify_sparse_system.py inputs/system/system.img work/source-sparse.json
@@ -97,8 +97,20 @@ jobs:
           import json
           r=json.load(open('work/source-sparse.json'))
           assert r['expanded_size']==2299998208 and r['size']>500000000
-          assert r['sha256']=='fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61'
-          print('Original experimental sparse SYSTEM provenance pinned.')
+          assert r['sha256']=='a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead'
+          print('Touch-corrected experimental sparse SYSTEM provenance pinned.')
+          # These two reports were embedded in the source-image artifact by build 42289790703.
+          from pathlib import Path
+          src=json.loads(Path('inputs/system/touch-hal-source-correction.json').read_text())
+          stage=json.loads(Path('inputs/system/touch-hal-stage-check.json').read_text())
+          assert src['sdk_java_changed'] is True and src['manifest_changed'] is True
+          assert src['key_disabler_request_disabled_for_trial'] is True
+          assert src['touchscreen_gesture_preserved'] is True
+          assert stage['IKeyDisabler_advertised'] is False
+          assert stage['ITouchscreenGesture_advertised'] is True
+          assert stage['sdk_java_patched_at_source'] is True
+          assert stage['hardware_boot_tested'] is False
+          print('Pinned touch SDK + staged VINTF proof checked before repack')
           PY
 
       - name: Expand and inspect old Android 11 SYSTEM without an Android rebuild
@@ -120,6 +132,40 @@ jobs:
           sudo test -s work/mount/system/build.prop
           sudo grep -Fxq 'ro.product.system.device=v1awifi' work/mount/system/build.prop
           sudo grep -Fxq 'ro.build.version.sdk=30' work/mount/system/build.prop
+          # Fail closed if the actual ext4 payload does not contain the touch fix.
+          sudo python3 - <<'PYVINTF'
+          import json
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root=Path('work/mount')
+          candidates=[]
+          for sub in ('system/vendor/etc/vintf','vendor/etc/vintf','system/etc/vintf'):
+              location=root/sub
+              if location.is_dir():
+                  candidates.extend(location.rglob('*.xml'))
+          matches=[]
+          for path in candidates:
+              data=path.read_text(errors='replace')
+              if '<name>vendor.lineage.touch</name>' in data:
+                  tree=ET.fromstring(data)
+                  touch=[h for h in tree.findall('hal') if h.findtext('name')=='vendor.lineage.touch']
+                  if len(touch)!=1:
+                      raise ValueError('Ambiguous touch HAL VINTF entry')
+                  interfaces=[i.findtext('name') for i in touch[0].findall('interface')]
+                  if 'IKeyDisabler' in interfaces or 'ITouchscreenGesture' not in interfaces:
+                      raise ValueError('Source ext4 lacks touch HAL workaround')
+                  matches.append(str(path.relative_to(root)))
+          if not matches:
+              raise ValueError('Touch HAL VINTF declaration missing: refusing to repack')
+          Path('work/touch-vintf-verified.json').write_text(json.dumps({
+              'source_system_run':42289790703,
+              'actual_ext4_paths':matches,
+              'touch_vintf_keydisabler_absent':True,
+              'touch_vintf_gesture_preserved':True,
+              'hardware_verified':False
+          },indent=2))
+          print('Verified actual mounted System VINTF touch entries:',matches)
+          PYVINTF
           sudo test -f work/mount/system/bin/surfaceflinger
           SRC_MALI=inputs/r15/libGLES_mali.so
           DEST_MALI=work/mount/system/vendor/lib/egl/libGLES_mali.so
@@ -201,7 +247,7 @@ jobs:
           import json
           from pathlib import Path
           result={
-            'original_system_sparse_sha256':'fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61',
+            'original_system_sparse_sha256':'a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead',
             'installed_mali_sha256':'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839',
             'installed_mali_path':'/system/vendor/lib/egl/libGLES_mali.so',
             'installed_system_device':'v1awifi',
@@ -215,6 +261,11 @@ jobs:
             'oneui_launcher_apk_sha256':Path('work/oneui-apk.sha256').read_text().strip(),
             'original_rom_launcher_preserved':True,
             'source_ext4_e2fsck_ok':True,
+            'source_system_run':42289790703,
+            'touch_source_ci_validated':True,
+            'touch_vintf_keydisabler_absent':True,
+            'touch_vintf_gesture_preserved':True,
+            'touch_sdk_service_getter_patched':True,
             'flash_approved':False,
           }
           Path('work/provenance.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -235,6 +286,10 @@ jobs:
           m=json.loads(Path('out/verification.json').read_text())
           assert m['donor_r15_mali_sha256']=='a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839'
           assert m['boot_sha256']=='7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
+          assert m['source_system_run']==42289790703
+          assert m['source_integrity_check']['touch_vintf_keydisabler_absent']
+          assert m['source_integrity_check']['touch_vintf_gesture_preserved']
+          assert m['source_integrity_check']['touch_sdk_service_getter_patched']
           assert m['oneui_launcher_package']=='org.elharika.oneui'
           assert m['original_rom_launcher_preserved']
           assert m['oneui_launcher_apk_sha256']==Path('work/oneui-apk.sha256').read_text().strip()
@@ -260,7 +315,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ELHARIKA-SM-P900-ANDROID11-R15P0-FULL-CLEAN-REINSTALL-EXPERIMENTAL
+          name: ELHARIKA-SM-P900-ANDROID11-R15P0-SPEN-TOUCH-MATCHED-EXPERIMENTAL
           path: out/
           compression-level: 0
           retention-days: 14

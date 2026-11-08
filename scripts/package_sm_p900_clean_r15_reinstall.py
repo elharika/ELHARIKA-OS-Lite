@@ -17,9 +17,9 @@ import zipfile
 BOOT_SHA="7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14"
 BOOT_SIZE=5462032
 SYSTEM_BYTES=2299998208
-SYSTEM_SHA_ORIGINAL_SPARSE="fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61"
+SYSTEM_SHA_ORIGINAL_SPARSE="a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead"
 DONOR_SHA="a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839"
-NAME="ELHARIKA-OS-Lite-SM-P900-Android11-R15P0-CLEAN-REINSTALL-EXPERIMENTAL.zip"
+NAME="ELHARIKA-OS-Lite-SM-P900-Android11-R15P0-SPEN-TOUCH-EXPERIMENTAL.zip"
 
 def sha(path):
     h=hashlib.sha256()
@@ -46,6 +46,10 @@ def validate_inputs(image, boot, marker):
         "original_owner_mode_xattrs_unchanged":True,
         "original_bootanimation_preserved":True,
         "source_ext4_e2fsck_ok":True,
+        "touch_source_ci_validated":True,
+        "touch_vintf_keydisabler_absent":True,
+        "touch_vintf_gesture_preserved":True,
+        "touch_sdk_service_getter_patched":True,
         "flash_approved":False
     }
     # The chosen One UI Edition Android 11 home APK must be integrated in System.
@@ -94,7 +98,7 @@ def package(image,boot,marker,out):
         if guard not in template:raise ValueError("Installer missing guarded operation: "+guard)
     readme=(
         "ELHARIKA OS Lite experimental Android 11 CLEAN REINSTALL for SM-P900/v1awifi.\n"
-        "Based on earlier known launcher-bootable system with exact R15P0 Mali ELF and R15P0 BOOT.\n"
+        "Uses independently built touch-fixed Android 11 system with exact R15P0 Mali ELF and R15P0 BOOT.\n"
         "Compiled and filesystem-audited OFFLINE. The clean reinstall package is NOT device-tested.\n"
         "Does not touch userdata (Data), EFS, Recovery, bootloader or partition table.\n"
         "Requires external microSD with >=2.5GiB free, unmounted System in TWRP, power >=50%.\n"
@@ -104,7 +108,7 @@ def package(image,boot,marker,out):
         "ELHARIKA One UI Edition is preinstalled as an Android HOME app.\n"
         "Keep ELHARIKA Launcher Lite as fallback. At first HOME choose One UI Edition.\n"
         "Custom Black Ice boot animation is intentionally NOT included.\n"
-        "Do NOT flash the earlier mismatched system.img from 42289790703.\n"
+        "The source image from run 42289790703 is NOT independently bootable with its old Mali.\n"
         "Do NOT flash only BOOT or only Mali.\n"
         "Android camera/GPS unsupported in this development build; no verified security patch level.\n"
         "Successful CI and first-ever launcher boot do not guarantee repeat-boot stability.\n"
@@ -113,7 +117,7 @@ def package(image,boot,marker,out):
         "status":"SYSTEM_R15_MALI_AND_BOOT_R15_PAIRED_EXPERIMENTAL",
         "hardware_tested_on_clean_reinstall":False,
         "flash_approved":False,
-        "source_system_run":41862679569,
+        "source_system_run":42289790703,
         "original_system_sparse_sha256":SYSTEM_SHA_ORIGINAL_SPARSE,
         "source_r15_boot_run":42067803567,
         "boot_sha256":BOOT_SHA,
