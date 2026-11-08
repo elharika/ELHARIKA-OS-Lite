@@ -92,11 +92,11 @@ jobs:
           grep -Fxq 'ro.product.system.device=v1awifi' work/mount/system/build.prop
           grep -Fxq 'ro.build.version.sdk=30' work/mount/system/build.prop
           test -f work/mount/system/bin/surfaceflinger
-          export SRC_MALI=inputs/r15/libGLES_mali.so
-          export DEST_MALI=work/mount/system/vendor/lib/egl/libGLES_mali.so
+          SRC_MALI=inputs/r15/libGLES_mali.so
+          DEST_MALI=work/mount/system/vendor/lib/egl/libGLES_mali.so
           test -f "$DEST_MALI"
           test ! -L "$DEST_MALI"
-          sudo python3 - <<'PY'
+          sudo env SRC_MALI="$SRC_MALI" DEST_MALI="$DEST_MALI" python3 - <<'PY'
           from pathlib import Path
           import os,stat,hashlib,shutil,json
           source=Path(os.environ['SRC_MALI'])
