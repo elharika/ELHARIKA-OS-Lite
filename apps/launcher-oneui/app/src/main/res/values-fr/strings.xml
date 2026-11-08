@@ -1,0 +1,18 @@
+<resources>
+<string name="app_name">ELHARIKA One UI Edition</string>
+<string name="apps">Applications</string><string name="home">Accueil</string>
+<string name="search">Rechercher une application</string><string name="widgets">Widgets</string>
+<string name="personalize">Personnaliser</string><string name="settings">Paramètres</string>
+<string name="edit">Modifier l\'accueil</string><string name="add_home">Ajouter à l\'accueil</string>
+<string name="add_dock">Épingler au dock</string><string name="remove_home">Retirer de l\'accueil</string>
+<string name="remove_dock">Retirer du dock</string><string name="app_info">Infos appli</string>
+<string name="create_folder">Créer un dossier</string><string name="rename_folder">Renommer</string>
+<string name="pick_widget">Choisir un widget</string>
+<string name="empty_home">Appui long pour ajouter une application à l\'accueil.</string>
+<string name="no_widgets">Ajouter un widget ou utiliser l\'horloge.</string>
+<string name="page">Page</string><string name="theme">Fond d\'écran</string>
+<string name="ocean">Océan</string><string name="violet">Violet</string><string name="peach">Coucher de soleil</string>
+<string name="cancel">Annuler</string><string name="done">Terminé</string>
+<string name="add_to_folder">Ajouter au dossier</string><string name="move_page">Autre page</string>
+<string name="drawer_hint">Glissez vers le haut pour toutes les applications</string>
+</resources>
