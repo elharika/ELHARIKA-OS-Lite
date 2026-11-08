@@ -2,7 +2,7 @@ name: Android 11 SM-P900 system image build
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/spen-keydisabler-vintf-20261108]
     paths:
       - '.github/workflows/android11-systemimage-after-boot.yml'
   workflow_run:
