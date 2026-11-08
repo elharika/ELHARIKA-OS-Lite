@@ -1,0 +1,62 @@
+name: Emergency SM-P900 Black Ice animation restore ZIP
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/build-sm-p900-black-ice-restore.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  build-only-animation-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate recovery guard and create small TWRP install ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n diagnostics/twrp-restore-black-ice-animation-original.sh
+          mkdir -p dist
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib
+          script=Path('diagnostics/twrp-restore-black-ice-animation-original.sh').read_bytes()
+          required=[
+            b'NEW_SHA=f0538efc7e052bcf3e927ba214dcef7853dafc0dffd3293400ac66f4dc27fd4f',
+            b'bootanimation-original.zip',b'SHA256SUMS.txt',b'TARGET.txt',
+            b'ro.build.version.sdk=30',b'getprop ro.product.device',
+            b'cat "$FOLDER/bootanimation-original.zip" > "$TARGET"',
+          ]
+          for item in required: assert item in script,item
+          for forbidden in [b'dd if=',b'/dev/block/mmcblk0p9',b'of="$SYSTEM"',b'Wipe',b'format /data']:
+            assert forbidden not in script,forbidden
+          target=Path('dist/ELHARIKA-OS-Black-Ice-RESTORE-GITHUB.zip')
+          with zipfile.ZipFile(target,'w',zipfile.ZIP_STORED) as z:
+            for name,blob,perm in (
+                ('META-INF/com/google/android/update-binary',script,0o100755),
+                ('META-INF/com/google/android/updater-script',b'# Restore original bootanimation ONLY\n',0o100644),
+                ('README.txt',b'Restore previous boot animation from automatic microSD ELHARIKA-BOOTANIM-ORIGINAL-xx folder. TWRP Mount: microSD checked, System UNCHECKED. No wipe, BOOT or Mali change. If STOP, photograph it and do not force.\n',0o100644),
+            ):
+              zi=zipfile.ZipInfo(name,(2026,11,8,0,0,0))
+              zi.create_system=3;zi.external_attr=perm<<16
+              z.writestr(zi,blob)
+          with zipfile.ZipFile(target) as z:
+            assert z.testzip() is None
+            assert len(z.namelist())==3
+            assert (z.getinfo('META-INF/com/google/android/update-binary').external_attr>>16)&0o111
+          (Path('dist')/'SHA256SUMS.txt').write_text(
+              hashlib.sha256(target.read_bytes()).hexdigest()+'  '+target.name+'\n')
+          print(target.name,target.stat().st_size)
+          PY
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-OS-SM-P900-BLACK-ICE-EMERGENCY-RESTORE
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
