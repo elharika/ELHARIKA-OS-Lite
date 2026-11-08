@@ -88,14 +88,14 @@ jobs:
           set -euo pipefail
           sudo mount -t ext4 -o loop,rw work/system.ext4 work/mount
           trap 'sudo umount work/mount || true' EXIT
-          test -s work/mount/system/build.prop
-          grep -Fxq 'ro.product.system.device=v1awifi' work/mount/system/build.prop
-          grep -Fxq 'ro.build.version.sdk=30' work/mount/system/build.prop
-          test -f work/mount/system/bin/surfaceflinger
+          sudo test -s work/mount/system/build.prop
+          sudo grep -Fxq 'ro.product.system.device=v1awifi' work/mount/system/build.prop
+          sudo grep -Fxq 'ro.build.version.sdk=30' work/mount/system/build.prop
+          sudo test -f work/mount/system/bin/surfaceflinger
           SRC_MALI=inputs/r15/libGLES_mali.so
           DEST_MALI=work/mount/system/vendor/lib/egl/libGLES_mali.so
-          test -f "$DEST_MALI"
-          test ! -L "$DEST_MALI"
+          sudo test -f "$DEST_MALI"
+          sudo test ! -L "$DEST_MALI"
           sudo env SRC_MALI="$SRC_MALI" DEST_MALI="$DEST_MALI" python3 - <<'PY'
           from pathlib import Path
           import os,stat,hashlib,shutil,json
@@ -121,7 +121,7 @@ jobs:
           assert hashlib.sha256(dest.read_bytes()).hexdigest()==expected
           print('Exact R15P0 donor written into original SYSTEM inode without attribute changes.')
           PY
-          test -f work/mount/system/media/bootanimation.zip || test -f work/mount/system/product/media/bootanimation.zip
+          sudo test -f work/mount/system/media/bootanimation.zip || sudo test -f work/mount/system/product/media/bootanimation.zip
           sudo sync
           sudo umount work/mount
           trap - EXIT
