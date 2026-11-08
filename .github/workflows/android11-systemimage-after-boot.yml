@@ -151,6 +151,7 @@ jobs:
             mv "$RUNNER_TEMP/elharika-vendor/samsung/$device" "$android_root/vendor/samsung/"
           done
           python3 scripts/apply_device_fixes.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_v1a_keydisabler_manifest.py "$android_root/device/samsung/v1a-common"
           python3 scripts/apply_minimal_profile.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/prepare_product.py "$android_root"
           python3 scripts/harden_sepolicy.py "$android_root/device/samsung/universal5420-common"
@@ -162,6 +163,7 @@ jobs:
           python3 scripts/fix_modem_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_sensor_policy.py "$android_root/device/samsung/universal5420-common"
           python3 scripts/fix_core_data_labels.py "$android_root/device/samsung/universal5420-common"
+          python3 scripts/fix_v1a_keydisabler_manifest.py --check "$android_root/device/samsung/v1a-common"
 
       - name: Select development bring-up profile without incompatible GPS and camera
         shell: bash
