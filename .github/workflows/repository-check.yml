@@ -16,5 +16,6 @@ jobs:
           grep -Fq 'not an approved or hardware-validated release' README.md
           grep -Fq '**Physical-device boot and all hardware operation remain untested**' README.md
           python3 -m unittest discover -s tests -p test_experimental_package.py -v
+          python3 -m unittest discover -s tests -p test_v1a_keydisabler_manifest.py -v
           sh -n installer/update-binary.in
           echo 'Development image documentation and installer safeguards passed; production approval remains blocked.'
