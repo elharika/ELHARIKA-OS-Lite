@@ -48,8 +48,20 @@ def validate_inputs(image, boot, marker):
         "source_ext4_e2fsck_ok":True,
         "flash_approved":False
     }
+    # The chosen One UI Edition Android 11 home APK must be integrated in System.
+    # Keep the basic ROM launcher as a fallback rather than disabling Home handling.
+    exact.update({
+        "oneui_launcher_included":True,
+        "oneui_launcher_system_path":"/system/app/ELHARIKAOneUI/ELHARIKAOneUI.apk",
+        "oneui_launcher_package":"org.elharika.oneui",
+        "original_rom_launcher_preserved":True,
+        "original_bootanimation_preserved":True,
+    })
     for key,value in exact.items():
         if report.get(key)!=value: raise ValueError(f"Missing/mismatched safety condition: {key}")
+    launcher_sha=report.get("oneui_launcher_apk_sha256","")
+    if len(launcher_sha)!=64 or any(v not in "0123456789abcdef" for v in launcher_sha):
+        raise ValueError("One UI launcher APK hash evidence missing or malformed")
     return report
 
 def package(image,boot,marker,out):
@@ -89,6 +101,9 @@ def package(image,boot,marker,out):
         "Only install the inner TWRP ZIP, never the outer Actions artifact.\n"
         "WARNING: Full Android reinstall from scratch may require Wipe Data; that erases apps,\n"
         "settings and personal files stored in Data. This installer NEVER wipes Data itself.\n"
+        "ELHARIKA One UI Edition is preinstalled as an Android HOME app.\n"
+        "Keep ELHARIKA Launcher Lite as fallback. At first HOME choose One UI Edition.\n"
+        "Custom Black Ice boot animation is intentionally NOT included.\n"
         "Do NOT flash the earlier mismatched system.img from 42289790703.\n"
         "Do NOT flash only BOOT or only Mali.\n"
         "Android camera/GPS unsupported in this development build; no verified security patch level.\n"
@@ -103,6 +118,10 @@ def package(image,boot,marker,out):
         "source_r15_boot_run":42067803567,
         "boot_sha256":BOOT_SHA,
         "donor_r15_mali_sha256":DONOR_SHA,
+        "oneui_launcher_apk_sha256":validated["oneui_launcher_apk_sha256"],
+        "oneui_launcher_package":"org.elharika.oneui",
+        "oneui_launcher_system_path":"/system/app/ELHARIKAOneUI/ELHARIKAOneUI.apk",
+        "original_rom_launcher_preserved":True,
         "full_raw_system_sha256":vals["SYSTEM_SHA"],
         "raw_system_bytes":SYSTEM_BYTES,
         "full_system_flash":True,
