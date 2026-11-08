@@ -52,6 +52,33 @@ jobs:
           github-token: ${{ github.token }}
           path: inputs/boot
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-ONE-UI-EDITION-ANDROID11-TABLET-APK
+          run-id: 42453092239
+          github-token: ${{ github.token }}
+          path: inputs/launcher
+
+      - name: Verify prebuilt One UI Edition Android 11 APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk
+          (cd inputs/launcher && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib
+          apk=Path('inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk')
+          assert apk.stat().st_size>25000 and apk.stat().st_size<10000000
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert {'AndroidManifest.xml','classes.dex','resources.arsc'}<=names
+              assert any(n.startswith('META-INF/') and n.endswith('.RSA') for n in names), 'APK signing material absent'
+          (Path('work')/'oneui-apk.sha256').write_text(hashlib.sha256(apk.read_bytes()).hexdigest()+'\n')
+          print('Pinned compiled One UI Edition APK ZIP and checksum verified')
+          PY
+
       - name: Fetch exact R15P0 Mali from pinned same-family vendor source
         shell: bash
         run: |
@@ -82,7 +109,7 @@ jobs:
           e2fsck -fn work/system.ext4 > work/original-fsck.log
           mkdir -p work/mount
 
-      - name: Patch ONLY old Mali library to previously hardware-bootable R15P0 donor
+      - name: Integrate paired Mali and ELHARIKA One UI Edition system launcher into previous bootable SYSTEM
         shell: bash
         run: |
           set -euo pipefail
@@ -122,6 +149,47 @@ jobs:
           print('Exact R15P0 donor written into original SYSTEM inode without attribute changes.')
           PY
           sudo test -f work/mount/system/media/bootanimation.zip || sudo test -f work/mount/system/product/media/bootanimation.zip
+
+          sudo env LAUNCHER_SOURCE="inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk"             LAUNCHER_SHA="$(cat work/oneui-apk.sha256)" python3 - <<'PY'
+          from pathlib import Path
+          import os,hashlib,shutil,stat
+          source=Path(os.environ['LAUNCHER_SOURCE'])
+          expected=os.environ['LAUNCHER_SHA'].strip()
+          root=Path('work/mount/system/app')
+          assert root.is_dir() and not root.is_symlink()
+          candidates=sorted(p for p in root.glob('*/*.apk') if p.is_file() and not p.is_symlink())
+          assert candidates, 'No reference Android system app for file labeling'
+          example=candidates[0]
+          target_dir=root/'ELHARIKAOneUI'
+          assert not target_dir.exists(), 'Launcher directory already occupied'
+          assert shutil.disk_usage(root).free>16*1024*1024, 'Insufficient filesystem free space'
+          data=source.read_bytes()
+          assert hashlib.sha256(data).hexdigest()==expected
+          target_dir.mkdir(mode=0o755)
+          os.chown(target_dir,0,0)
+          target=target_dir/'ELHARIKAOneUI.apk'
+          target.write_bytes(data)
+          os.chmod(target,0o644);os.chown(target,0,0)
+          # Copy the existing system app SELinux file contexts when available,
+          # rather than making up device-specific labels.
+          def copy_label(reference,destination):
+              try:
+                  label=os.getxattr(reference,'security.selinux')
+              except OSError:
+                  return False
+              os.setxattr(destination,'security.selinux',label)
+              assert os.getxattr(destination,'security.selinux')==label
+              return True
+          dir_labeled=copy_label(example.parent,target_dir)
+          apk_labeled=copy_label(example,target)
+          assert target.stat().st_size==len(data)
+          assert stat.S_IMODE(target.stat().st_mode)==0o644
+          assert hashlib.sha256(target.read_bytes()).hexdigest()==expected
+          # Keep ElharikaLauncherLite as a separate Home fallback.
+          original=[p for p in candidates if 'ElharikaLauncher' in str(p) or 'elharika' in str(p).lower()]
+          assert original, 'Original ROM launcher not found; do not remove recovery HOME option'
+          print('One UI Edition integrated at',target,'labels:',dir_labeled,apk_labeled,'fallback:',[str(p) for p in original])
+          PY
           sudo sync
           sudo umount work/mount
           trap - EXIT
@@ -139,6 +207,11 @@ jobs:
             'original_inode_unchanged':True,
             'original_owner_mode_xattrs_unchanged':True,
             'original_bootanimation_preserved':True,
+            'oneui_launcher_included':True,
+            'oneui_launcher_system_path':'/system/app/ELHARIKAOneUI/ELHARIKAOneUI.apk',
+            'oneui_launcher_package':'org.elharika.oneui',
+            'oneui_launcher_apk_sha256':Path('work/oneui-apk.sha256').read_text().strip(),
+            'original_rom_launcher_preserved':True,
             'source_ext4_e2fsck_ok':True,
             'flash_approved':False,
           }
@@ -160,6 +233,9 @@ jobs:
           m=json.loads(Path('out/verification.json').read_text())
           assert m['donor_r15_mali_sha256']=='a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839'
           assert m['boot_sha256']=='7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
+          assert m['oneui_launcher_package']=='org.elharika.oneui'
+          assert m['original_rom_launcher_preserved']
+          assert m['oneui_launcher_apk_sha256']==Path('work/oneui-apk.sha256').read_text().strip()
           assert not m['wipes_data'] and m['full_system_flash']
           name=next(Path('out').glob('*.zip'))
           with zipfile.ZipFile(name) as z:
