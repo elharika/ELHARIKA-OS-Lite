@@ -1,0 +1,122 @@
+name: SM-P900 R15P0 kernel-only Wacom LCD-sync isolation experiment
+on:
+  push:
+    branches: [diagnostics/spen-drawing-freeze-20261108]
+    paths:
+      - .github/workflows/compile-spen-r15-wacom-isolation.yml
+      - scripts/experimental_disable_wacom_lcd_sync_r15.py
+      - tests/test_experimental_disable_wacom_lcd_sync_r15.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-kernel-source-experiment:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run bounded fail-closed source tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence kernel-only
+          python3 -m unittest discover -s tests -p test_experimental_disable_wacom_lcd_sync_r15.py -v |& tee evidence/source-tests.log
+          python3 -m compileall -q scripts/experimental_disable_wacom_lcd_sync_r15.py tests/test_experimental_disable_wacom_lcd_sync_r15.py
+
+      - name: Install pinned legacy ARM build requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y make bc bison flex libncurses-dev libssl-dev zlib1g-dev git unzip binutils file
+          df -h | tee evidence/disk-before.txt
+
+      - name: Fetch exact R15P0 SM-P900 kernel and compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init "$RUNNER_TEMP/sm-p900-kernel"
+          git -C "$RUNNER_TEMP/sm-p900-kernel" remote add origin https://github.com/salih4187/android_kernel_samsung_exynos5420
+          git -C "$RUNNER_TEMP/sm-p900-kernel" fetch -q --depth=1 origin 35d960ed3c2de3d5558b782257053599cded659e
+          git -C "$RUNNER_TEMP/sm-p900-kernel" -c advice.detachedHead=false checkout -q FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/sm-p900-kernel" rev-parse HEAD)" = 35d960ed3c2de3d5558b782257053599cded659e
+          git init "$RUNNER_TEMP/arm-gcc-4.9"
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" remote add origin https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" fetch -q --depth=1 origin da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          git -C "$RUNNER_TEMP/arm-gcc-4.9" -c advice.detachedHead=false checkout -q FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/arm-gcc-4.9" rev-parse HEAD)" = da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
+          test -x "$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-gcc"
+
+      - name: Isolate only broken display frequency feedback, keep input events
+        shell: bash
+        run: |
+          set -euo pipefail
+          k="$RUNNER_TEMP/sm-p900-kernel"
+          grep -Fxq 'CONFIG_MALI_T6XX_R15P0=y' "$k/arch/arm/configs/lineageos_v1awifi_defconfig"
+          grep -Fxq '# CONFIG_MALI_T6XX_R7P0 is not set' "$k/arch/arm/configs/lineageos_v1awifi_defconfig"
+          python3 scripts/experimental_disable_wacom_lcd_sync_r15.py "$k" --report evidence/wacom-patch-source-report.json
+          python3 scripts/experimental_disable_wacom_lcd_sync_r15.py "$k" --check
+          git -C "$k" diff --check
+          git -C "$k" diff -- drivers/input/wacom/wacom_i2c.c | tee evidence/only-wacom-diff.patch
+          test "$(git -C "$k" diff --numstat | wc -l)" -eq 1
+          test "$(git -C "$k" diff --numstat | cut -f1)" = 1
+          test "$(git -C "$k" diff --numstat | cut -f2)" = 1
+          test "$(git -C "$k" diff --name-only)" = drivers/input/wacom/wacom_i2c.c
+          test -s evidence/only-wacom-diff.patch
+          echo 'One source-line experiment only; stylus coordinate IRQ/pressure path not changed.' | tee evidence/isolation-gate.txt
+
+      - name: Compile R15P0 zImage only, NOT BOOT
+        shell: bash
+        run: |
+          set -euo pipefail
+          k="$RUNNER_TEMP/sm-p900-kernel"
+          out="$RUNNER_TEMP/sm-p900-kernel-out"
+          mkdir -p "$out"
+          export ARCH=arm
+          export CROSS_COMPILE="$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-"
+          make -C "$k" O="$out" lineageos_v1awifi_defconfig 2>&1 | tee evidence/defconfig.log
+          grep -Fxq 'CONFIG_MALI_T6XX_R15P0=y' "$out/.config"
+          make -C "$k" O="$out" -j3 zImage 2>&1 | tee evidence/build.log
+          test -s "$out/arch/arm/boot/zImage"
+          test -s "$out/vmlinux"
+          cp "$out/arch/arm/boot/zImage" kernel-only/zImage
+          (cd kernel-only && sha256sum zImage > SHA256SUMS && sha256sum -c SHA256SUMS)
+          sha256sum kernel-only/zImage | tee evidence/zImage.sha256
+          cat > kernel-only/NOT-FLASHABLE.txt <<'EOF'
+          SM-P900 R15P0 EXPERIMENTAL Wacom LCD-frequency feedback isolation.
+          Not a Samsung BOOT image. Not a ROM, update ZIP or flashable file.
+          No proof this one-line change fixes S Pen drawing freezes.
+          The original R15P0 BOOT requires exact ramdisk/DTB/partition pairing.
+          Keep Wacom pressure/coordinate event handlers intact. Hardware untested.
+          Never flash zImage directly or attempt it without full rollback.
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ELHARIKA-SM-P900-SPEN-R15-LCD-SYNC-ISOLATED-zImage-ONLY-NOT-FLASHABLE
+          path: kernel-only/
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Preserve source checks and build evidence
+        if: always()
+        shell: bash
+        run: |
+          df -h > evidence/disk-after.txt
+          if [ -f evidence/build.log ]; then
+            tail -n 120 evidence/build.log > evidence/build-tail.log
+          fi
+          echo 'SOURCE AND BUILD EVIDENCE ONLY. NO DEVICE TEST. NO FLASH APPROVAL.' > evidence/READ-ME-FIRST.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-SPEN-R15-ISOLATION-COMPILE-EVIDENCE
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
