@@ -50,4 +50,15 @@ Do not combine BOOT and SYSTEM images from separate revisions, change Mali DDK a
 5. Check EGL swap, SurfaceFlinger, drawing, sleep/wake, audio, Wi-Fi and memory stability.
 6. Mark stable only after actual physical evidence; otherwise keep as experimental.
 
-Status as of script authoring: **build was started; no completed hardware-validated artifact yet**.
+## Actual GitHub Actions result — 2026-11-08
+
+- [Matched R15P0 + touch source repack run #42509941831](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42509941831): **SUCCESS**, all steps completed.
+- Artifact ID **13629141900**; GitHub artifact name `ELHARIKA-SM-P900-ANDROID11-R15P0-SPEN-TOUCH-MATCHED-EXPERIMENTAL`; artifact outer ZIP size **508,802,001 bytes**, artifact digest SHA256 `388b72bc1304842adabe7868061714b9f5fdabc2f7d85bef959fa038d10ebc16`.
+- **Inner TWRP ZIP file**: `ELHARIKA-OS-Lite-SM-P900-Android11-R15P0-SPEN-TOUCH-EXPERIMENTAL.zip`; **508,798,008 bytes**; SHA256 `615b8a179e66305c30d8dea183206457d9e1db151cd4313a915440f24caa33f9`.
+- Built raw ext4 SYSTEM SHA256 `a0a8abc0d59651ab46c3a99ee41e2181559a14316b7fde645580684f89d3ae10`; matched R15 BOOT SHA256 `7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14`.
+- Actual mount inspection logged `Verified actual mounted System VINTF touch entries: ['system/vendor/etc/vintf/manifest.xml']`. It also logged that One UI Edition was integrated and the fallback launcher remained present.
+- `sha256sum -c SHA256SUMS.txt`, ZIP CRC, ZIP32 and ext4 fsck checks completed successfully.
+
+**Hardware/pen validation of this combined build: NOT DONE. Flash approval: NOT GRANTED.**
+The prior r15p0 launcher screenshot does not automatically validate this new system image.
+
