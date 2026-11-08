@@ -1,0 +1,85 @@
+name: SM-P900 read-only actual graphics HAL inventory
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/inventory-sm-p900-graphics.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sm-p900-graphics-inventory
+  cancel-in-progress: false
+
+jobs:
+  inspect-existing-system-no-rebuild:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Run read-only audit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/inventory_sm_p900_graphics.py
+          python3 -m unittest discover -s tests -p test_inventory_sm_p900_graphics.py -v
+          mkdir -p evidence
+      - name: Install sparse image and ELF metadata tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs binutils
+          command -v simg2img
+          command -v readelf
+          command -v debugfs
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-touch-hal-system-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42289790703
+          github-token: ${{ github.token }}
+          path: input
+      - name: Verify exact prior built image; no Android compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd input && sha256sum -c SHA256SUMS)
+          python3 scripts/verify_sparse_system.py input/system.img evidence/sparse-check.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("evidence/sparse-check.json").read_text())
+          assert report['sha256']=='a0e5904b2bb20bfb350090bef50e465514a482d71c67870a86d9711ebdc03ead'
+          assert report['expanded_size']==2299998208
+          assert report['flash_approved'] is False
+          PY
+      - name: Expand image and identify actual Gralloc/HWComposer/EGL binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p working
+          simg2img input/system.img working/system.ext4
+          python3 scripts/inventory_sm_p900_graphics.py working/system.ext4 --out evidence/graphics-hal-inventory.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/graphics-hal-inventory.json").read_text())
+          assert r['flash_approved'] is False
+          assert r['runtime_egl_swap_fixed'] is False
+          print("Board HAL discovery:",r['derived']['presence'])
+          print("Paths:",r['derived']['gralloc_exynos5'],r['derived']['hwcomposer_exynos5'])
+          print("Uninspectable binaries:",r['errors'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-GRAPHICS-HAL-INVENTORY-REPORT-ONLY
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn

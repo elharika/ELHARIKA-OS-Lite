@@ -1,0 +1,109 @@
+name: SM-P900 R15 paired experimental INSTALL + paired RESTORE (no manual backup)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/package-sm-p900-r15-paired-install-restore.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-and-package-two-complete-gpu-pairs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run fail-closed installer and archive packaging tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n installer/r15p0-paired-update-binary.in
+          python3 -m compileall -q scripts/package_sm_p900_paired_trial_no_manual_backup.py
+          python3 -m unittest discover -s tests -p test_package_sm_p900_paired_trial_no_manual_backup.py -v
+          mkdir -p input/r7 input/r15 input/uk10 out
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42272497938
+          github-token: ${{ github.token }}
+          path: input/r7
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: input/r15
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: SM-P900-MALI-UK10-TRIAL-r1-HARDWARE-UNTESTED
+          run-id: 42246505509
+          github-token: ${{ github.token }}
+          path: input/uk10
+
+      - name: Unpack the already SHA-proven old UK10 library and pinned donor R15 ELF
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -p 'input/uk10/ELHARIKA-SM-P900-MALI-UK10-TRIAL-INSTALL-r1.zip' replacement.so > input/uk10/libGLES_mali.so
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 240 \
+            --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output input/r15/libGLES_mali.so
+          echo 'f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0  input/r7/boot.img' | sha256sum -c -
+          echo '7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14  input/r15/boot.img' | sha256sum -c -
+          echo '34af399a1090295a7138297b9352334c73d569212a4bd11be4b3254dafe26cde  input/uk10/libGLES_mali.so' | sha256sum -c -
+          echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  input/r15/libGLES_mali.so' | sha256sum -c -
+
+      - name: Build paired INSTALL and paired RESTORE, no manually created backup required
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_sm_p900_paired_trial_no_manual_backup.py \
+            --r7-boot input/r7/boot.img --uk10-mali input/uk10/libGLES_mali.so \
+            --r15-boot input/r15/boot.img --r15-mali input/r15/libGLES_mali.so \
+            --out out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          import json,zipfile
+          from pathlib import Path
+          m=json.loads(Path('out/PAIR-MANIFEST.json').read_text())
+          assert len(m)==2 and {x['operation'] for x in m}=={'INSTALL','RESTORE'}
+          for row in m:
+              with zipfile.ZipFile(Path('out')/row['file']) as z:
+                  assert z.testzip() is None
+                  assert len(z.namelist())==6
+                  sh=z.read('META-INF/com/google/android/update-binary').decode()
+                  assert f"MODE='{row['operation']}'" in sh
+                  assert 'getprop ro.product.device' in sh
+                  assert 'ro.build.version.sdk=30' in sh
+                  assert 'COMMITTED=1' in sh
+                  assert 'WRITING=1' in sh
+                  assert 'cat "$WORK/orig-full-boot.img" > "$BOOT"' in sh
+                  assert 'BOOT' in z.read('manifest.json').decode()
+                  assert 'system.img' not in z.namelist()
+          print('Two complete paired ZIPs validated: INSTALL trial and RESTORE old black-screen pair.')
+          PY
+
+      - name: Wipe temporary input copies from runner after building
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- input
+          test ! -d input
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-R15P0-EXPERIMENTAL-INSTALL-AND-R7-RESTORE
+          path: out/
+          retention-days: 14
+          if-no-files-found: error

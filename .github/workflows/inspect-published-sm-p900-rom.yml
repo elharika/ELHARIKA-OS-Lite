@@ -1,0 +1,75 @@
+name: SM-P900 published Android 11 ROM read-only inventory
+# Large public SourceForge OTA download disabled for automatic pushes after
+# canceled 805 MB attempt at <70 KB/s; manually re-enable only with a fast mirror.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sm-p900-public-donor-rom-inspection
+  cancel-in-progress: true
+
+jobs:
+  inspect-without-system-rebuild:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run OTA safety tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_inspect_sm_p900_donor_ota.py -v
+          python3 -m compileall -q scripts/inspect_sm_p900_donor_ota.py
+          mkdir -p scratch evidence
+
+      - name: Download public v1awifi Android 11 OTA (not to flash)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd scratch
+          echo 'Download is for forensic comparison only; no update script is executed.'
+          curl --fail --location --retry 2 --retry-delay 5 --connect-timeout 20 \
+            --max-time 540 --speed-limit 300000 --speed-time 30 --max-filesize 1500000000 \
+            'https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip/download' \
+            --output e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip
+          test -s e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip
+
+      - name: Inventory exact donor boot/system package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/inspect_sm_p900_donor_ota.py \
+            scratch/e-2.3-r-20260227-UNOFFICIAL-v1awifi.zip \
+            --out evidence/published-sm-p900-donor-rom.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('evidence/published-sm-p900-donor-rom.json').read_text())
+          assert r["status"] == "SAME_DEVICE_REFERENCE_OTA_STRUCTURE_CHECKED_NOT_FLASH_APPROVED"
+          assert r["boot_image"]["android_magic"]
+          assert not r["flash_approved"]
+          assert r["must_not_mix_with_existing_r7p0_trial"]
+          print("Donation source inspected, ROM not approved for flashing")
+          PY
+
+      - name: Delete downloaded proprietary ROM, preserve metadata only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- scratch
+          test ! -e scratch
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-PUBLIC-ANDROID11-OTA-INVENTORY-REPORT-ONLY
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn

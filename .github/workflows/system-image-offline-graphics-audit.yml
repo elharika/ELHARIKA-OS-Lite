@@ -1,0 +1,147 @@
+name: SM-P900 offline system image FS and graphics compatibility audit
+
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/system-image-offline-graphics-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sm-p900-offline-system-graphics-audit
+  cancel-in-progress: false
+
+jobs:
+  validate-without-recompiling:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Run offline audit safety tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/audit_system_image_offline.py
+          python3 -m unittest discover -s tests -p test_audit_system_image_offline.py -v
+          mkdir -p evidence
+
+      - name: Install filesystem inspection tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y e2fsprogs android-sdk-libsparse-utils binutils
+          command -v simg2img
+          command -v e2fsck
+          command -v debugfs
+          command -v readelf
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-touch-hal-system-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42289790703
+          github-token: ${{ github.token }}
+          path: input
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-touch-hal-system-build-evidence
+          run-id: 42289790703
+          github-token: ${{ github.token }}
+          path: pinned-build-evidence
+
+      - name: Verify downloaded image SHA and sparse geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s input/system.img
+          test -s input/SHA256SUMS
+          (cd input && sha256sum -c SHA256SUMS)
+          python3 scripts/verify_sparse_system.py input/system.img evidence/current-sparse-validation.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          built=json.loads(Path('pinned-build-evidence/system-image-validation.json').read_text())
+          now=json.loads(Path('evidence/current-sparse-validation.json').read_text())
+          for key in ('size','expanded_size','sha256'):
+              assert built[key]==now[key], (key,built.get(key),now.get(key))
+          assert now['filesystem_verified'] is False
+          assert now['flash_approved'] is False
+          print('Pinned source SHA and expanded geometry verified')
+          PY
+
+      - name: Expand already-built sparse image and check ext4 filesystem
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p working
+          df -h
+          simg2img input/system.img working/system.ext4
+          e2fsck -fn working/system.ext4 2>&1 | tee evidence/e2fsck-readonly.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('evidence/current-sparse-validation.json').read_text())
+          actual=Path('working/system.ext4').stat().st_size
+          assert actual==j['expanded_size'], (actual,j['expanded_size'])
+          PY
+
+      - name: Inspect installed VINTF and graphics binary ABI metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_system_image_offline.py \
+            working/system.ext4 \
+            pinned-build-evidence/system-image-validation.json \
+            pinned-build-evidence/touch-hal-stage-check.json \
+            --out evidence/graphics-system-audit.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('evidence/graphics-system-audit.json').read_text())
+          assert report['touch_interfaces'].count('ITouchscreenGesture') == 1
+          assert 'IKeyDisabler' not in report['touch_interfaces']
+          assert report['flash_approved'] is False
+          assert report['hardware_tested'] is False
+          # Not a "pass" for GPU pairing: mismatches must be reviewed before flashing.
+          if not report['mali_paired_with_installed_r7p0_boot']:
+              print('WARNING: Built Mali binary differs from known current r7p0/UK10 userspace pair')
+          print('Graphics libraries audited:', [v['name'] for v in report['hw_libraries']])
+          PY
+
+      - name: Record final read-only result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('evidence/graphics-system-audit.json').read_text())
+          out={
+              'status':'EXT4_AND_GRAPHICS_AUDITED_NO_HARDWARE_TEST',
+              'source_build_run':42289790703,
+              'image_sha256':json.loads(Path('evidence/current-sparse-validation.json').read_text())['sha256'],
+              'filesystem_e2fsck_ok':True,
+              'touch_vintf_ok':True,
+              'paired_mali_for_current_r7p0_runtime':report['mali_paired_with_installed_r7p0_boot'],
+              'egl_swap_fixed':False,
+              'flash_approved':False
+          }
+          Path('evidence/offline-gate.json').write_text(json.dumps(out,indent=2)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-OFFLINE-EXT4-GRAPHICS-EVIDENCE-ONLY
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn

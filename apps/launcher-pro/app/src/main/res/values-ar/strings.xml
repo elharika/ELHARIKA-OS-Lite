@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">مشغل الهريكا الاحترافي</string>
+    <string name="welcome">مساحتك الخاصة</string>
+    <string name="hero">واجهة الهريكا الذكية</string>
+    <string name="subtitle">تطبيقاتك وأدواتك المفضلة في واجهة مريحة ومخصصة للأجهزة اللوحية.</string>
+    <string name="installed">التطبيقات المثبتة</string>
+    <string name="favorites">المفضلة</string>
+    <string name="quick_access">الوصول السريع</string>
+    <string name="all_apps">جميع التطبيقات</string>
+    <string name="manage">إدارة التطبيقات</string>
+    <string name="settings">الإعدادات</string>
+    <string name="search">ابحث عن تطبيق</string>
+    <string name="light_theme">فاتح</string>
+    <string name="dark_theme">داكن</string>
+    <string name="no_favorites">اضغط مطولاً على تطبيق لإضافته هنا.</string>
+    <string name="add_favorite">إضافة إلى المفضلة</string>
+    <string name="remove_favorite">إزالة من المفضلة</string>
+    <string name="app_info">معلومات التطبيق</string>
+    <string name="cancel">إلغاء</string>
+    <string name="hint">الضغط المطول على التطبيق لإدارة المفضلة.</string>
+    <string name="launch_error">تعذر فتح التطبيق</string>
+</resources>

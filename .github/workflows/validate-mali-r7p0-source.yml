@@ -1,0 +1,124 @@
+name: SM-P900 Mali r7p0 guard tests
+
+on:
+  pull_request:
+    paths:
+      - scripts/select_mali_r7p0.py
+      - scripts/fix_missing_keydisabler_hal.py
+      - scripts/audit_mali_boot_pair.py
+      - scripts/analyze_mali_runtime.py
+      - scripts/fix_blocking_optional_touch_hal.py
+      - scripts/inventory_sm_p900_graphics.py
+      - scripts/audit_uk10_swap_crash.py
+      - scripts/inspect_egl_fault_registers.py
+      - scripts/audit_uk10_device_buildid_and_egl_context.py
+      - scripts/audit_pinned_exynos5_gralloc_contract.py
+      - scripts/audit_sm_p900_known_android11_reference.py
+      - scripts/evaluate_twrp_egl_register_export.py
+      - scripts/build_egl_tombstone_readonly_zip.py
+      - scripts/package_r15p0_pair_readonly_preflight.py
+      - scripts/evaluate_r15p0_pair_readonly_preflight.py
+      - scripts/package_sm_p900_pretrial_backup.py
+      - scripts/validate_sm_p900_backup_report.py
+      - diagnostics/twrp-backup-current-r7-uk10-before-r15-trial.sh
+      - diagnostics/twrp-r15p0-pair-readonly-preflight.sh
+      - diagnostics/twrp-export-existing-egl-tombstones.sh
+      - scripts/fix_r7p0_kbuild.py
+      - tests/test_select_mali_r7p0.py
+      - tests/test_fix_missing_keydisabler_hal.py
+      - tests/test_audit_mali_boot_pair.py
+      - tests/test_analyze_mali_runtime.py
+      - tests/test_fix_blocking_optional_touch_hal.py
+      - tests/test_inventory_sm_p900_graphics.py
+      - tests/test_audit_uk10_swap_crash.py
+      - tests/test_inspect_egl_fault_registers.py
+      - tests/test_audit_uk10_device_buildid_and_egl_context.py
+      - tests/test_audit_pinned_exynos5_gralloc_contract.py
+      - tests/test_audit_sm_p900_known_android11_reference.py
+      - tests/test_evaluate_twrp_egl_register_export.py
+      - tests/test_build_egl_tombstone_readonly_zip.py
+      - tests/test_package_r15p0_pair_readonly_preflight.py
+      - tests/test_evaluate_r15p0_pair_readonly_preflight.py
+      - tests/test_package_sm_p900_pretrial_backup.py
+      - tests/test_validate_sm_p900_backup_report.py
+      - tests/test_fix_r7p0_kbuild.py
+      - .github/workflows/validate-mali-r7p0-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-guards:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run focused tests, no ROM flashing
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/select_mali_r7p0.py scripts/fix_missing_keydisabler_hal.py scripts/audit_mali_boot_pair.py scripts/analyze_mali_runtime.py scripts/fix_blocking_optional_touch_hal.py scripts/inventory_sm_p900_graphics.py scripts/audit_uk10_swap_crash.py scripts/inspect_egl_fault_registers.py scripts/audit_uk10_device_buildid_and_egl_context.py scripts/audit_pinned_exynos5_gralloc_contract.py scripts/audit_sm_p900_known_android11_reference.py scripts/evaluate_twrp_egl_register_export.py scripts/build_egl_tombstone_readonly_zip.py scripts/package_r15p0_pair_readonly_preflight.py scripts/evaluate_r15p0_pair_readonly_preflight.py scripts/package_sm_p900_pretrial_backup.py scripts/validate_sm_p900_backup_report.py scripts/fix_r7p0_kbuild.py
+          python3 -m unittest discover -s tests -p 'test_select_mali_r7p0.py' -v
+          python3 -m unittest discover -s tests -p 'test_fix_missing_keydisabler_hal.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_mali_boot_pair.py' -v
+          python3 -m unittest discover -s tests -p 'test_analyze_mali_runtime.py' -v
+          python3 -m unittest discover -s tests -p 'test_fix_blocking_optional_touch_hal.py' -v
+          python3 -m unittest discover -s tests -p 'test_inventory_sm_p900_graphics.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_uk10_swap_crash.py' -v
+          python3 -m unittest discover -s tests -p 'test_inspect_egl_fault_registers.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_uk10_device_buildid_and_egl_context.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_pinned_exynos5_gralloc_contract.py' -v
+          python3 -m unittest discover -s tests -p 'test_audit_sm_p900_known_android11_reference.py' -v
+          python3 -m unittest discover -s tests -p 'test_evaluate_twrp_egl_register_export.py' -v
+          python3 -m unittest discover -s tests -p 'test_build_egl_tombstone_readonly_zip.py' -v
+          python3 -m unittest discover -s tests -p 'test_package_r15p0_pair_readonly_preflight.py' -v
+          python3 -m unittest discover -s tests -p 'test_evaluate_r15p0_pair_readonly_preflight.py' -v
+          python3 -m unittest discover -s tests -p 'test_package_sm_p900_pretrial_backup.py' -v
+          python3 -m unittest discover -s tests -p 'test_validate_sm_p900_backup_report.py' -v
+          python3 -m unittest discover -s tests -p 'test_fix_r7p0_kbuild.py' -v
+      - name: Validate pinned upstream defconfig and manifest format
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/arch/arm/configs/lineageos_v1awifi_defconfig \
+            --output kernel-defconfig
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_device_samsung_v1a-common/4ae15a9b02c6efb1ffe956ab386fce9b3606ea94/manifest.xml \
+            --output touch-manifest.xml
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/gpu/arm/t6xx/r7p0/Kbuild \
+            --output mali-r7p0-kbuild
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/gpu/arm/t6xx/r7p0/platform/exynos/Kbuild \
+            --output mali-exynos-kbuild
+          curl --fail --location --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/LineageOS/android_lineage-sdk/5f1b14d27249f8b7f035060005e07ac9388e5470/sdk/src/java/lineageos/hardware/LineageHardwareManager.java \
+            --output pinned-lineage-hardware-manager.java
+          python3 - <<'PY'
+          from pathlib import Path
+          from scripts.fix_blocking_optional_touch_hal import patch_java
+          pinned_sdk=Path('pinned-lineage-hardware-manager.java').read_text()
+          assert pinned_sdk.count('case FEATURE_KEY_DISABLE:') == 3
+          patched_sdk, changed = patch_java(pinned_sdk)
+          assert changed
+          assert patched_sdk.count('IKeyDisabler.getService(true)') == 0
+          assert patched_sdk.count('ITouchscreenGesture.getService(true)') == 1
+          assert patch_java(patched_sdk) == (patched_sdk, False)
+          from scripts.select_mali_r7p0 import patch_defconfig
+          from scripts.fix_missing_keydisabler_hal import patch_manifest
+          config, changed = patch_defconfig(Path('kernel-defconfig').read_text())
+          assert changed and 'CONFIG_MALI_T6XX_R7P0=y' in config
+          xml, changed = patch_manifest(Path('touch-manifest.xml').read_text())
+          assert changed and '<name>IKeyDisabler</name>' not in xml
+          assert '<name>ITouchscreenGesture</name>' in xml
+          from scripts.fix_r7p0_kbuild import patch_main, patch_platform
+          # These are fetched from exactly locked source below.
+          kbuild, changed = patch_main(Path('mali-r7p0-kbuild').read_text())
+          assert changed and kbuild.count('CONFIG_MALI_T6XX_R7P0') == 4
+          platform, changed = patch_platform(Path('mali-exynos-kbuild').read_text())
+          assert changed and 'gpu_exynos5420.o' in platform
+          print('Pinned upstream source patch preflights passed')
+          PY

@@ -1,0 +1,57 @@
+name: SM-P900 read-only existing EGL tombstone exporter
+# V4: checksum-verified nonempty report, microSD staging, preserve older/empty filenames.
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/build-readonly-egl-tombstone-export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-collector-only-no-android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Validate read-only TWRP shell and packaging tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/build_egl_tombstone_readonly_zip.py
+          python3 -m unittest discover -s tests -p 'test_build_egl_tombstone_readonly_zip.py' -v
+          sh -n diagnostics/twrp-export-existing-egl-tombstones.sh
+
+      - name: Package tiny TWRP evidence ZIP (NO FLASH DATA)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/build_egl_tombstone_readonly_zip.py . out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          path=Path("out/ELHARIKA-SM-P900-READONLY-EGL-TOMBSTONES-TWRP.zip")
+          assert 300 < path.stat().st_size < 25000
+          with zipfile.ZipFile(path) as bundle:
+              assert bundle.testzip() is None
+              script=bundle.read('META-INF/com/google/android/update-binary').decode()
+              assert 'NO_MATCHING_TOMBSTONE_FOUND' in script
+              assert 'getprop ro.product.device' in script
+              assert 'getprop ro.bootloader' in script
+              assert 'mount -t ' not in script
+              assert 'dd if=' not in script
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-READONLY-OLD-TOMBSTONE-TWRP-NO-SYSTEM-MOD
+          path: out/
+          retention-days: 7
+          if-no-files-found: error

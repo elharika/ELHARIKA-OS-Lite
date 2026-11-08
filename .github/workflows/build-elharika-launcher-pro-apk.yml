@@ -1,0 +1,83 @@
+name: ELHARIKA Launcher Pro standalone APK (Android 11 tablet)
+# AAPT French apostrophe escaping corrected for android resource compiler.
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/build-elharika-launcher-pro-apk.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-launcher-without-rom-rebuild:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # v4 no longer installs Google's removed "tools" SDK package.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Install Android 35 SDK platform and build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
+
+      - name: Build standalone app keeping stock ELHARIKA Launcher Lite installed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apps/launcher-pro
+          gradle :app:assembleDebug --no-daemon --stacktrace --warning-mode all
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Check Android11 APK metadata and signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=apps/launcher-pro/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" > /tmp/elharika-launcher-badging.txt
+          grep -q "package: name='org.elharika.launcher.pro'" /tmp/elharika-launcher-badging.txt
+          grep -q "targetSdkVersion:'30'" /tmp/elharika-launcher-badging.txt
+          grep -q "sdkVersion:'29'" /tmp/elharika-launcher-badging.txt
+          mkdir -p dist
+          cp "$apk" dist/ELHARIKA-Launcher-Pro-Android11-v1.0-preview.apk
+          (cd dist && sha256sum ELHARIKA-Launcher-Pro-Android11-v1.0-preview.apk > SHA256SUMS.txt)
+          cat > dist/README.txt <<'NOTE'
+          ELHARIKA Launcher Pro v1.0 PREVIEW for Samsung SM-P900 / Android 11.
+          Installs separately as org.elharika.launcher.pro.
+          Does not update the built-in ELHARIKA Launcher Lite, BOOT, Mali or system.img.
+          On the tablet: open the APK in Files, allow install from that source if asked.
+          Press HOME and choose ELHARIKA Launcher Pro as the default, or use
+          Settings > Apps > Default apps > Home app.
+          If anything goes wrong, choose ELHARIKA Launcher Lite as Home again.
+          This APK is signed with a GitHub Actions temporary DEBUG certificate.
+          For future updates without uninstalling, set up a persistent release key.
+          NOTE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-LAUNCHER-PRO-ANDROID11-STANDALONE-APK-PREVIEW
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14

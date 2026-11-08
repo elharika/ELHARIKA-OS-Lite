@@ -1,0 +1,56 @@
+name: SM-P900 S Pen reboot READ-ONLY TWRP collector
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/build-sm-p900-spen-readonly-diagnostics.yml
+      - diagnostics/twrp-capture-spen-reboot-no-write.sh
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify NO writes to Android partitions and assemble tiny recovery ZIP
+        run: |
+          set -euo pipefail
+          sh -n diagnostics/twrp-capture-spen-reboot-no-write.sh
+          python3 - <<'PY'
+          import re,zipfile,hashlib,pathlib
+          s=pathlib.Path('diagnostics/twrp-capture-spen-reboot-no-write.sh').read_bytes()
+          assert b'getprop ro.product.device' in s and b'P900' in s
+          assert b'/proc/last_kmsg' in s and b'/sys/fs/pstore/' in s
+          assert b'/data/system/dropbox' in s and b'/data/tombstones/' in s
+          assert b'ELHARIKA-SPEN-DIAG-' in s and b'No System/BOOT/Mali/Data changes' in s
+          forbidden=[b' dd if=',b'dd of=',b'\nmkfs',b'\nformat ',b'/dev/block/',b'rm -rf /data',b'rm -rf /system',b'\nmount -t ext4',b'\nreboot']
+          for v in forbidden:assert v not in s,v
+          out=pathlib.Path('dist');out.mkdir(exist_ok=True)
+          dest=out/'ELHARIKA-SM-P900-SPEN-READONLY-CRASH-COLLECTOR.zip'
+          with zipfile.ZipFile(dest,'w',zipfile.ZIP_STORED) as z:
+              for name,blob,mode in (
+                  ('META-INF/com/google/android/update-binary',s,0o100755),
+                  ('META-INF/com/google/android/updater-script',b'# No flash. Read-only S Pen diagnostics.\n',0o100644),
+                  ('README.txt',b'SM-P900 Wacom S Pen restart reports ONLY. TWRP > Mount: Data and Micro SDCard. Then Install the INNER zip. On success locate ELHARIKA-SPEN-DIAG-xx.tgz on SD and send it. This tool only reads existing logs. Logs may contain private information.\n',0o100644),
+              ):
+                  entry=zipfile.ZipInfo(name,(2026,11,8,0,0,0))
+                  entry.external_attr=mode<<16;entry.create_system=3
+                  z.writestr(entry,blob)
+          with zipfile.ZipFile(dest) as z:
+              assert z.testzip() is None
+              assert len(z.namelist())==3
+              assert ((z.getinfo('META-INF/com/google/android/update-binary').external_attr>>16)&0o111)
+          (out/'SHA256SUMS.txt').write_text(hashlib.sha256(dest.read_bytes()).hexdigest()+'  '+dest.name+'\n')
+          print('READ ONLY TWRP archive built:',dest,'bytes',dest.stat().st_size)
+          PY
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-READONLY-LOGS
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error

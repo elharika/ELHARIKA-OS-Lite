@@ -1,0 +1,92 @@
+name: SM-P900 R15 donor trial read-only BOOT/Mali TWRP preflight
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/package-r15-pair-readonly-preflight.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-and-package-readonly-fingerprints:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Safety tests; NO ROM compilation and NO flashing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_package_r15p0_pair_readonly_preflight.py' -v
+          sh -n diagnostics/twrp-r15p0-pair-readonly-preflight.sh
+          python3 -m compileall -q scripts/package_r15p0_pair_readonly_preflight.py
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: evidence-input/r15p0-original
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-Mali-r7p0-kernel-EXPERIMENTAL-NOT-FLASH-APPROVED
+          run-id: 42272497938
+          github-token: ${{ github.token }}
+          path: evidence-input/r7p0-actual
+
+      - name: Independently validate BOOT exact size and SHA used by recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import re
+          import json
+          src=Path('diagnostics/twrp-r15p0-pair-readonly-preflight.sh').read_text()
+          expected = [
+              ('r15p0-original',5462032,'7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'),
+              ('r7p0-actual',5437456,'f5f60b64a023b5223d7af711bfbe239dc79248f9cded878cd17e034751594eb0'),
+          ]
+          for dirname,size,digest in expected:
+              p=Path('evidence-input')/dirname/'boot.img'
+              blob=p.read_bytes()
+              assert len(blob)==size,(p,len(blob),size)
+              assert sha256(blob).hexdigest()==digest
+              assert digest in src and str(size) in src
+              assert blob.startswith(b'ANDROID!')
+          print('Two complete prior BOOT images verified exact hashes, names and sizes.')
+          PY
+          rm -rf -- evidence-input
+
+      - name: Create tiny read-only TWRP ZIP and SHA256 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_r15p0_pair_readonly_preflight.py . out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          p=Path('out/ELHARIKA-SM-P900-R15P0-READONLY-PAIR-PREFLIGHT-TWRP.zip')
+          assert 300 < p.stat().st_size < 16000
+          with zipfile.ZipFile(p) as zip:
+              assert zip.testzip() is None
+              assert zip.namelist().count('META-INF/com/google/android/update-binary')==1
+              assert all('boot.img' not in s and 'libGLES_mali.so' not in s for s in zip.namelist())
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-R15-PRE-FLASH-READONLY-FINGERPRINT-KIT
+          path: out/
+          retention-days: 14
+          if-no-files-found: error

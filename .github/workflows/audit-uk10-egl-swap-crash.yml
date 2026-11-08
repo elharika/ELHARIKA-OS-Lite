@@ -1,0 +1,70 @@
+name: SM-P900 read-only UK10 Mali EGL swap crash disassembly
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/audit-uk10-egl-swap-crash.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-pinned-blob-without-patching:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_audit_uk10_swap_crash.py -v
+          python3 -m compileall -q scripts/audit_uk10_swap_crash.py
+          mkdir -p evidence
+      - name: Install ARM32 ELF reader and disassembler
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-capstone python3-pyelftools
+          python3 -c 'import capstone, elftools'
+      - name: Fetch exact pinned public UK10 candidate (never publish binary)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p confidential-input
+          curl --fail --location --retry 2 --max-time 60 \
+            https://raw.githubusercontent.com/Valera1978/android_vendor_samsung_v1awifi/4079dd66fc6955adb208a0633220f4b72faaf82d/proprietary/vendor/lib/egl/libGLES_mali.so \
+            --output confidential-input/libGLES_mali.so
+          echo 'a66179ef65c26a797b814e3d9cf0ab2b7f07e0d32c641f463820c0a0c49f1ee9  confidential-input/libGLES_mali.so' | sha256sum -c -
+      - name: Decode tiny ARM instruction window at actual BootAnimation crash
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_uk10_swap_crash.py confidential-input/libGLES_mali.so \
+            --out evidence/uk10-egl-swap-disassembly.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('evidence/uk10-egl-swap-disassembly.json').read_text())
+          assert data['flash_approved'] is False
+          assert any(x['at_fault'] for x in data['instructions'])
+          assert data['cause_proven'] is False
+          PY
+      - name: Remove private binary; upload metadata only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- confidential-input
+          test ! -e confidential-input/libGLES_mali.so
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SM-P900-UK10-EGL-SWAP-DISASSEMBLY-METADATA-ONLY
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 7

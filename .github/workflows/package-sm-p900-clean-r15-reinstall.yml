@@ -1,0 +1,267 @@
+name: SM-P900 experimental clean Android 11 r15p0 FULL ROM (Mali matched)
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/package-sm-p900-clean-r15-reinstall.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  restore-prior-launcher-bootable-system-as-full-matched-pair:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify pure packaging code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts/package_sm_p900_clean_r15_reinstall.py
+          sh -n installer/update-binary.in
+          mkdir -p inputs/system inputs/boot inputs/r15 work out
+
+      - name: Install ext4 and sparse-image inspection tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs binutils
+          command -v simg2img
+          command -v e2fsck
+          command -v readelf
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-system-development-NOT-FLASH-APPROVED
+          run-id: 41862679569
+          github-token: ${{ github.token }}
+          path: inputs/system
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: inputs/boot
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-ONE-UI-EDITION-ANDROID11-TABLET-APK
+          run-id: 42453092239
+          github-token: ${{ github.token }}
+          path: inputs/launcher
+
+      - name: Verify prebuilt One UI Edition Android 11 APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk
+          (cd inputs/launcher && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib
+          apk=Path('inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk')
+          assert apk.stat().st_size>25000 and apk.stat().st_size<10000000
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert {'AndroidManifest.xml','classes.dex','resources.arsc'}<=names
+              # APK is verified by apksigner in pinned successful build #42453092239.
+              # Android APK Signature Scheme v2/v3 need not contain META-INF/*.RSA.
+              assert b'APK Sig Block 42' in apk.read_bytes(), 'Android APK v2/v3 signature block absent'
+          (Path('work')/'oneui-apk.sha256').write_text(hashlib.sha256(apk.read_bytes()).hexdigest()+'\n')
+          print('Pinned compiled One UI Edition APK ZIP and checksum verified')
+          PY
+
+      - name: Fetch exact R15P0 Mali from pinned same-family vendor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --connect-timeout 20 --max-time 240 \
+            --max-filesize 45000000 \
+            'https://raw.githubusercontent.com/salih4187/android_vendor_samsung_universal5420-common/8f5241f7637477d3ecae65c67b9315d343257fad/proprietary/vendor/lib/egl/libGLES_mali.so' \
+            --output inputs/r15/libGLES_mali.so
+          echo 'fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61  inputs/system/system.img' | sha256sum -c -
+          echo '7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14  inputs/boot/boot.img' | sha256sum -c -
+          echo 'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839  inputs/r15/libGLES_mali.so' | sha256sum -c -
+          python3 scripts/verify_sparse_system.py inputs/system/system.img work/source-sparse.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('work/source-sparse.json'))
+          assert r['expanded_size']==2299998208 and r['size']>500000000
+          assert r['sha256']=='fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61'
+          print('Original experimental sparse SYSTEM provenance pinned.')
+          PY
+
+      - name: Expand and inspect old Android 11 SYSTEM without an Android rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -h .
+          simg2img inputs/system/system.img work/system.ext4
+          test "$(stat -c %s work/system.ext4)" = 2299998208
+          e2fsck -fn work/system.ext4 > work/original-fsck.log
+          mkdir -p work/mount
+
+      - name: Integrate paired Mali and ELHARIKA One UI Edition system launcher into previous bootable SYSTEM
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo mount -t ext4 -o loop,rw work/system.ext4 work/mount
+          trap 'sudo umount work/mount || true' EXIT
+          sudo test -s work/mount/system/build.prop
+          sudo grep -Fxq 'ro.product.system.device=v1awifi' work/mount/system/build.prop
+          sudo grep -Fxq 'ro.build.version.sdk=30' work/mount/system/build.prop
+          sudo test -f work/mount/system/bin/surfaceflinger
+          SRC_MALI=inputs/r15/libGLES_mali.so
+          DEST_MALI=work/mount/system/vendor/lib/egl/libGLES_mali.so
+          sudo test -f "$DEST_MALI"
+          sudo test ! -L "$DEST_MALI"
+          sudo env SRC_MALI="$SRC_MALI" DEST_MALI="$DEST_MALI" python3 - <<'PY'
+          from pathlib import Path
+          import os,stat,hashlib,shutil,json
+          source=Path(os.environ['SRC_MALI'])
+          dest=Path(os.environ['DEST_MALI'])
+          expected='a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839'
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==expected
+          before=os.stat(dest,follow_symlinks=False)
+          assert stat.S_ISREG(before.st_mode)
+          attrs={k:os.getxattr(dest,k) for k in os.listxattr(dest)}
+          # Preserve original inode and extended attributes. No unlink/rename.
+          with source.open('rb') as src,dest.open('r+b') as dst:
+              dst.seek(0)
+              dst.truncate(0)
+              shutil.copyfileobj(src,dst,1024*1024)
+              dst.flush()
+              os.fsync(dst.fileno())
+          after=os.stat(dest,follow_symlinks=False)
+          unchanged=(before.st_ino,before.st_uid,before.st_gid,before.st_mode)==(
+              after.st_ino,after.st_uid,after.st_gid,after.st_mode)
+          attrs_after={k:os.getxattr(dest,k) for k in os.listxattr(dest)}
+          assert unchanged and attrs==attrs_after, 'Original Mali ownership/mode/SELinux attributes changed'
+          assert hashlib.sha256(dest.read_bytes()).hexdigest()==expected
+          print('Exact R15P0 donor written into original SYSTEM inode without attribute changes.')
+          PY
+          sudo test -f work/mount/system/media/bootanimation.zip || sudo test -f work/mount/system/product/media/bootanimation.zip
+
+          sudo env LAUNCHER_SOURCE="inputs/launcher/ELHARIKA-OneUI-Edition-SM-P900-Android11-v1.apk"             LAUNCHER_SHA="$(cat work/oneui-apk.sha256)" python3 - <<'PY'
+          from pathlib import Path
+          import os,hashlib,shutil,stat
+          source=Path(os.environ['LAUNCHER_SOURCE'])
+          expected=os.environ['LAUNCHER_SHA'].strip()
+          root=Path('work/mount/system/app')
+          assert root.is_dir() and not root.is_symlink()
+          candidates=sorted(p for p in root.glob('*/*.apk') if p.is_file() and not p.is_symlink())
+          assert candidates, 'No reference Android system app for file labeling'
+          example=candidates[0]
+          target_dir=root/'ELHARIKAOneUI'
+          assert not target_dir.exists(), 'Launcher directory already occupied'
+          assert shutil.disk_usage(root).free>16*1024*1024, 'Insufficient filesystem free space'
+          data=source.read_bytes()
+          assert hashlib.sha256(data).hexdigest()==expected
+          target_dir.mkdir(mode=0o755)
+          os.chown(target_dir,0,0)
+          target=target_dir/'ELHARIKAOneUI.apk'
+          target.write_bytes(data)
+          os.chmod(target,0o644);os.chown(target,0,0)
+          # Copy the existing system app SELinux file contexts when available,
+          # rather than making up device-specific labels.
+          def copy_label(reference,destination):
+              try:
+                  label=os.getxattr(reference,'security.selinux')
+              except OSError:
+                  return False
+              os.setxattr(destination,'security.selinux',label)
+              assert os.getxattr(destination,'security.selinux')==label
+              return True
+          dir_labeled=copy_label(example.parent,target_dir)
+          apk_labeled=copy_label(example,target)
+          assert target.stat().st_size==len(data)
+          assert stat.S_IMODE(target.stat().st_mode)==0o644
+          assert hashlib.sha256(target.read_bytes()).hexdigest()==expected
+          # Keep ElharikaLauncherLite as a separate Home fallback.
+          original=[p for p in candidates if 'ElharikaLauncher' in str(p) or 'elharika' in str(p).lower()]
+          assert original, 'Original ROM launcher not found; do not remove recovery HOME option'
+          print('One UI Edition integrated at',target,'labels:',dir_labeled,apk_labeled,'fallback:',[str(p) for p in original])
+          PY
+          sudo sync
+          sudo umount work/mount
+          trap - EXIT
+          e2fsck -fn work/system.ext4 > work/paired-fsck.log
+          # Read the original first-boot software metadata WITHOUT touching Data.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result={
+            'original_system_sparse_sha256':'fd145e39215b7839d3a414a23a58bcd7cec2707b551e409fecd2b8c44b663f61',
+            'installed_mali_sha256':'a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839',
+            'installed_mali_path':'/system/vendor/lib/egl/libGLES_mali.so',
+            'installed_system_device':'v1awifi',
+            'installed_system_sdk':'30',
+            'original_inode_unchanged':True,
+            'original_owner_mode_xattrs_unchanged':True,
+            'original_bootanimation_preserved':True,
+            'oneui_launcher_included':True,
+            'oneui_launcher_system_path':'/system/app/ELHARIKAOneUI/ELHARIKAOneUI.apk',
+            'oneui_launcher_package':'org.elharika.oneui',
+            'oneui_launcher_apk_sha256':Path('work/oneui-apk.sha256').read_text().strip(),
+            'original_rom_launcher_preserved':True,
+            'source_ext4_e2fsck_ok':True,
+            'flash_approved':False,
+          }
+          Path('work/provenance.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+
+      - name: Produce single TWRP ZIP with full SYSTEM and matched R15 BOOT
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_sm_p900_clean_r15_reinstall.py \
+            --system work/system.ext4 --boot inputs/boot/boot.img \
+            --marker work/provenance.json --out out
+          (cd out && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import zipfile
+          m=json.loads(Path('out/verification.json').read_text())
+          assert m['donor_r15_mali_sha256']=='a00166d28cbd0213c88daadb437534310de09da4bf9fcc64f8e2207e22d76839'
+          assert m['boot_sha256']=='7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
+          assert m['oneui_launcher_package']=='org.elharika.oneui'
+          assert m['original_rom_launcher_preserved']
+          assert m['oneui_launcher_apk_sha256']==Path('work/oneui-apk.sha256').read_text().strip()
+          assert not m['wipes_data'] and m['full_system_flash']
+          name=next(Path('out').glob('*.zip'))
+          with zipfile.ZipFile(name) as z:
+              assert z.testzip() is None
+              assert len(z.namelist())==6
+              assert all(item.extract_version<=20 for item in z.infolist())
+              assert z.getinfo('system.ext4').file_size==2299998208
+              assert z.getinfo('boot.img').file_size==5462032
+          print('Matched full SYSTEM + BOOT ZIP CRC and format checks passed; hardware remains untested.')
+          PY
+
+      - name: Remove original raw donor and build copies to avoid accidental redistribution
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo umount work/mount 2>/dev/null || true
+          rm -rf -- inputs work
+          test ! -d inputs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-ANDROID11-R15P0-FULL-CLEAN-REINSTALL-EXPERIMENTAL
+          path: out/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error

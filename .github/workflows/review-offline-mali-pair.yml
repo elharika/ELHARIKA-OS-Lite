@@ -1,0 +1,55 @@
+name: SM-P900 existing offline graphics report pairing gate
+on:
+  push:
+    branches: [diagnostics/mali-r7p0-matched-boot-trial]
+    paths:
+      - .github/workflows/review-offline-mali-pair.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  review-only-no-image-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Validate fail-closed pairing logic
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_review_offline_mali_pair.py -v
+          python3 -m compileall -q scripts/review_offline_mali_pair.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-OFFLINE-EXT4-GRAPHICS-EVIDENCE-ONLY
+          run-id: 42343611095
+          github-token: ${{ github.token }}
+          path: existing-evidence
+      - name: Review exact existing system.img graphics fingerprint and block unsafe use
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 scripts/review_offline_mali_pair.py \
+            existing-evidence/graphics-system-audit.json \
+            existing-evidence/offline-gate.json \
+            --out evidence/system-graphics-pairing-decision.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('evidence/system-graphics-pairing-decision.json').read_text())
+          assert d['physical_boot_verified'] is False
+          assert d['bootanimation_egl_swap_fixed'] is False
+          assert d['flash_approved'] is False
+          print('SYSTEM IMAGE MUST NOT BE FLASHED; audit succeeded, hardware compatibility not validated')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-GRAPHICS-PAIRING-REVIEW-NO-IMAGE
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 7
