@@ -1,0 +1,83 @@
+name: SM-P900 read-only R15 original BOOT vs S Pen zImage audit
+on:
+  push:
+    branches: [diagnostics/spen-drawing-freeze-20261108]
+    paths:
+      - .github/workflows/audit-r15-wacom-boot-pair-readonly.yml
+      - scripts/audit_r15_wacom_boot_pair_readonly.py
+      - tests/test_audit_r15_wacom_boot_pair_readonly.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  inspect-pinned-boot-and-kernel-metadata:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify read-only analyzer on synthetic paired boot fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_audit_r15_wacom_boot_pair_readonly.py -v
+          python3 -m compileall -q scripts/audit_r15_wacom_boot_pair_readonly.py
+          mkdir -p input/original input/experiment evidence
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: input/original
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-R15-LCD-SYNC-ISOLATED-zImage-ONLY-NOT-FLASHABLE
+          run-id: 42516456316
+          github-token: ${{ github.token }}
+          path: input/experiment
+
+      - name: Authenticate both source artifacts, record boot metadata without modifying either
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s input/original/boot.img
+          test -s input/experiment/zImage
+          (cd input/original && sha256sum -c SHA256SUMS)
+          (cd input/experiment && sha256sum -c SHA256SUMS)
+          python3 scripts/audit_r15_wacom_boot_pair_readonly.py \
+            input/original/boot.img input/experiment/zImage \
+            --report evidence/r15-wacom-boot-compatibility.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('evidence/r15-wacom-boot-compatibility.json').read_text())
+          assert d['status']=='READ_ONLY_PAIR_METADATA_NOT_BOOT_BUILD'
+          assert d['samsung_boot_trailer_present']
+          assert d['original_boot_sha256']=='7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14'
+          assert d['zimage_is_standalone_not_boot'] and not d['flash_approved']
+          assert not d['boot_repacking_proven_safe']
+          print('Original and experimental kernel metadata compared; NO flashable BOOT produced.')
+          PY
+
+      - name: Remove raw BOOT/zImage from Actions workspace and upload metadata only
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- input/
+          test ! -e input/
+          printf 'READ-ONLY SOURCE METADATA AUDIT. NO FLASH, NO BOOT IMAGE, NO HARDWARE TEST.\n' > evidence/NOT-FLASH-APPROVED.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ELHARIKA-SPEN-R15-BOOT-ZIMAGE-PAIR-METADATA-ONLY
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: warn
