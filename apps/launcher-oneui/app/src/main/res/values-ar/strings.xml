@@ -1,0 +1,17 @@
+<resources>
+<string name="app_name">واجهة الهريكا</string>
+<string name="apps">التطبيقات</string><string name="home">الرئيسية</string>
+<string name="search">البحث عن تطبيق</string><string name="widgets">الأدوات المصغرة</string>
+<string name="personalize">تخصيص</string><string name="settings">الإعدادات</string>
+<string name="edit">تعديل الرئيسية</string><string name="add_home">إضافة إلى الرئيسية</string>
+<string name="add_dock">تثبيت في الشريط السفلي</string><string name="remove_home">إزالة من الرئيسية</string>
+<string name="remove_dock">إزالة من الشريط السفلي</string><string name="app_info">معلومات التطبيق</string>
+<string name="create_folder">إنشاء مجلد</string><string name="rename_folder">تسمية المجلد</string>
+<string name="pick_widget">اختيار أداة</string><string name="empty_home">اضغط مطولاً على تطبيق لإضافته إلى الرئيسية.</string>
+<string name="no_widgets">أضف أداة أو استعمل الساعة والتقويم.</string>
+<string name="page">الصفحة</string><string name="theme">ألوان الخلفية</string>
+<string name="ocean">المحيط</string><string name="violet">بنفسجي</string><string name="peach">الغروب</string>
+<string name="cancel">إلغاء</string><string name="done">تم</string>
+<string name="add_to_folder">إضافة إلى مجلد</string><string name="move_page">نقل إلى صفحة أخرى</string>
+<string name="drawer_hint">اسحب للأعلى لعرض جميع التطبيقات</string>
+</resources>
