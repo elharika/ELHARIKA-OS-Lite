@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'org.elharika.oneui'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'org.elharika.oneui'
+    minSdk 29
+    targetSdk 30
+    versionCode 1
+    versionName '1.0-oneui-preview'
+  }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  buildTypes { debug { minifyEnabled false }; release { minifyEnabled false } }
+}
