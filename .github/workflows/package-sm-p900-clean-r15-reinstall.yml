@@ -74,7 +74,9 @@ jobs:
               assert z.testzip() is None
               names=set(z.namelist())
               assert {'AndroidManifest.xml','classes.dex','resources.arsc'}<=names
-              assert any(n.startswith('META-INF/') and n.endswith('.RSA') for n in names), 'APK signing material absent'
+              # APK is verified by apksigner in pinned successful build #42453092239.
+              # Android APK Signature Scheme v2/v3 need not contain META-INF/*.RSA.
+              assert b'APK Sig Block 42' in apk.read_bytes(), 'Android APK v2/v3 signature block absent'
           (Path('work')/'oneui-apk.sha256').write_text(hashlib.sha256(apk.read_bytes()).hexdigest()+'\n')
           print('Pinned compiled One UI Edition APK ZIP and checksum verified')
           PY
