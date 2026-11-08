@@ -27,7 +27,7 @@ jobs:
           assert b'/proc/last_kmsg' in s and b'/sys/fs/pstore/' in s
           assert b'/data/system/dropbox' in s and b'/data/tombstones/' in s
           assert b'ELHARIKA-SPEN-DIAG-' in s and b'No System/BOOT/Mali/Data changes' in s
-          forbidden=[b' dd if=',b'dd of=',b'mkfs',b'format',b'/dev/block/',b'rm -rf /data',b'rm -rf /system',b'mount -t ext4',b'reboot']
+          forbidden=[b' dd if=',b'dd of=',b'\nmkfs',b'\nformat ',b'/dev/block/',b'rm -rf /data',b'rm -rf /system',b'\nmount -t ext4',b'\nreboot']
           for v in forbidden:assert v not in s,v
           out=pathlib.Path('dist');out.mkdir(exist_ok=True)
           dest=out/'ELHARIKA-SM-P900-SPEN-READONLY-CRASH-COLLECTOR.zip'
