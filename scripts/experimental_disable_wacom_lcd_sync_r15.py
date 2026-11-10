@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bounded experimental SM-P900 R15P0 Wacom LCD-sync isolation, never a flash fix.
 
-Target: salih4187/android_kernel_samsung_exynos5420 @35d960ed3c2de3d5558b782257053599cded659e
+Target: exynos5420/android_kernel_samsung_exynos5420 @de0cdcf10dcca77b400f15d83c1edf4f264a0f02
 Only make the optional *display-frequency feedback* inert at stylus probe.
 Never edit coordinate IRQ, pressure, touch, booster, GPU, DTS or firmware paths.
 """
@@ -14,8 +14,8 @@ import stat
 import subprocess
 import sys
 
-EXPECTED_REV = "35d960ed3c2de3d5558b782257053599cded659e"
-EXPECTED_SOURCE_SHA256 = "dabb7f6191f407b5e60b023cb3feef57776f885c0aca8e4975bbfc40fb849a86"
+EXPECTED_REV = "de0cdcf10dcca77b400f15d83c1edf4f264a0f02"
+EXPECTED_SOURCE_SHA256 = "72a7669ab02e62cf414444345b1e53333d63b3070d7f455fc4a4a5f6848477b6"
 REL = Path("drivers/input/wacom/wacom_i2c.c")
 OLD = (
     "\tif (likely(system_rev >= LCD_FREQ_SUPPORT_HWID))\n"

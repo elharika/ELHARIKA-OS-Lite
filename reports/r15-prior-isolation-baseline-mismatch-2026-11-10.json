@@ -1,0 +1,402 @@
+{
+  "status": "KERNEL_BASELINE_STATIC_COMPARISON_ONLY",
+  "original_boot_sha256": "7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14",
+  "original": {
+    "kernel_sha256": "5ec7993f903ddb2bdec64407bbd118b019f7e66d83067ec8229277b27cf786ad",
+    "kernel_bytes": 4790952,
+    "linux_banner": "Linux version 3.4.113-gde0cdcf1 (nobody@android-build) (gcc version 4.9.x 20150123 (prerelease) (GCC) ) #1 SMP PREEMPT Thu Nov 5 17:19:40 UTC 2026",
+    "config_sha256": "cb9dfcd6c9ef9aaa0ad0b2243b90bf3c6184b3d8421b243247643e49900707fc",
+    "compressed_image_bytes": 4790952,
+    "appended_bytes": 0
+  },
+  "candidate": {
+    "kernel_sha256": "006aa419b39f038f960e89ab97d6df15b227c864e0399adf4d152f9274e7bf76",
+    "kernel_bytes": 4825856,
+    "linux_banner": "Linux version 3.4.113-g35d960ed-dirty (runner@runnervmlby3q) (gcc version 4.9.x 20150123 (prerelease) (GCC) ) #1 SMP PREEMPT Sun Nov 8 19:47:30 UTC 2026",
+    "config_sha256": "1eba401e598566d9e9868b885b2c998f6d30c231fddeeb9a207f35da8955bd2b",
+    "compressed_image_bytes": 4825856,
+    "appended_bytes": 0
+  },
+  "expected_kernel_source_revision": "de0cdcf10dcca77b400f15d83c1edf4f264a0f02",
+  "candidate_source_matches_original": false,
+  "config_changed_count": 93,
+  "config_differences": {
+    "CONFIG_CGROUP_BFQIO": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_CMDLINE": {
+      "original": "\"console=ttySAC2,115200n8 vmalloc=512M androidboot.console=ttySAC2 androidboot.selinux=permissive\"",
+      "candidate": "\"console=ttySAC2,115200n8 vmalloc=512M androidboot.console=ttySAC2\""
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_ABYSSPLUG": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_ABYSSPLUGV2": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_ADAPTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_BADASS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVEX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_DANCEDANCE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_DARKNESS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_HYPER": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_INTELLIACTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_INTELLIDEMAND": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_INTELLIMM": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE": {
+      "original": "n",
+      "candidate": "y"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVEX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_LAZY": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_LULZACTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_NIGHTMARE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND": {
+      "original": "y",
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMANDPLUS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_OPTIMAX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_PEGASUSQ": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_SMARTMAX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_UBERDEMAND": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_DEFAULT_GOV_WHEATLEY": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_ABYSSPLUG": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_ABYSSPLUGV2": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_ADAPTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_BADASS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_CONSERVATIVEX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_DANCEDANCE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_DARKNESS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_HYPER": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_INTELLIACTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_INTELLIDEMAND": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_INTELLIMM": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_INTERACTIVEX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_LAZY": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_LIONHEART": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_LULZACTIVE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_NIGHTMARE": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_ONDEMANDPLUS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_OPTIMAX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_PEGASUSQ": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_SMARTMAX": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_UBERDEMAND": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_CPU_FREQ_GOV_WHEATLEY": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_BFQ": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_FIFO": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_FIOPS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_SIO": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_SIOPLUS": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_TRIPNDROID": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_VR": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DEFAULT_ZEN": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_DIRECT_RECLAIM_FILE_PAGES_ONLY": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_DISABLE_LUMPY_RECLAIM": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_EXFAT_SUPPORT_STLOG": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_EXFAT_VIRTUAL_XATTR": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_FIX_INACTIVE_RATIO": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_FRANDOM": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_FRONTSWAP": {
+      "original": "y",
+      "candidate": "n"
+    },
+    "CONFIG_HAVE_ARCH_TRACEHOOK": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_INCREASE_MAXIMUM_SWAPPINESS": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_IOSCHED_BFQ": {
+      "original": "n",
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_FIFO": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_FIOPS": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_SIO": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_SIOPLUS": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_TRIPNDROID": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_VR": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_IOSCHED_ZEN": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_LZ4_COMPRESS": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_LZ4_DECOMPRESS": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_MALI_SEC_LEGACY_SUPPORT": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_RWSEM_GENERIC_SPINLOCK": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_RWSEM_XCHGADD_ALGORITHM": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_SEC_OOM_KILLER": {
+      "original": "y",
+      "candidate": "n"
+    },
+    "CONFIG_SND_COMPRESS_OFFLOAD": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_TIGHT_PGDAT_BALANCE": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_VNSWAP": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_WQ_POWER_EFFICIENT_DEFAULT": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_ZPOOL": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_ZRAM": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_ZRAM_DEBUG": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_ZRAM_LZ4_COMPRESS": {
+      "original": null,
+      "candidate": "y"
+    },
+    "CONFIG_ZSMALLOC": {
+      "original": "n",
+      "candidate": "y"
+    },
+    "CONFIG_ZSMALLOC_NEW": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_ZSMALLOC_STAT": {
+      "original": null,
+      "candidate": "n"
+    },
+    "CONFIG_ZSWAP": {
+      "original": "y",
+      "candidate": null
+    },
+    "CONFIG_ZSWAP_ENABLE_WRITEBACK": {
+      "original": "n",
+      "candidate": null
+    }
+  },
+  "same_source_and_config": false,
+  "legacy_board_config_without_appended_dtb": true,
+  "dtb_structure_validated": false,
+  "hardware_tested": false,
+  "flash_approved": false
+}
