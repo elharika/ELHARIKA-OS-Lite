@@ -39,3 +39,25 @@ The corrected kernel build is a source experiment. Successful compilation is
 not proof of a fix for S Pen drawing freezes. No tablet writes or full Android
 system rebuild are performed by this work. Physical drawing acceptance remains
 FAIL for the previously installed ROM and NOT TESTED for the new experiment.
+
+## Corrected compile and independent BOOT reconstruction
+
+- Corrected compile [42909955707](https://github.com/elharika/ELHARIKA-OS-Lite/actions/runs/42909955707): SUCCESS.
+- Corrected compiled zImage SHA-256: `8b920c96019869aa531b50fcad791b96f3aaf2d518bb4542883d1ce773379937`.
+- Downloaded outer artifact SHA-256 `f42fa43bace6c571f3b5137afe7abf6f72fafc560d2fb2f508c2a393797df839` matches GitHub's digest.
+- Actual compiled embedded config is byte-identical to the original config:
+  `cb9dfcd6c9ef9aaa0ad0b2243b90bf3c6184b3d8421b243247643e49900707fc`.
+  Semantic config differences: **ZERO**. Source banner: `3.4.113-gde0cdcf1-dirty`.
+- Non-installable staging tooling preserves original ramdisk, board/cmdline,
+  header load addresses and Samsung trailer; only kernel size and image ID change.
+- Staged candidate BOOT SHA-256: `a4c0773787ccd9c4d1a4da592ebf204512f882717d76d23b6cf1411fb32b3022`.
+- Both the original and new candidate were independently reconstructed using the
+  **exact original mkbootimg source** pinned in the original build manifest:
+  `LineageOS/android_system_tools_mkbootimg@ed76fccb92950d0d1fba31cc5777944a5a636c23`.
+  Result: **byte-identical** for both. The legacy SHA-1 ID includes kernel,
+  ramdisk, empty second stage and empty legacy DT lengths.
+- Added staging regression tests: **233 host tests passed**.
+- Staging archive contains candidate/original images, checksums and metadata;
+  **no META-INF, TWRP update-binary or flashing command**. It is an engineering
+  artifact, not a user installation update. Physical boot and drawing remain
+  untested; no tablet writes were made.

@@ -1,0 +1,29 @@
+{
+  "status": "KERNEL_BASELINE_STATIC_COMPARISON_ONLY",
+  "original_boot_sha256": "7d15b15e127e4b31841e1081efac31d2c298c2748dbc5d55889a3e8d45e20d14",
+  "original": {
+    "kernel_sha256": "5ec7993f903ddb2bdec64407bbd118b019f7e66d83067ec8229277b27cf786ad",
+    "kernel_bytes": 4790952,
+    "linux_banner": "Linux version 3.4.113-gde0cdcf1 (nobody@android-build) (gcc version 4.9.x 20150123 (prerelease) (GCC) ) #1 SMP PREEMPT Thu Nov 5 17:19:40 UTC 2026",
+    "config_sha256": "cb9dfcd6c9ef9aaa0ad0b2243b90bf3c6184b3d8421b243247643e49900707fc",
+    "compressed_image_bytes": 4790952,
+    "appended_bytes": 0
+  },
+  "candidate": {
+    "kernel_sha256": "8b920c96019869aa531b50fcad791b96f3aaf2d518bb4542883d1ce773379937",
+    "kernel_bytes": 4786304,
+    "linux_banner": "Linux version 3.4.113-gde0cdcf1-dirty (runner@runnervmlby3q) (gcc version 4.9.x 20150123 (prerelease) (GCC) ) #1 SMP PREEMPT Tue Nov 10 21:59:53 UTC 2026",
+    "config_sha256": "cb9dfcd6c9ef9aaa0ad0b2243b90bf3c6184b3d8421b243247643e49900707fc",
+    "compressed_image_bytes": 4786304,
+    "appended_bytes": 0
+  },
+  "expected_kernel_source_revision": "de0cdcf10dcca77b400f15d83c1edf4f264a0f02",
+  "candidate_source_matches_original": true,
+  "config_changed_count": 0,
+  "config_differences": {},
+  "same_source_and_config": true,
+  "legacy_board_config_without_appended_dtb": true,
+  "dtb_structure_validated": false,
+  "hardware_tested": false,
+  "flash_approved": false
+}

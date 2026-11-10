@@ -1,0 +1,91 @@
+name: Stage original R15 Wacom BOOT without installer
+on:
+  push:
+    branches: [fix/spen-original-kernel-baseline-20261110]
+    paths:
+      - .github/workflows/stage-original-r15-wacom-boot.yml
+      - scripts/stage_r15_wacom_boot_candidate.py
+      - tests/test_stage_r15_wacom_boot_candidate.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  stage-noninstallable-boot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install ext4 regression fixture tools
+        run: sudo apt-get update -qq && sudo apt-get install -y e2fsprogs binutils gcc
+      - name: Run host regression suite
+        run: python3 -m unittest discover -s tests -v
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: input/original
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-ORIGINAL-R15-BASELINE-zImage-ONLY-NOT-FLASHABLE
+          run-id: 42909955707
+          github-token: ${{ github.token }}
+          path: input/corrected
+      - name: Stage exact original ramdisk and corrected original-source kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          python3 scripts/stage_r15_wacom_boot_candidate.py \
+            input/original/boot.img input/corrected/zImage \
+            --kernel-sha256 8b920c96019869aa531b50fcad791b96f3aaf2d518bb4542883d1ce773379937 \
+            --output output/ELHARIKA-SM-P900-SPEN-BOOT-STAGING-NOT-INSTALLABLE.zip \
+            > output/staging-result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('output/staging-result.json').read_text())
+          assert d['kernel_baseline']['same_source_and_config']
+          assert d['candidate']['image_sha256']=='a4c0773787ccd9c4d1a4da592ebf204512f882717d76d23b6cf1411fb32b3022'
+          assert d['ramdisk_unchanged'] and not d['flash_approved']
+          assert not d['contains_twrp_installer']
+          PY
+      - name: Independently reconstruct original and candidate with pinned mkbootimg
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/ed76fccb92950d0d1fba31cc5777944a5a636c23/mkbootimg.py \
+            -o "$RUNNER_TEMP/mkbootimg.py"
+          echo "4a25d58bb22b2f1aac817f8b02716fdefe1979a54c531fcf981fedab2042ceed  $RUNNER_TEMP/mkbootimg.py" | sha256sum -c -
+          python3 - "$RUNNER_TEMP" <<'PY'
+          import struct, subprocess, sys
+          from pathlib import Path
+          from zipfile import ZipFile
+          temp=Path(sys.argv[1])
+          original=Path('input/original/boot.img').read_bytes()
+          ks,ka,rs,ra,ss,sa,tags,page,version,osv=struct.unpack_from('<10I',original,8)
+          assert version==0 and ss==0 and page==2048 and osv==369099138
+          assert (original[64:576]+original[608:1632]).split(b'\0')[0]==b'buildvariant=userdebug'
+          assert original[48:64]==bytes(16)
+          ro=page+((ks+page-1)//page)*page
+          (temp/'ramdisk.img').write_bytes(original[ro:ro+rs])
+          (temp/'old-kernel').write_bytes(original[page:page+ks])
+          with ZipFile('output/ELHARIKA-SM-P900-SPEN-BOOT-STAGING-NOT-INSTALLABLE.zip') as z:
+              candidate=z.read('BOOT-CANDIDATE-NOT-DEVICE-TESTED.img')
+          for name,kernel,expected in [('original',temp/'old-kernel',original),('candidate',Path('input/corrected/zImage'),candidate)]:
+              out=temp/(name+'.img')
+              subprocess.run([sys.executable,str(temp/'mkbootimg.py'),'--kernel',str(kernel),'--ramdisk',str(temp/'ramdisk.img'),'--base','0','--kernel_offset',hex(ka),'--ramdisk_offset',hex(ra),'--tags_offset',hex(tags),'--pagesize',str(page),'--header_version','0','--os_version','11.0.0','--os_patch_level','2024-02','--cmdline','buildvariant=userdebug','--output',str(out)],check=True)
+              assert out.read_bytes()+b'SEANDROIDENFORCE'==expected
+          Path('output/independent-reconstruction.txt').write_text('Original and candidate are byte-identical to independent pinned mkbootimg reconstruction. No device test. No installer.\n')
+          PY
+          (cd output && sha256sum ELHARIKA-SM-P900-SPEN-BOOT-STAGING-NOT-INSTALLABLE.zip > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-ORIGINAL-R15-BOOT-STAGING-NOT-INSTALLABLE
+          path: output/
+          retention-days: 14
+          if-no-files-found: error
