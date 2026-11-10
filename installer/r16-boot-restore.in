@@ -1,0 +1,40 @@
+#!/sbin/sh
+# Return only BOOT to the exact pre-R16 R15 kernel. SYSTEM and DATA untouched.
+set -eu
+FD=$2; ZIP=$3; WORK=
+case "$FD" in ''|*[!0-9]*) exit 1;; esac
+ui() { printf 'ui_print %s\nui_print\n' "$*" > "/proc/self/fd/$FD"; }
+die() { ui "STOP: $*"; exit 1; }
+cleanup() { [ -z "$WORK" ] || rm -rf -- "$WORK"; }
+trap cleanup EXIT
+for cmd in getprop readlink blockdev unzip sha256sum head awk dd wc tr sync mktemp rm cat; do
+ command -v "$cmd" >/dev/null 2>&1 || die "Missing $cmd"
+done
+[ "$(getprop ro.product.device)" = v1awifi ] || die 'SM-P900 only'
+case "$(getprop ro.bootloader)" in P900*) ;; *) die 'P900 identity not verified';; esac
+case "$ZIP" in /external_sd/*|/external_sd1/*|/external_sdcard/*) ;; *) die 'Use external microSD';; esac
+BOOT=$(readlink -f /dev/block/platform/dw_mmc.0/by-name/BOOT) || die 'No BOOT mapping'
+case "$BOOT" in /dev/block/mmcblk0p[0-9]*) ;; *) die 'Unexpected BOOT path';; esac
+[ -b "$BOOT" ] || die 'BOOT is not a block device'
+[ "$(blockdev --getsize64 "$BOOT")" = 8388608 ] || die 'Wrong BOOT capacity'
+while read -r source target rest; do
+ [ "$(readlink -f "$source" 2>/dev/null || true)" != "$BOOT" ] || die 'BOOT is mounted'
+done < /proc/mounts
+[ -r /sys/class/power_supply/battery/capacity ] || die 'Battery reading unavailable'
+PWR=$(cat /sys/class/power_supply/battery/capacity)
+case "$PWR" in ''|*[!0-9]*) die 'Invalid battery reading';; esac
+[ "$PWR" -ge 50 ] || die 'Charge battery to at least 50 percent'
+OLD=$(head -c @OLD_BYTES@ "$BOOT" | sha256sum | awk '{print $1}')
+if [ "$OLD" = '@OLD_SHA@' ]; then ui 'Original R15 BOOT already present; nothing written'; exit 0; fi
+CURRENT=$(head -c @NEW_BYTES@ "$BOOT" | sha256sum | awk '{print $1}')
+[ "$CURRENT" = '@NEW_SHA@' ] || die 'Unknown current BOOT; use full verified ROM recovery instead'
+WORK=$(mktemp -d "${ZIP%/*}/elharika-restore.XXXXXX") || die 'Cannot stage restore'
+unzip -p "$ZIP" boot.img > "$WORK/boot.img" || die 'Cannot extract original BOOT'
+[ "$(wc -c < "$WORK/boot.img" | tr -d '[:space:]')" = '@OLD_BYTES@' ] || die 'Wrong payload size'
+[ "$(sha256sum "$WORK/boot.img" | awk '{print $1}')" = '@OLD_SHA@' ] || die 'Wrong payload SHA256'
+ui 'Restoring original R15 BOOT only. Keep power connected.'
+dd if="$WORK/boot.img" of="$BOOT" bs=1048576 || die 'Write failed; stay in TWRP'
+sync
+[ "$(head -c @OLD_BYTES@ "$BOOT" | sha256sum | awk '{print $1}')" = '@OLD_SHA@' ] || die 'Readback failed; stay in TWRP'
+ui 'Original R15 BOOT restored and readback verified. SYSTEM and DATA unchanged.'
+ui 'This returns to the prior ROM; it does not prove prior S Pen stability.'

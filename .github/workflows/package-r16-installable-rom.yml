@@ -1,0 +1,52 @@
+name: Package SM-P900 R16 installable ROM and BOOT rollback
+on:
+  push:
+    branches: [fix/installable-r16-spen-20261110]
+    paths:
+      - .github/workflows/package-r16-installable-rom.yml
+      - scripts/package_r16_installable_rom.py
+      - installer/r16-boot-restore.in
+      - tests/test_package_r16_installable_rom.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package-existing-verified-images:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install host fixture tools
+        run: sudo apt-get update -qq && sudo apt-get install -y e2fsprogs binutils gcc
+      - name: Test guard logic and all host regressions
+        run: python3 -m unittest discover -s tests -v
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-ANDROID11-R15P0-SPEN-TOUCH-MATCHED-EXPERIMENTAL
+          run-id: 42509941831
+          github-token: ${{ github.token }}
+          path: inputs/rom
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-ORIGINAL-R15-BOOT-STAGING-NOT-INSTALLABLE
+          run-id: 42910771450
+          github-token: ${{ github.token }}
+          path: inputs/staged
+      - name: Package full SYSTEM with corrected BOOT and independent BOOT restore
+        run: |
+          set -euo pipefail
+          python3 scripts/package_r16_installable_rom.py \
+            inputs/rom/ELHARIKA-OS-Lite-SM-P900-Android11-R15P0-SPEN-TOUCH-EXPERIMENTAL.zip \
+            inputs/staged/ELHARIKA-SM-P900-SPEN-BOOT-STAGING-NOT-INSTALLABLE.zip \
+            out | tee packaging-result.json
+          cp packaging-result.json out/
+          (cd out && sha256sum -c ELHARIKA-R16-SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-R16-INSTALLABLE-ROM-AND-BOOT-ROLLBACK-DEVICE-UNTESTED
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
