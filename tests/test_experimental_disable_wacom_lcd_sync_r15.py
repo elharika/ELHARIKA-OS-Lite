@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -49,6 +50,19 @@ class WacomIsolationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             mod.transform(SOURCE.replace("wacom_i2c_coord(wac_i2c);", ""))
 
+    def test_dirty_source_refused_even_with_correct_head(self):
+        for text in (SOURCE + "/* unrelated edit */\n",
+                     SOURCE.replace(mod.OLD, mod.NEW) + "/* unrelated edit */\n"):
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                src = root / mod.REL
+                src.parent.mkdir(parents=True)
+                src.write_text(text)
+                with patch.object(mod, "EXPECTED_SOURCE_SHA256", hashlib.sha256(SOURCE.encode()).hexdigest()), patch.object(mod.subprocess, "check_output", return_value=mod.EXPECTED_REV):
+                    with self.assertRaisesRegex(ValueError, "SHA256 changed"):
+                        mod.apply(root)
+                self.assertEqual(src.read_text(), text)
+
     def test_pinned_revision_fail_closed(self):
         with tempfile.TemporaryDirectory() as td:
             with patch.object(mod.subprocess, "check_output", return_value="badrevision\n"):
@@ -74,7 +88,7 @@ class WacomIsolationTests(unittest.TestCase):
             src = root / mod.REL
             src.parent.mkdir(parents=True)
             src.write_text(SOURCE)
-            with patch.object(mod.subprocess, "check_output", return_value=mod.EXPECTED_REV + "\n"):
+            with patch.object(mod, "EXPECTED_SOURCE_SHA256", hashlib.sha256(SOURCE.encode()).hexdigest()), patch.object(mod.subprocess, "check_output", return_value=mod.EXPECTED_REV + "\n"):
                 with self.assertRaisesRegex(ValueError, "Expected patched"):
                     mod.apply(root, check=True)
                 a = mod.apply(root)

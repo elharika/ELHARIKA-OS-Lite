@@ -10,7 +10,7 @@ This supersedes an earlier observation of an S Pen-triggered spontaneous reboot.
 
 Older \`ELHARIKA-SPEN-DIAG-01(2).tgz\` includes seven \`system_server_watchdog\` reports awaiting \`IKeyDisabler/default\`, and historical graphics native crashes. The older \`kernel/last_kmsg.txt\` does **not** establish an S Pen IRQ kernel panic during this **new** drawing freeze; it ends in an orderly charger-mode \`Restarting system\` / \`sec_reboot\`. The older archive predates or is not temporally correlated with the latest freeze.
 
-The Android 11 R15P0 + touch-HAL experimental system+boot package built as GitHub Actions #42509941831 has not been confirmed by the user to be installed. Do not assume it is the running build or that its source fix has been tested physically.
+Update from PR #10: the user subsequently confirmed that the freeze happened on the latest R15P0 + S Pen Touch Fix image. Physical S Pen drawing acceptance therefore FAILS for that combined image. This confirmation does not turn older, pre-installation KeyDisabler traces into evidence of a post-fix recurrence. The isolated LCD-sync kernel remains untested on hardware.
 
 ## Diagnostic strategy
 
