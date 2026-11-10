@@ -15,7 +15,7 @@ The user uploaded `ELHARIKA-SPEN-FREEZE-01.tgz` and the SHA256 sidecar. SHA256 v
 
 ## Temporal interpretation
 
-The touch-fixed R15P0+One UI development package was built by GitHub Actions #42509941831 around 18:27 UTC. All captured KeyDisabler hangs occurred **before** that build. They do not demonstrate failure of that new package. We do **not** know whether it was installed on the user's tablet when it froze.
+The touch-fixed R15P0+One UI development package was built by GitHub Actions #42509941831 around 18:27 UTC. All captured KeyDisabler hangs occurred **before** that build. They do not demonstrate failure of that new package. The user subsequently confirmed in PR #10 that the latest R15P0 + S Pen Touch Fix image was installed when drawing froze. The combined image fails physical S Pen acceptance, while the cause of that freeze remains unproven.
 
 ## Action plan
 

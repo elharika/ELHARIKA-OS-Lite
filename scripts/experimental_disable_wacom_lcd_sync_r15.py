@@ -6,6 +6,7 @@ Only make the optional *display-frequency feedback* inert at stylus probe.
 Never edit coordinate IRQ, pressure, touch, booster, GPU, DTS or firmware paths.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ import subprocess
 import sys
 
 EXPECTED_REV = "35d960ed3c2de3d5558b782257053599cded659e"
+EXPECTED_SOURCE_SHA256 = "dabb7f6191f407b5e60b023cb3feef57776f885c0aca8e4975bbfc40fb849a86"
 REL = Path("drivers/input/wacom/wacom_i2c.c")
 OLD = (
     "\tif (likely(system_rev >= LCD_FREQ_SUPPORT_HWID))\n"
@@ -62,6 +64,11 @@ def apply(root: Path, check: bool = False):
     if not stat.S_ISREG(st.st_mode):
         raise ValueError("Wacom target not a regular file")
     result, changed = transform(before.decode("utf-8"))
+    # HEAD alone cannot authenticate a dirty worktree. Reverse only our exact
+    # toggle before hashing, so reapplying is allowed but unrelated edits fail.
+    original = result.replace(NEW, OLD, 1).encode("utf-8")
+    if hashlib.sha256(original).hexdigest() != EXPECTED_SOURCE_SHA256:
+        raise ValueError("Pinned Wacom source SHA256 changed; unrelated edits refused")
     if check:
         if changed:
             raise ValueError("Expected patched source but still original")
@@ -70,6 +77,7 @@ def apply(root: Path, check: bool = False):
     return dict(
         status=STATUS,
         source_revision=EXPECTED_REV,
+        original_source_sha256=EXPECTED_SOURCE_SHA256,
         path=str(REL),
         check_mode=check,
         changed=changed,

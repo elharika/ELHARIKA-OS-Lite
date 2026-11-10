@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('blobs', Path(__file__).resolve().parents[1] / 'scripts/verify_stock_blobs.py')
 blobs = importlib.util.module_from_spec(spec)
@@ -11,6 +12,27 @@ spec.loader.exec_module(blobs)
 
 
 class StockTests(unittest.TestCase):
+    def test_extractor_failure_is_not_reported_as_missing_blob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'blob'
+            failed = subprocess.CompletedProcess([], 127, '', 'missing libss.so.2')
+            with patch.object(blobs.subprocess, 'run', return_value=failed):
+                with self.assertRaisesRegex(RuntimeError, 'debugfs failed.*127'):
+                    blobs.dump(Path(tmp) / 'image', 'build.prop', target)
+            missing = subprocess.CompletedProcess([], 0, '', 'File not found by ext2_lookup')
+            with patch.object(blobs.subprocess, 'run', return_value=missing):
+                self.assertFalse(blobs.dump(Path(tmp) / 'image', 'build.prop', target))
+
+    def test_stale_extraction_destination_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'blob'
+            target.write_text('stale bytes')
+            with patch.object(blobs.subprocess, 'run') as runner:
+                with self.assertRaisesRegex(ValueError, 'must not exist'):
+                    blobs.dump(Path(tmp) / 'image', 'build.prop', target)
+                runner.assert_not_called()
+            self.assertEqual(target.read_text(), 'stale bytes')
+
     def test_paths_reject_escape_and_command_injection(self):
         for path in ['../boot.img', '/boot.img', 'a/../../b', 'a b', 'a\nb', '"', '.']:
             with self.assertRaises(ValueError):

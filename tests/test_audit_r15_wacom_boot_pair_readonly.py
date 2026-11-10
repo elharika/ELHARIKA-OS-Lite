@@ -17,9 +17,14 @@ def fixture(ks=b"z"*3500, rs=b"r"*1700, trailer=m.SAMSUNG_TRAILER):
     return (bytes(header)+ks+bytes(m.rounded(len(ks),page)-len(ks))+
             rs+bytes(m.rounded(len(rs),page)-len(rs))+trailer)
 
+def zimage(size=4200, appended=b""):
+    data=bytearray(size)
+    struct.pack_into("<3I",data,0x24,0x016F2818,0,size)
+    return bytes(data)+appended
+
 class PairAuditTest(unittest.TestCase):
     def test_valid_is_never_flash_approved(self):
-        old=fixture();new=b"new zImage payload"
+        old=fixture();new=zimage()
         with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
             r=m.analyze(old,new)
         self.assertFalse(r["flash_approved"])
@@ -27,6 +32,28 @@ class PairAuditTest(unittest.TestCase):
         self.assertFalse(r["dtb_structure_validated"])
         self.assertEqual(r["experimental_kernel_sha256"],m.digest(new))
         self.assertEqual(r["ramdisk_bytes"],1700)
+
+    def test_random_payload_and_nested_boot_rejected(self):
+        old=fixture()
+        with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
+            for payload in (b"random"*100, old, b"z"*47):
+                with self.subTest(payload=payload[:8]):
+                    with self.assertRaises(ValueError):
+                        m.analyze(old,payload)
+
+    def test_zimage_bounds_and_appended_bytes(self):
+        self.assertEqual(m.inspect_zimage(zimage(appended=b"dtb"))["appended_bytes"],3)
+        for start,end in ((100,99),(0,47),(0,9000)):
+            data=bytearray(zimage())
+            struct.pack_into("<2I",data,0x28,start,end)
+            with self.assertRaisesRegex(ValueError,"bounds"):
+                m.inspect_zimage(data)
+
+    def test_truncated_authenticated_header_rejected(self):
+        old=b"ANDROID!"
+        with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
+            with self.assertRaisesRegex(ValueError,"boot image"):
+                m.analyze(old,zimage())
 
     def test_hash_drift_rejected(self):
         with self.assertRaisesRegex(ValueError,"SHA changed"):
@@ -36,13 +63,13 @@ class PairAuditTest(unittest.TestCase):
         old=fixture(trailer=b"unsupported trailer")
         with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
             with self.assertRaisesRegex(ValueError,"trailer"):
-                m.analyze(old,b"zImage")
+                m.analyze(old,zimage())
 
     def test_header_rejected(self):
         old=bytearray(fixture());old[8:12]=(0).to_bytes(4,"little")
         with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
             with self.assertRaisesRegex(ValueError,"header"):
-                m.analyze(bytes(old),b"zImage")
+                m.analyze(bytes(old),zimage())
 
     def test_untrusted_image_refused(self):
         old=fixture()
@@ -53,7 +80,7 @@ class PairAuditTest(unittest.TestCase):
     def test_read_only_payloads(self):
         old=fixture()
         with patch.object(m,"ORIGINAL_SHA",m.digest(old)):
-            result=m.analyze(old,b"a"*4200)
+            result=m.analyze(old,zimage())
         self.assertEqual(m.digest(old),result["original_boot_sha256"])
         self.assertTrue(result["zimage_is_standalone_not_boot"])
         self.assertEqual(result["user_spen_drawing_on_experimental_kernel"],"NOT_TESTED")

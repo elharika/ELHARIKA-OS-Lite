@@ -32,10 +32,14 @@ def dump(image, source, target):
     source = safe_path(source)
     if not re.fullmatch(r'[A-Za-z0-9_./-]+', str(target)):
         raise ValueError('Unsafe temporary destination')
+    if target.exists() or target.is_symlink():
+        raise ValueError('Extraction destination must not exist')
     result = subprocess.run(['debugfs', '-R', f'dump /{source} {target}', str(image)],
                             capture_output=True, text=True, timeout=120)
+    if result.returncode:
+        raise RuntimeError(f'debugfs failed ({result.returncode}): {result.stderr[:300]}')
     # debugfs can return zero even for a missing inode.
-    return result.returncode == 0 and target.is_file()
+    return target.is_file()
 
 
 def elf_info(path):
