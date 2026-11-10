@@ -1,7 +1,7 @@
 name: SM-P900 source review regression
 on:
   push:
-    branches: [fix/sm-p900-review-20261110]
+    branches: [fix/sm-p900-review-20261110, fix/spen-original-kernel-baseline-20261110]
   pull_request:
     paths:
       - scripts/experimental_disable_wacom_lcd_sync_r15.py
@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --location --silent --show-error \
-            https://raw.githubusercontent.com/salih4187/android_kernel_samsung_exynos5420/35d960ed3c2de3d5558b782257053599cded659e/drivers/input/wacom/wacom_i2c.c \
+            https://raw.githubusercontent.com/exynos5420/android_kernel_samsung_exynos5420/de0cdcf10dcca77b400f15d83c1edf4f264a0f02/drivers/input/wacom/wacom_i2c.c \
             -o "$RUNNER_TEMP/wacom_i2c.c"
           python3 - "$RUNNER_TEMP/wacom_i2c.c" <<'PY'
           import hashlib, sys

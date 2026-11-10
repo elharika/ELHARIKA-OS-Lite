@@ -1,15 +1,18 @@
-name: SM-P900 R15P0 kernel-only Wacom LCD-sync isolation experiment
+name: SM-P900 original R15P0 baseline Wacom isolation
 on:
   push:
-    branches: [diagnostics/spen-drawing-freeze-20261108]
+    branches: [fix/spen-original-kernel-baseline-20261110]
     paths:
       - .github/workflows/compile-spen-r15-wacom-isolation.yml
       - scripts/experimental_disable_wacom_lcd_sync_r15.py
       - tests/test_experimental_disable_wacom_lcd_sync_r15.py
+      - scripts/inspect_r15_kernel_baseline.py
+      - tests/test_inspect_r15_kernel_baseline.py
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   bounded-kernel-source-experiment:
@@ -28,6 +31,31 @@ jobs:
           python3 -m unittest discover -s tests -p test_experimental_disable_wacom_lcd_sync_r15.py -v |& tee evidence/source-tests.log
           python3 -m compileall -q scripts/experimental_disable_wacom_lcd_sync_r15.py tests/test_experimental_disable_wacom_lcd_sync_r15.py
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-matching-boot-NOT-FLASH-APPROVED
+          run-id: 42067803567
+          github-token: ${{ github.token }}
+          path: input/original
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ELHARIKA-SM-P900-SPEN-R15-LCD-SYNC-ISOLATED-zImage-ONLY-NOT-FLASHABLE
+          run-id: 42516456316
+          github-token: ${{ github.token }}
+          path: input/prior-experiment
+
+      - name: Extract original embedded config and expose prior baseline mismatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_inspect_r15_kernel_baseline.py -v
+          python3 scripts/inspect_r15_kernel_baseline.py \
+            input/original/boot.img input/prior-experiment/zImage \
+            --report evidence/prior-experiment-baseline.json \
+            --original-config evidence/original.config
+          test -s evidence/original.config
+
       - name: Install pinned legacy ARM build requirements
         shell: bash
         run: |
@@ -41,10 +69,10 @@ jobs:
         run: |
           set -euo pipefail
           git init "$RUNNER_TEMP/sm-p900-kernel"
-          git -C "$RUNNER_TEMP/sm-p900-kernel" remote add origin https://github.com/salih4187/android_kernel_samsung_exynos5420
-          git -C "$RUNNER_TEMP/sm-p900-kernel" fetch -q --depth=1 origin 35d960ed3c2de3d5558b782257053599cded659e
+          git -C "$RUNNER_TEMP/sm-p900-kernel" remote add origin https://github.com/exynos5420/android_kernel_samsung_exynos5420
+          git -C "$RUNNER_TEMP/sm-p900-kernel" fetch -q --depth=1 origin de0cdcf10dcca77b400f15d83c1edf4f264a0f02
           git -C "$RUNNER_TEMP/sm-p900-kernel" -c advice.detachedHead=false checkout -q FETCH_HEAD
-          test "$(git -C "$RUNNER_TEMP/sm-p900-kernel" rev-parse HEAD)" = 35d960ed3c2de3d5558b782257053599cded659e
+          test "$(git -C "$RUNNER_TEMP/sm-p900-kernel" rev-parse HEAD)" = de0cdcf10dcca77b400f15d83c1edf4f264a0f02
           git init "$RUNNER_TEMP/arm-gcc-4.9"
           git -C "$RUNNER_TEMP/arm-gcc-4.9" remote add origin https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
           git -C "$RUNNER_TEMP/arm-gcc-4.9" fetch -q --depth=1 origin da10d2bd65e2c57d338fb6bb712ff522ad4e34e7
@@ -79,12 +107,37 @@ jobs:
           mkdir -p "$out"
           export ARCH=arm
           export CROSS_COMPILE="$RUNNER_TEMP/arm-gcc-4.9/bin/arm-linux-androideabi-"
-          make -C "$k" O="$out" lineageos_v1awifi_defconfig 2>&1 | tee evidence/defconfig.log
+          cp evidence/original.config "$out/.config"
+          make -C "$k" O="$out" oldnoconfig 2>&1 | tee evidence/defconfig.log
+          python3 - "$out/.config" <<'PYCONFIG'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from inspect_r15_kernel_baseline import config_values, differences
+          before = config_values(Path('evidence/original.config').read_text())
+          after = config_values(Path(sys.argv[1]).read_text())
+          delta = differences(before, after)
+          assert not delta, delta
+          print('Original BOOT kernel configuration preserved exactly.')
+          PYCONFIG
           grep -Fxq 'CONFIG_MALI_T6XX_R15P0=y' "$out/.config"
           make -C "$k" O="$out" -j3 zImage 2>&1 | tee evidence/build.log
           test -s "$out/arch/arm/boot/zImage"
           test -s "$out/vmlinux"
           cp "$out/arch/arm/boot/zImage" kernel-only/zImage
+          python3 scripts/inspect_r15_kernel_baseline.py \
+            input/original/boot.img kernel-only/zImage \
+            --report evidence/new-kernel-baseline.json \
+            --original-config evidence/rechecked-original.config
+          python3 - <<'PYGATE'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('evidence/new-kernel-baseline.json').read_text())
+          assert d['same_source_and_config'], d
+          assert d['config_changed_count'] == 0
+          assert not d['flash_approved']
+          PYGATE
+          cp evidence/new-kernel-baseline.json kernel-only/
           (cd kernel-only && sha256sum zImage > SHA256SUMS && sha256sum -c SHA256SUMS)
           sha256sum kernel-only/zImage | tee evidence/zImage.sha256
           cat > kernel-only/NOT-FLASHABLE.txt <<'EOF'
@@ -99,7 +152,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ELHARIKA-SM-P900-SPEN-R15-LCD-SYNC-ISOLATED-zImage-ONLY-NOT-FLASHABLE
+          name: ELHARIKA-SM-P900-SPEN-ORIGINAL-R15-BASELINE-zImage-ONLY-NOT-FLASHABLE
           path: kernel-only/
           retention-days: 7
           if-no-files-found: error
@@ -116,7 +169,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ELHARIKA-SM-P900-SPEN-R15-ISOLATION-COMPILE-EVIDENCE
+          name: ELHARIKA-SM-P900-SPEN-ORIGINAL-BASELINE-COMPILE-EVIDENCE
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
